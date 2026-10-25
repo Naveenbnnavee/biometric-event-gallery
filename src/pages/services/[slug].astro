@@ -1,0 +1,329 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { services } from '../../data/services';
+import BespokeInquiryModal from '../../components/BespokeInquiryModal.astro';
+import FaqAccordion from '../../components/FaqAccordion.astro';
+import { getStudioSettings } from '../../lib/db';
+
+export function getStaticPaths() {
+  return services.map((service) => ({
+    params: { slug: service.slug },
+    props: { service }
+  }));
+}
+
+const { service } = Astro.props;
+const settings = getStudioSettings();
+const whatsappClean = (settings.whatsappConcierge || '917892706982').replace(/[^0-9]/g, '');
+const whatsappUrl = `https://wa.me/${whatsappClean}?text=${encodeURIComponent('Hello Frames By Hithu, I am interested in your bespoke services.')}`;
+
+const serviceJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Service',
+  'name': service.title,
+  'description': service.overview,
+  'provider': {
+    '@type': 'PhotographyBusiness',
+    'name': 'Frames By Hithu'
+  },
+  'areaServed': {
+    '@type': 'State',
+    'name': 'Karnataka'
+  }
+};
+---
+
+<Layout
+  title={`${service.title} | Fine-Art Photography Karnataka | Frames By Hithu`}
+  description={service.shortDescription}
+  image={service.coverImage}
+  schema={serviceJsonLd}
+>
+  <!-- Service Hero -->
+  <header class="service-hero">
+    <div class="service-hero-bg protected-media">
+      <img src={service.coverImage} alt={service.title} class="hero-bg-img" />
+      <div class="hero-vignette"></div>
+      <div class="watermark-subtle">FRAMES BY HITHU • BESPOKE</div>
+    </div>
+
+    <div class="container hero-content text-center">
+      <a href="/services" class="back-link">← All Bespoke Services</a>
+      <div class="gold-pill">BESPOKE FINE-ART COMMISSION</div>
+      <h1 class="hero-title">{service.title}</h1>
+      <h2 class="hero-headline font-sans">{service.heroHeadline}</h2>
+      <p class="hero-desc">{service.shortDescription}</p>
+
+      <div class="hero-actions">
+        <a href="#inquiry-form" class="btn-gold">Request Custom Quote & Dates</a>
+        <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
+          Inquire on WhatsApp
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Deep Dive Overview & Philosophy -->
+  <section class="section-py">
+    <div class="container content-container">
+      <div class="deep-dive-grid">
+        <div class="deep-dive-main">
+          <div class="glass-card section-card">
+            <h3 class="card-heading">Cultural Overview & Intent</h3>
+            <p class="card-paragraph">{service.overview}</p>
+          </div>
+
+          <div class="glass-card section-card">
+            <h3 class="card-heading">Our Documentary Philosophy</h3>
+            <blockquote class="philosophy-quote">
+              “{service.philosophy}”
+            </blockquote>
+          </div>
+
+          <!-- Rituals Detailed -->
+          <div class="glass-card section-card">
+            <h3 class="card-heading">Vedic & Heritage Rituals Covered</h3>
+            <p class="card-subnote">
+              Every critical ritual is documented with multi-angle prime lenses and dedicated focus on family emotion:
+            </p>
+            <ul class="rituals-detailed-list">
+              {service.ritualsCovered.map((ritual) => (
+                <li class="ritual-item">
+                  <span class="ritual-bullet">🪔</span>
+                  <span>{ritual}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <!-- Sidebar / Deliverables -->
+        <aside class="deep-dive-sidebar">
+          <div class="glass-card deliverables-card">
+            <div class="gold-pill">CLIENT DELIVERABLES</div>
+            <h3 class="sidebar-title">What You Receive</h3>
+            <div class="gold-divider" style="margin: 1rem 0;"></div>
+            <ul class="deliverables-check-list">
+              {service.deliverables.map((item) => (
+                <li>
+                  <span class="check-icon">✓</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div class="sidebar-cta">
+              <a href="#inquiry-form" class="btn-gold" style="width: 100%;">
+                Inquire For Your Dates
+              </a>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- Service Specific FAQs -->
+  <FaqAccordion
+    faqs={service.faq}
+    title={`Frequently Asked Questions: ${service.title}`}
+    subtitle="COMMISSION DETAILS & PROTOCOL"
+  />
+
+  <!-- Embedded Bespoke Inquiry Funnel -->
+  <section class="section-py" id="inquiry-form">
+    <div class="container">
+      <BespokeInquiryModal initialService={service.slug} />
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .text-center {
+    text-align: center;
+  }
+
+  .service-hero {
+    position: relative;
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6rem 0 4rem 0;
+    overflow: hidden;
+  }
+
+  .service-hero-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  .hero-bg-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .hero-vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse at center,
+      rgba(11, 12, 16, 0.5) 0%,
+      rgba(11, 12, 16, 0.9) 70%,
+      rgba(11, 12, 16, 0.98) 100%
+    );
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 5;
+    max-width: 860px;
+  }
+
+  .back-link {
+    color: var(--gold-primary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    display: inline-block;
+  }
+
+  .hero-title {
+    font-size: clamp(2.6rem, 5.5vw, 4.4rem);
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-headline {
+    font-size: 1.25rem;
+    color: var(--gold-light);
+    font-weight: 500;
+    margin-bottom: 1.25rem;
+  }
+
+  .hero-desc {
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    max-width: 680px;
+    margin: 0 auto 2.5rem auto;
+    line-height: 1.7;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .content-container {
+    max-width: 1120px;
+  }
+
+  .deep-dive-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  @media (min-width: 1024px) {
+    .deep-dive-grid {
+      grid-template-columns: 1.6fr 1fr;
+    }
+  }
+
+  .deep-dive-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .section-card {
+    padding: 2.5rem;
+  }
+
+  .card-heading {
+    font-size: 1.6rem;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+
+  .card-paragraph {
+    font-size: 1rem;
+    color: var(--text-muted);
+    line-height: 1.8;
+  }
+
+  .philosophy-quote {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 1.25rem;
+    color: var(--gold-light);
+    line-height: 1.6;
+    border-left: 3px solid var(--gold-primary);
+    padding-left: 1.25rem;
+  }
+
+  .card-subnote {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    margin-bottom: 1.25rem;
+  }
+
+  .rituals-detailed-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .ritual-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+  }
+
+  .ritual-bullet {
+    font-size: 1rem;
+  }
+
+  /* Sidebar */
+  .deliverables-card {
+    padding: 2.5rem;
+    position: sticky;
+    top: calc(var(--header-height) + 2rem);
+  }
+
+  .sidebar-title {
+    font-size: 1.6rem;
+    color: var(--text-primary);
+    margin-top: 0.75rem;
+  }
+
+  .deliverables-check-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .deliverables-check-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .check-icon {
+    color: var(--gold-primary);
+    font-weight: bold;
+    font-size: 1rem;
+  }
+</style>

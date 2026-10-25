@@ -1,0 +1,80 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Page Not Found | Frames By Hithu"
+  description="The requested page could not be located on Frames By Hithu."
+>
+  <div class="not-found-section section-py text-center">
+    <div class="container">
+      <div class="not-found-card glass-card">
+        <span class="error-gold-code">404</span>
+        <div class="gold-pill">FRAME NOT LOCATED</div>
+        <h1 class="error-title">This Frame Has Moved or Does Not Exist</h1>
+        <div class="gold-divider"></div>
+        <p class="error-desc">
+          The fine-art gallery, story essay, or page you were seeking may have been archived or reorganized. Please return to our portfolio archive or check date availability.
+        </p>
+
+        <div class="error-actions">
+          <a href="/" class="btn-gold">Return to Homepage</a>
+          <a href="/portfolio" class="btn-outline">Explore Fine-Art Portfolio</a>
+          <a href="/contact#inquiry-form" class="btn-whatsapp">Check Date Availability</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .text-center {
+    text-align: center;
+  }
+
+  .not-found-section {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .not-found-card {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 6vw, 4rem);
+    border: 1px solid var(--gold-border);
+  }
+
+  .error-gold-code {
+    font-family: var(--font-serif);
+    font-size: clamp(4rem, 10vw, 7rem);
+    font-weight: 700;
+    line-height: 1;
+    background: var(--gold-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  .error-title {
+    font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .error-desc {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin-bottom: 2.5rem;
+  }
+
+  .error-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+</style>

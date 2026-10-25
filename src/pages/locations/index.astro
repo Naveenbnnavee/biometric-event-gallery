@@ -1,0 +1,266 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { locations } from '../../data/locations';
+import { getStudioSettings } from '../../lib/db';
+
+const settings = getStudioSettings();
+const whatsappClean = (settings.whatsappConcierge || '917892706982').replace(/[^0-9]/g, '');
+const whatsappUrl = `https://wa.me/${whatsappClean}?text=${encodeURIComponent('Hello Frames By Hithu, I would like to inquire about a ceremony in Karnataka.')}`;
+
+const locationsHubSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Place',
+  'name': 'Frames By Hithu Statewide Karnataka Coverage',
+  'address': {
+    '@type': 'PostalAddress',
+    'addressRegion': 'Karnataka',
+    'addressCountry': 'IN'
+  },
+  'description': 'Premier fine-art photography coverage across Karnataka: Bengaluru, Mysuru, Mangaluru, Udupi, Hubballi, Coorg, Chikmagalur, and Hassan.'
+};
+---
+
+<Layout
+  title="Statewide Karnataka Photography Hub | Bengaluru, Mysuru, Mangaluru | Frames By Hithu"
+  description="Explore Frames By Hithu statewide Karnataka photography coverage. Luxury weddings, Vedic Gruhapravesham, and traditional poojas in Bengaluru, Mysuru, Mangaluru, Udupi, and Hubballi."
+  schema={locationsHubSchema}
+>
+  <div class="page-header section-py text-center">
+    <div class="container">
+      <div class="gold-pill">LOCAL SEO & VENUE DIRECTORY</div>
+      <h1 class="page-title">Statewide Karnataka Coverage Hub</h1>
+      <div class="gold-divider"></div>
+      <p class="page-subtitle">
+        From royal palace courtyards in Mysuru and heritage mantapas in Bengaluru to coastal horizons in Mangaluru and sacred mutts in Udupi—we bring master fine-art lenses and deep cultural reverence everywhere in Karnataka.
+      </p>
+    </div>
+  </div>
+
+  <section class="locations-grid-section section-py">
+    <div class="container">
+      <div class="cities-large-grid">
+        {locations.map((loc) => (
+          <article class="city-feature-card glass-card">
+            <div class="city-card-header">
+              <span class="kannada-badge">{loc.kannadaName}</span>
+              <h2 class="city-heading">{loc.cityName}</h2>
+              <p class="city-tagline-text">{loc.tagline}</p>
+            </div>
+
+            <p class="city-overview-text">{loc.overview}</p>
+
+            <div class="venues-box">
+              <strong class="venues-title">Iconic Venues & Localities Covered:</strong>
+              <ul class="venues-list">
+                {loc.popularVenues.map((v) => (
+                  <li>
+                    <span class="venue-pin">📍</span>
+                    <span class="venue-name">{v.name}</span>
+                    <span class="venue-badge">({v.type})</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div class="specialties-box">
+              <strong class="venues-title">Local Ritual Expertise:</strong>
+              <ul class="specialties-list">
+                {loc.localSpecialties.slice(0, 3).map((spec) => (
+                  <li>• {spec}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div class="city-card-actions">
+              <a href={`/locations/${loc.slug}`} class="btn-gold">
+                View {loc.cityName} City Landing Page
+              </a>
+              <a href={`/contact#inquiry-form?city=${encodeURIComponent(loc.cityName)}`} class="btn-outline">
+                Inquire For {loc.cityName} Dates
+              </a>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Statewide Travel Assurance Banner -->
+  <section class="section-py text-center">
+    <div class="container">
+      <div class="travel-banner glass-card">
+        <div class="gold-pill">ZERO TRAVEL LOGISTICS OVERHEAD</div>
+        <h2>Traveling to All Districts & Heritage Temples</h2>
+        <p>
+          Planning an intimate wedding or Gruhapravesham in Coorg, Chikmagalur, Hassan, Shivamogga, Belagavi, or Melukote? Our team manages all travel and logistics seamlessly.
+        </p>
+        <div class="travel-cta">
+          <a href="/contact#inquiry-form" class="btn-gold">Check Date Availability</a>
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
+            Discuss on WhatsApp
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .text-center {
+    text-align: center;
+  }
+
+  .page-header {
+    background: radial-gradient(ellipse at top, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
+    padding-bottom: 2rem;
+  }
+
+  .page-title {
+    font-size: clamp(2.5rem, 5.5vw, 4.2rem);
+    margin-top: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .page-subtitle {
+    max-width: 740px;
+    margin: 0 auto;
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  .cities-large-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  @media (min-width: 1024px) {
+    .cities-large-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .city-feature-card {
+    padding: clamp(2rem, 4vw, 3rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .city-card-header {
+    margin-bottom: 1.25rem;
+  }
+
+  .kannada-badge {
+    font-size: 1.2rem;
+    color: var(--gold-primary);
+    font-weight: 700;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  .city-heading {
+    font-size: 2.2rem;
+    color: var(--text-primary);
+    margin-bottom: 0.35rem;
+  }
+
+  .city-tagline-text {
+    font-size: 0.95rem;
+    color: var(--gold-light);
+    font-weight: 500;
+  }
+
+  .city-overview-text {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin-bottom: 1.75rem;
+  }
+
+  .venues-box, .specialties-box {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-subtle);
+    padding: 1.25rem;
+    border-radius: 6px;
+    margin-bottom: 1.25rem;
+  }
+
+  .venues-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--gold-primary);
+    display: block;
+    margin-bottom: 0.75rem;
+  }
+
+  .venues-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .venues-list li {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    color: var(--text-primary);
+  }
+
+  .venue-badge {
+    color: var(--text-dim);
+    font-size: 0.75rem;
+  }
+
+  .specialties-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  .city-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+
+  /* Travel Banner */
+  .travel-banner {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 3.5rem 2rem;
+    border: 1px solid var(--gold-border);
+  }
+
+  .travel-banner h2 {
+    font-size: 2.2rem;
+    color: var(--gold-light);
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .travel-banner p {
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+    max-width: 680px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .travel-cta {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+</style>

@@ -1,0 +1,312 @@
+---
+import Layout from '../layouts/Layout.astro';
+import BeforeAfterSlider from '../components/BeforeAfterSlider.astro';
+import { getStudioSettingsAsync } from '../lib/db';
+
+export const prerender = false;
+
+const settings = await getStudioSettingsAsync();
+const whatsappClean = (settings.whatsappConcierge || '917892706982').replace(/[^0-9]/g, '');
+const whatsappUrl = `https://wa.me/${whatsappClean}?text=${encodeURIComponent('Hello Hithu, I would love to connect regarding our ceremony.')}`;
+
+const aboutSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'AboutPage',
+  'name': 'About Frames By Hithu - Fine-Art Photography Studio',
+  'description': 'The story, philosophy, team, and camera craftsmanship behind Frames By Hithu, Karnataka’s premier fine-art photography studio.',
+  'url': 'https://framesbyhithu.com/about'
+};
+---
+
+<Layout
+  title="About Frames By Hithu | Philosophy, Gear & Heritage Craftsmanship"
+  description="Discover the story and ethos of Frames By Hithu: dedicated fine-art photography honoring Karnataka’s Vedic traditions, authentic emotion, and bespoke commissions."
+  schema={aboutSchema}
+>
+  <div class="page-header section-py text-center">
+    <div class="container">
+      <div class="gold-pill">FOUNDER & CRAFT</div>
+      <h1 class="page-title">The Art of Silent Witnessing</h1>
+      <div class="gold-divider"></div>
+      <p class="page-subtitle">
+        Founded by lead photographer Hithu, <strong>Frames By Hithu</strong> was born out of a profound reverence for Karnataka’s ancestral traditions and an obsession with timeless fine-art color aesthetics.
+      </p>
+    </div>
+  </div>
+
+  <section class="section-py">
+    <div class="container about-container">
+      <!-- Story Block -->
+      <div class="about-grid">
+        <div class="about-media protected-media glass-card">
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Lalitha_Mahal_Palace_Hotel.jpg/1280px-Lalitha_Mahal_Palace_Hotel.jpg"
+            alt="Lead Photographer Hithu"
+            class="about-img"
+          />
+          <div class="protected-overlay"></div>
+          <div class="watermark-subtle">FRAMES BY HITHU</div>
+          <div class="about-caption-box">
+            <strong>Hithu</strong>
+            <span>Lead Fine-Art Photographer & Creative Director</span>
+          </div>
+        </div>
+
+        <div class="about-narrative">
+          <div class="gold-pill">OUR GENESIS</div>
+          <h2>Preserving Sanctity Over Spectacle</h2>
+          <p>
+            In modern wedding photography, sacred ceremonies are too often treated like chaotic theatrical film sets. Priests are interrupted during sacred mantras, blinding flashes wash away the warm diya light, and genuine tears are staged.
+          </p>
+          <p>
+            We set out to create an alternative: <em>a fine-art sanctuary</em>. We photograph with utmost discretion. We arrive in traditional attire, respect the sanctum sanctorum of temple mantapas, and capture the authentic emotional gravity of your family as it unfolds naturally.
+          </p>
+
+          <div class="creed-card glass-card">
+            <h3 class="creed-title">The Frames By Hithu Creed</h3>
+            <ul class="creed-list">
+              <li>• <strong>No Artificial Drama:</strong> Real smiles, real tears, uninhibited blessings.</li>
+              <li>• <strong>Color Integrity:</strong> Rich Kanjeevaram silk crimson, glowing temple gold, authentic skin tones.</li>
+              <li>• <strong>Zero Disruptions:</strong> Non-intrusive electronic shutters and fast cinema lenses.</li>
+              <li>• <strong>Generational Quality:</strong> Handcrafted archival albums designed to outlive centuries.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gear & Craftsmanship -->
+      <div class="gear-section section-py">
+        <div class="section-header text-center">
+          <div class="gold-pill">THE CRAFTSMANSHIP</div>
+          <h2>Master Equipment & Color Pipeline</h2>
+          <div class="gold-divider"></div>
+          <p>We deploy medium-format and full-frame cinema glass optimized for low-light temple ceremonies and dynamic South Indian weddings.</p>
+        </div>
+
+        <div class="gear-grid">
+          <div class="gear-card glass-card">
+            <span class="gear-icon">📷</span>
+            <h3>Camera Systems</h3>
+            <p>Dual-slot flagship high-dynamic-range cameras with 100% redundant real-time backup on dual cards to protect once-in-a-lifetime moments.</p>
+          </div>
+
+          <div class="gear-card glass-card">
+            <span class="gear-icon">🔍</span>
+            <h3>Prime Cinema Glass</h3>
+            <p>Ultra-fast f/1.2 and f/1.4 prime optics allowing luminous capture in the natural glow of oil lamps and sacred homa embers without harsh flash.</p>
+          </div>
+
+          <div class="gear-card glass-card">
+            <span class="gear-icon">🛸</span>
+            <h3>4K Aerial Cinematography</h3>
+            <p>Licensed high-resolution aerial drones for sweeping perspectives of heritage palace grounds, lush coffee estates, and coastal shores.</p>
+          </div>
+
+          <div class="gear-card glass-card">
+            <span class="gear-icon">📖</span>
+            <h3>Italian Archival Albums</h3>
+            <p>Hand-bound flush-mount heirloom wedding albums with genuine leatherette covers, micro-etched acrylic plaques, and 100-year archival paper.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fine-Art Color Grading Before & After Retouch Slider -->
+      <BeforeAfterSlider />
+
+      <!-- Direct Contact Banner -->
+      <div class="about-cta-banner glass-card text-center">
+        <div class="gold-pill">LET’S CONNECT</div>
+        <h2>Commissioning Frames By Hithu</h2>
+        <p>Every commission begins with a warm conversation about your family’s traditions and dates.</p>
+        <div class="cta-actions">
+          <a href="/contact#inquiry-form" class="btn-gold">Check Date Availability</a>
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
+            Direct WhatsApp With Hithu
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .text-center {
+    text-align: center;
+  }
+
+  .page-header {
+    background: radial-gradient(ellipse at top, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
+    padding-bottom: 2rem;
+  }
+
+  .page-title {
+    font-size: clamp(2.4rem, 5vw, 4rem);
+    margin-top: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .page-subtitle {
+    max-width: 720px;
+    margin: 0 auto;
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  .about-container {
+    max-width: 1100px;
+  }
+
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+    align-items: center;
+  }
+
+  @media (min-width: 1024px) {
+    .about-grid {
+      grid-template-columns: 1fr 1.2fr;
+    }
+  }
+
+  .about-media {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .about-img {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    display: block;
+  }
+
+  .about-caption-box {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(11, 12, 16, 0.85);
+    padding: 1.25rem;
+    backdrop-filter: blur(8px);
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .about-caption-box strong {
+    font-size: 1.15rem;
+    color: var(--gold-light);
+  }
+
+  .about-caption-box span {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .about-narrative h2 {
+    font-size: clamp(2rem, 3.5vw, 2.75rem);
+    margin-top: 0.75rem;
+    margin-bottom: 1.25rem;
+    line-height: 1.2;
+  }
+
+  .about-narrative p {
+    font-size: 1.025rem;
+    color: var(--text-muted);
+    line-height: 1.8;
+    margin-bottom: 1.25rem;
+  }
+
+  .creed-card {
+    padding: 1.75rem;
+    margin-top: 2rem;
+    border-left: 3px solid var(--gold-primary);
+  }
+
+  .creed-title {
+    font-size: 1.25rem;
+    color: var(--gold-light);
+    margin-bottom: 1rem;
+  }
+
+  .creed-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    font-size: 0.925rem;
+    color: var(--text-primary);
+  }
+
+  /* Gear */
+  .gear-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .gear-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .gear-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .gear-card {
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .gear-icon {
+    font-size: 2.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .gear-card h3 {
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+  }
+
+  .gear-card p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .about-cta-banner {
+    padding: 3.5rem 2rem;
+    border: 1px solid var(--gold-border);
+    margin-top: 4rem;
+  }
+
+  .about-cta-banner h2 {
+    font-size: 2.2rem;
+    color: var(--gold-light);
+    margin-top: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .about-cta-banner p {
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+  }
+
+  .cta-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+</style>

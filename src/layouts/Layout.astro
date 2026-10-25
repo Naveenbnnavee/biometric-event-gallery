@@ -1,0 +1,163 @@
+---
+import '../styles/global.css';
+import SeoHead from '../components/SeoHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import LivelyBackground from '../components/LivelyBackground.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  canonicalUrl?: string;
+  schema?: Record<string, any> | Record<string, any>[];
+  type?: 'website' | 'article';
+}
+
+const { title, description, image, canonicalUrl, schema, type } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <SeoHead
+      title={title}
+      description={description}
+      image={image}
+      canonicalUrl={canonicalUrl}
+      schema={schema}
+      type={type}
+    />
+  </head>
+  <body>
+    <!-- Lively Fine-Art Background (Atmospheric Mesh, Royal Jali, Aurora & Deepa Embers) -->
+    <LivelyBackground />
+
+    <!-- Top Progress Bar / Ambient Glow -->
+    <div class="luxury-ambient-glow" aria-hidden="true"></div>
+
+    <Header />
+
+    <main id="main-content" class="site-main">
+      <slot />
+    </main>
+
+    <Footer />
+
+    <!-- Anti-Theft Protection Toast Modal -->
+    <div id="copyright-toast" class="copyright-toast" role="alert" aria-live="polite">
+      <div class="toast-content">
+        <span class="toast-icon">🛡️</span>
+        <div>
+          <strong class="toast-title">Frames By Hithu Fine-Art Protection</strong>
+          <p class="toast-desc">All photographs are copyrighted intellectual property. Right-click downloading is disabled.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Global Client Protection Script -->
+    <script>
+      // Subtle Right-Click & Drag Protection for Fine-Art Photography
+      const toast = document.getElementById('copyright-toast');
+      let toastTimer: number;
+
+      function showCopyrightToast() {
+        if (!toast) return;
+        toast.classList.add('visible');
+        clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(() => {
+          toast.classList.remove('visible');
+        }, 3200);
+      }
+
+      // Prevent context menu on images and protected elements
+      document.addEventListener('contextmenu', (e) => {
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'IMG' || target.closest('.protected-media') || target.closest('.lightbox-content')) {
+          e.preventDefault();
+          showCopyrightToast();
+        }
+      });
+
+      // Prevent dragging images
+      document.addEventListener('dragstart', (e) => {
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'IMG' || target.closest('.protected-media')) {
+          e.preventDefault();
+        }
+      });
+    </script>
+  </body>
+</html>
+
+<style>
+  .site-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
+  }
+
+  .luxury-ambient-glow {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60vw;
+    height: 180px;
+    background: radial-gradient(ellipse at top, rgba(212, 175, 55, 0.12) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 998;
+  }
+
+  /* Protection Toast */
+  .copyright-toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(14, 16, 22, 0.94);
+    border: 1px solid var(--gold-border);
+    border-radius: 8px;
+    padding: 0.85rem 1.4rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), var(--gold-glow-subtle);
+    backdrop-filter: blur(16px);
+    z-index: 10000;
+    opacity: 0;
+    pointer-events: none;
+    transition: var(--transition-smooth);
+    max-width: 90vw;
+    width: 440px;
+  }
+
+  .copyright-toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .toast-content {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
+
+  .toast-icon {
+    font-size: 1.4rem;
+  }
+
+  .toast-title {
+    display: block;
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: var(--gold-light);
+    letter-spacing: 0.05em;
+  }
+
+  .toast-desc {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+    line-height: 1.4;
+  }
+</style>

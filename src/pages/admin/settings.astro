@@ -1,0 +1,999 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { isAuthenticated } from '../../lib/auth';
+import { getStudioSettingsAsync } from '../../lib/db';
+
+export const prerender = false;
+
+const authed = await isAuthenticated(Astro.request);
+if (!authed) {
+  return Astro.redirect('/admin/login');
+}
+
+const settings = await getStudioSettingsAsync();
+
+// Helper to reliably extract the local 10 digits from any stored phone format
+function extract10Digits(val?: string): string {
+  if (!val) return '';
+  const digits = val.replace(/\D/g, '');
+  return digits.length >= 10 ? digits.slice(-10) : digits;
+}
+
+const primaryDigits = extract10Digits(settings.primaryPhone);
+const whatsappDigits = extract10Digits(settings.whatsappConcierge);
+---
+
+<AdminLayout title="Studio & Concierge Settings" activeNav="settings">
+  <div class="settings-page">
+    <div class="page-intro">
+      <div>
+        <h2 class="section-title">General Studio Settings & Metadata</h2>
+        <p class="section-desc">
+          Configure official contact numbers, Sadashivanagar studio coordinates, social handles, and Google Maps geotags. These values dynamically populate website CTAs and local business JSON-LD structured data for statewide Karnataka SEO.
+        </p>
+      </div>
+    </div>
+
+    <form id="settings-form" class="settings-form">
+      <!-- Section 1: Studio Identity & Concierge Contact -->
+      <div class="settings-section glass-card">
+        <div class="section-card-header">
+          <span class="section-badge">📞 CONCIERGE & IDENTITY</span>
+          <h3 class="card-heading">Studio Identity & Contact Numbers</h3>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group col-2">
+            <label class="form-label" for="studioName">Studio Legal & Brand Name</label>
+            <input
+              type="text"
+              id="studioName"
+              name="studioName"
+              class="form-input"
+              value={settings.studioName}
+              required
+            />
+          </div>
+
+          <div class="form-group col-2">
+            <label class="form-label" for="tagline">Studio Tagline / Philosophy</label>
+            <input
+              type="text"
+              id="tagline"
+              name="tagline"
+              class="form-input"
+              value={settings.tagline}
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <div class="phone-label-row">
+              <label class="form-label" for="primaryPhoneInput">Primary Voice Line</label>
+              <span class={`phone-counter-badge ${primaryDigits.length === 10 ? 'valid' : primaryDigits.length > 0 ? 'invalid' : ''}`} id="primaryPhoneCounter">
+                {primaryDigits.length === 10 ? '✓ 10 digits' : `${primaryDigits.length}/10 digits`}
+              </span>
+            </div>
+            <div class="phone-input-wrapper" id="primaryPhoneWrapper">
+              <span class="phone-prefix-addon" title="Default Country Code: India (+91)">
+                <span class="country-flag">🇮🇳</span>
+                <span class="country-code">+91</span>
+              </span>
+              <input
+                type="tel"
+                id="primaryPhoneInput"
+                class="form-input phone-digits-input"
+                value={primaryDigits}
+                placeholder="7410852222"
+                maxlength="10"
+                inputmode="numeric"
+                autocomplete="tel-national"
+                required
+              />
+            </div>
+            <input
+              type="hidden"
+              id="primaryPhone"
+              name="primaryPhone"
+              value={primaryDigits ? `+91-${primaryDigits}` : (settings.primaryPhone || '')}
+            />
+            <span class="field-hint">Default country code (+91). Enter exactly 10 digits for studio voice line.</span>
+          </div>
+
+          <div class="form-group">
+            <div class="phone-label-row">
+              <label class="form-label" for="whatsappConciergeInput">WhatsApp Concierge Number</label>
+              <span class={`phone-counter-badge ${whatsappDigits.length === 10 ? 'valid' : whatsappDigits.length > 0 ? 'invalid' : ''}`} id="whatsappConciergeCounter">
+                {whatsappDigits.length === 10 ? '✓ 10 digits' : `${whatsappDigits.length}/10 digits`}
+              </span>
+            </div>
+            <div class="phone-input-wrapper" id="whatsappConciergeWrapper">
+              <span class="phone-prefix-addon" title="Default Country Code: India (+91)">
+                <span class="country-flag">🇮🇳</span>
+                <span class="country-code">+91</span>
+              </span>
+              <input
+                type="tel"
+                id="whatsappConciergeInput"
+                class="form-input phone-digits-input"
+                value={whatsappDigits}
+                placeholder="7892706982"
+                maxlength="10"
+                inputmode="numeric"
+                autocomplete="tel-national"
+                required
+              />
+            </div>
+            <input
+              type="hidden"
+              id="whatsappConcierge"
+              name="whatsappConcierge"
+              value={whatsappDigits ? `+91${whatsappDigits}` : (settings.whatsappConcierge || '')}
+            />
+            <span class="field-hint">Default country code (+91). Enter exactly 10 digits for direct WhatsApp concierge.</span>
+          </div>
+
+          <div class="form-group col-2">
+            <label class="form-label" for="conciergeEmail">Concierge Email Address</label>
+            <input
+              type="email"
+              id="conciergeEmail"
+              name="conciergeEmail"
+              class="form-input"
+              value={settings.conciergeEmail}
+              required
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Studio Physical Address & Google Maps Geotags -->
+      <div class="settings-section glass-card">
+        <div class="section-card-header">
+          <span class="section-badge">📍 LOCATION & LOCAL SEO GEOTAGS</span>
+          <h3 class="card-heading">Studio Operations Hub (Sadashivanagar)</h3>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group col-2">
+            <label class="form-label" for="streetAddress">Street Address</label>
+            <input
+              type="text"
+              id="streetAddress"
+              name="streetAddress"
+              class="form-input"
+              value={settings.streetAddress}
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="city">City</label>
+            <input
+              type="text"
+              id="city"
+              name="city"
+              class="form-input"
+              value={settings.city}
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="postalCode">Postal Code (PIN Code)</label>
+            <input
+              type="text"
+              id="postalCode"
+              name="postalCode"
+              class="form-input"
+              value={settings.postalCode}
+              required
+            />
+          </div>
+
+          <div class="form-group col-2">
+            <label class="form-label" for="googleMapsUrl">Google Maps Location Link (URL)</label>
+            <input
+              type="url"
+              id="googleMapsUrl"
+              name="googleMapsUrl"
+              class="form-input"
+              value={settings.googleMapsUrl || ''}
+              placeholder="e.g. https://maps.app.goo.gl/... or https://maps.google.com/?q=..."
+            />
+            <span class="field-hint">Paste your studio's Google Maps link here. If provided, visitors will see a clickable "View on Google Maps ↗" option on the site. If left empty, no map link will appear on the public pages.</span>
+          </div>
+
+          <div class="form-group col-2">
+            <label class="form-label" for="googleReviewUrl">Google Review Direct Link (Review Velocity Engine)</label>
+            <input
+              type="url"
+              id="googleReviewUrl"
+              name="googleReviewUrl"
+              class="form-input"
+              value={settings.googleReviewUrl || 'https://g.page/r/FramesByHithu/review'}
+              placeholder="e.g. https://g.page/r/.../review"
+            />
+            <span class="field-hint">Your Google Business Profile direct review shortlink. Automatically included in WhatsApp handover cards when marking events "Completed" to build review velocity and rank #1 on Google Maps.</span>
+          </div>
+
+          <details class="advanced-geo-details col-2">
+            <summary class="advanced-geo-summary">Advanced SEO Coordinates (Optional)</summary>
+            <div class="form-grid" style="margin-top: 1rem;">
+              <div class="form-group">
+                <label class="form-label" for="latitude">Latitude (SEO Schema)</label>
+                <input
+                  type="number"
+                  step="0.000001"
+                  id="latitude"
+                  name="latitude"
+                  class="form-input"
+                  value={settings.latitude ?? 13.0068}
+                  placeholder="13.0068"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="longitude">Longitude (SEO Schema)</label>
+                <input
+                  type="number"
+                  step="0.000001"
+                  id="longitude"
+                  name="longitude"
+                  class="form-input"
+                  value={settings.longitude ?? 77.5813}
+                  placeholder="77.5813"
+                />
+              </div>
+
+              <div class="form-group col-2">
+                <label class="form-label" for="googleSiteVerification">Google Search Console Verification Token</label>
+                <input
+                  type="text"
+                  id="googleSiteVerification"
+                  name="googleSiteVerification"
+                  class="form-input"
+                  value={settings.googleSiteVerification || ''}
+                  placeholder="e.g. googled6a1b2c3d4e5f6... or token string"
+                />
+                <span class="field-hint">Paste your Google Search Console verification token here. Injects &lt;meta name="google-site-verification" content="..."&gt; across the site automatically.</span>
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- Section 3: Social Portfolios & Feeds -->
+      <div class="settings-section glass-card">
+        <div class="section-card-header">
+          <span class="section-badge">🌐 SOCIAL MEDIA ARCHIVES</span>
+          <h3 class="card-heading">Social Media Profiles & Channels</h3>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="instagramUrl">Instagram URL</label>
+            <input
+              type="url"
+              id="instagramUrl"
+              name="instagramUrl"
+              class="form-input"
+              value={settings.instagramUrl}
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="instagramHandle">Instagram Display Handle</label>
+            <input
+              type="text"
+              id="instagramHandle"
+              name="instagramHandle"
+              class="form-input"
+              value={settings.instagramHandle}
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="facebookUrl">Facebook Page URL</label>
+            <input
+              type="url"
+              id="facebookUrl"
+              name="facebookUrl"
+              class="form-input"
+              value={settings.facebookUrl}
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="youtubeUrl">YouTube Channel URL</label>
+            <input
+              type="url"
+              id="youtubeUrl"
+              name="youtubeUrl"
+              class="form-input"
+              value={settings.youtubeUrl}
+            />
+          </div>
+
+          <div class="form-group col-2">
+            <label class="form-label" for="pinterestUrl">Pinterest Editorial Board URL</label>
+            <input
+              type="url"
+              id="pinterestUrl"
+              name="pinterestUrl"
+              class="form-input"
+              value={settings.pinterestUrl}
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Google Search & Local SEO Sync -->
+      <div class="settings-section glass-card">
+        <div class="section-card-header">
+          <span class="section-badge">✨ SEARCH ENGINE VISIBILITY</span>
+          <h3 class="card-heading">Google Search & Local Business Sync</h3>
+        </div>
+
+        <div class="seo-status-grid">
+          <div class="seo-status-item">
+            <span class="seo-icon">✓</span>
+            <div class="seo-text">
+              <strong>Local Business Rich Snippets</strong>
+              <span>Automatically generated from the studio address & phone for Google Search rankings.</span>
+            </div>
+          </div>
+
+          <div class="seo-status-item">
+            <span class="seo-icon">📍</span>
+            <div class="seo-text">
+              <strong>Google Maps Geotags</strong>
+              <span>Coordinates ({settings.latitude}, {settings.longitude}) calibrated for Sadashivanagar studio discovery.</span>
+            </div>
+          </div>
+
+          <div class="seo-status-item">
+            <span class="seo-icon">🌐</span>
+            <div class="seo-text">
+              <strong>Social Authority Graph</strong>
+              <span>Instagram, Facebook, YouTube, and Pinterest verified for Google Knowledge Panel.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Client Portal Public Visibility -->
+      <div class="settings-section glass-card">
+        <div class="section-card-header">
+          <span class="section-badge">🔐 CLIENT PORTAL & PROOFING ACCESS</span>
+          <h3 class="card-heading">Client Portal Public Visibility</h3>
+        </div>
+
+        <div class="portal-toggle-container">
+          <div class="portal-toggle-info">
+            <h4 class="toggle-title">Show Client Portal in Website Navigation & Footers</h4>
+            <p class="toggle-desc">
+              Controls whether the <strong>"Client Portal"</strong> link is visible to the public across website headers, mobile navigation, and footers. When turned off, the public link is completely hidden and direct visits to <code>/client-portal</code> are protected.
+            </p>
+            <div class={`portal-status-pill ${settings.clientPortalVisible !== false ? 'active' : 'hidden'}`} id="portal-status-pill">
+              <span class="status-dot"></span>
+              <span class="status-label" id="portal-status-label">
+                {settings.clientPortalVisible !== false ? '● Publicly Active (Visible in Menus)' : '○ Hidden from Public (Private Mode)'}
+              </span>
+            </div>
+          </div>
+
+          <div class="toggle-switch-wrapper">
+            <label class="luxury-toggle-label" for="clientPortalVisible">
+              <input
+                type="checkbox"
+                id="clientPortalVisible"
+                name="clientPortalVisible"
+                class="luxury-toggle-checkbox"
+                checked={settings.clientPortalVisible !== false}
+              />
+              <span class="luxury-toggle-slider">
+                <span class="toggle-knob"></span>
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Save Button Bar -->
+      <div class="save-bar">
+        <button type="submit" id="save-btn" class="btn-gold">
+          <span>Save Studio Settings</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</AdminLayout>
+
+<style>
+  .settings-page {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .page-intro {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .section-title {
+    font-family: var(--font-serif);
+    font-size: 1.8rem;
+    color: #FFFFFF;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .section-desc {
+    color: #9CA3AF;
+    font-size: 0.9rem;
+    max-width: 780px;
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  .settings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+  }
+
+  .settings-section {
+    padding: 2rem;
+  }
+
+  .section-card-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .section-badge {
+    font-size: 0.675rem;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    color: var(--text-gold);
+    display: block;
+    margin-bottom: 0.4rem;
+  }
+
+  .card-heading {
+    font-family: var(--font-serif);
+    font-size: 1.35rem;
+    color: #FFFFFF;
+    margin: 0;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+
+  .col-2 {
+    grid-column: span 2;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .form-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #D1D5DB;
+  }
+
+  .form-input {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: #FFFFFF;
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.2s ease;
+  }
+
+  .form-input:focus {
+    border-color: var(--gold-primary);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+  }
+
+  .field-hint {
+    font-size: 0.725rem;
+    color: #9CA3AF;
+  }
+
+  /* Phone input styling with locked +91 prefix and digit counter */
+  .phone-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .phone-counter-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #9CA3AF;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+    user-select: none;
+  }
+
+  .phone-counter-badge.valid {
+    background: rgba(37, 211, 102, 0.15);
+    color: #25D366;
+    border-color: rgba(37, 211, 102, 0.35);
+  }
+
+  .phone-counter-badge.invalid {
+    background: rgba(239, 68, 68, 0.12);
+    color: #EF4444;
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+
+  .phone-input-wrapper {
+    display: flex;
+    align-items: stretch;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+  }
+
+  .phone-input-wrapper:focus-within {
+    border-color: var(--gold-primary);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+  }
+
+  .phone-input-wrapper.has-error {
+    border-color: #EF4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25) !important;
+  }
+
+  .phone-prefix-addon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0 0.85rem;
+    background: rgba(212, 175, 55, 0.08);
+    border-right: 1px solid rgba(212, 175, 55, 0.2);
+    color: var(--gold-light, #F3E5AB);
+    font-size: 0.9rem;
+    font-weight: 600;
+    user-select: none;
+    letter-spacing: 0.03em;
+  }
+
+  .phone-prefix-addon .country-flag {
+    font-size: 1.05rem;
+    line-height: 1;
+  }
+
+  .phone-digits-input {
+    flex: 1;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 0.95rem;
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums;
+    color: #FFFFFF;
+  }
+
+  .phone-digits-input:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  .seo-status-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .seo-status-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+  }
+
+  .seo-icon {
+    width: 28px;
+    height: 28px;
+    background: rgba(37, 211, 102, 0.15);
+    border: 1px solid rgba(37, 211, 102, 0.3);
+    color: #25D366;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  .seo-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .seo-text strong {
+    font-size: 0.875rem;
+    color: #FFFFFF;
+  }
+
+  .seo-text span {
+    font-size: 0.8rem;
+    color: #9CA3AF;
+  }
+
+  .save-bar {
+    position: sticky;
+    bottom: 24px;
+    background: rgba(19, 20, 27, 0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-gold);
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    display: flex;
+    justify-content: flex-end;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  }
+
+  .save-bar .btn-gold {
+    padding: 0.75rem 2rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  .advanced-geo-details {
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px dashed rgba(212, 175, 55, 0.25);
+    border-radius: 8px;
+    margin-top: 0.5rem;
+  }
+
+  /* Client Portal Toggle Box */
+  .portal-toggle-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: 1.5rem 1.75rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    border-radius: 12px;
+  }
+
+  .portal-toggle-info {
+    flex: 1;
+  }
+
+  .toggle-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #FFFFFF;
+    margin: 0 0 0.4rem 0;
+  }
+
+  .toggle-desc {
+    font-size: 0.85rem;
+    color: #9CA3AF;
+    margin: 0 0 1rem 0;
+    line-height: 1.5;
+  }
+
+  .toggle-desc strong {
+    color: var(--text-gold);
+  }
+
+  .toggle-desc code {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    color: var(--gold-light);
+    font-size: 0.8rem;
+  }
+
+  .portal-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.25s ease;
+  }
+
+  .portal-status-pill.active {
+    background: rgba(37, 211, 102, 0.12);
+    color: #25D366;
+    border: 1px solid rgba(37, 211, 102, 0.35);
+  }
+
+  .portal-status-pill.hidden {
+    background: rgba(245, 158, 11, 0.12);
+    color: #F59E0B;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+  }
+
+  .portal-status-pill .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor;
+  }
+
+  /* Luxury Gold Toggle Switch */
+  .luxury-toggle-label {
+    position: relative;
+    display: inline-block;
+    width: 64px;
+    height: 34px;
+    cursor: pointer;
+  }
+
+  .luxury-toggle-checkbox {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+  }
+
+  .luxury-toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 34px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .toggle-knob {
+    position: absolute;
+    top: 3px;
+    left: 4px;
+    width: 26px;
+    height: 26px;
+    background: #9CA3AF;
+    border-radius: 50%;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  }
+
+  .luxury-toggle-checkbox:checked + .luxury-toggle-slider {
+    background: rgba(37, 211, 102, 0.25);
+    border-color: #25D366;
+    box-shadow: 0 0 16px rgba(37, 211, 102, 0.3);
+  }
+
+  .luxury-toggle-checkbox:checked + .luxury-toggle-slider .toggle-knob {
+    transform: translateX(28px);
+    background: #25D366;
+    box-shadow: 0 0 10px rgba(37, 211, 102, 0.6);
+  }
+
+  @media (max-width: 640px) {
+    .portal-toggle-container {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+    .col-2 {
+      grid-column: span 1;
+    }
+  }
+</style>
+
+<script>
+  const form = document.getElementById('settings-form') as HTMLFormElement;
+  const saveBtn = document.getElementById('save-btn') as HTMLButtonElement;
+
+  // Setup strict numeric, 10-digit phone number input with locked +91 prefix
+  function bindPhoneInput(
+    inputId: string,
+    counterId: string,
+    hiddenId: string,
+    wrapperId: string,
+    formatVal: (digits: string) => string
+  ) {
+    const input = document.getElementById(inputId) as HTMLInputElement | null;
+    const counter = document.getElementById(counterId) as HTMLElement | null;
+    const hidden = document.getElementById(hiddenId) as HTMLInputElement | null;
+    const wrapper = document.getElementById(wrapperId) as HTMLElement | null;
+
+    if (!input || !counter || !hidden) return;
+
+    const inputEl = input;
+    const counterEl = counter;
+    const hiddenEl = hidden;
+
+    function sanitizeAndUpdate() {
+      // 1. Strip all non-digit characters
+      let digits = inputEl.value.replace(/\D/g, '');
+
+      // 2. Handle pasted strings with country code (+91) or trunk prefix (0)
+      if (digits.length > 10) {
+        if (digits.startsWith('91')) {
+          digits = digits.slice(2);
+        } else if (digits.startsWith('0')) {
+          digits = digits.slice(1);
+        }
+        // If still longer than 10, take last 10 digits
+        if (digits.length > 10) {
+          digits = digits.slice(-10);
+        }
+      }
+
+      // Restrict strictly to max 10 digits
+      if (digits.length > 10) {
+        digits = digits.slice(0, 10);
+      }
+
+      inputEl.value = digits;
+
+      // Update counter UI & validation badge
+      const count = digits.length;
+      if (count === 10) {
+        counterEl.textContent = '✓ 10 digits';
+        counterEl.className = 'phone-counter-badge valid';
+        wrapper?.classList.remove('has-error');
+        hiddenEl.value = formatVal(digits);
+      } else {
+        counterEl.textContent = `${count}/10 digits`;
+        counterEl.className = count > 0 ? 'phone-counter-badge invalid' : 'phone-counter-badge';
+        hiddenEl.value = digits ? formatVal(digits) : '';
+      }
+    }
+
+    // Only allow numeric keystrokes 0-9 and control keys
+    inputEl.addEventListener('keydown', (e) => {
+      const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter', 'Home', 'End'];
+      if (allowedKeys.includes(e.key) || e.ctrlKey || e.metaKey) {
+        return;
+      }
+      if (!/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+      }
+    });
+
+    inputEl.addEventListener('input', sanitizeAndUpdate);
+    inputEl.addEventListener('paste', () => setTimeout(sanitizeAndUpdate, 10));
+    inputEl.addEventListener('blur', sanitizeAndUpdate);
+
+    // Initial sync
+    sanitizeAndUpdate();
+  }
+
+  bindPhoneInput(
+    'primaryPhoneInput',
+    'primaryPhoneCounter',
+    'primaryPhone',
+    'primaryPhoneWrapper',
+    (digits) => `+91-${digits}`
+  );
+
+  bindPhoneInput(
+    'whatsappConciergeInput',
+    'whatsappConciergeCounter',
+    'whatsappConcierge',
+    'whatsappConciergeWrapper',
+    (digits) => `+91${digits}`
+  );
+
+  // Live interactive feedback for Client Portal toggle
+  const portalToggle = document.getElementById('clientPortalVisible') as HTMLInputElement | null;
+  const portalPill = document.getElementById('portal-status-pill');
+  const portalLabel = document.getElementById('portal-status-label');
+
+  portalToggle?.addEventListener('change', () => {
+    const isChecked = portalToggle.checked;
+    if (portalPill && portalLabel) {
+      if (isChecked) {
+        portalPill.className = 'portal-status-pill active';
+        portalLabel.textContent = '● Publicly Active (Visible in Menus)';
+      } else {
+        portalPill.className = 'portal-status-pill hidden';
+        portalLabel.textContent = '○ Hidden from Public (Private Mode)';
+      }
+    }
+  });
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!saveBtn) return;
+
+    // Validate strictly 10 digits for both phone numbers
+    const primaryInput = document.getElementById('primaryPhoneInput') as HTMLInputElement;
+    const whatsappInput = document.getElementById('whatsappConciergeInput') as HTMLInputElement;
+
+    const primaryDigits = (primaryInput?.value || '').replace(/\D/g, '');
+    const whatsappDigits = (whatsappInput?.value || '').replace(/\D/g, '');
+
+    if (primaryDigits.length !== 10) {
+      (window as any).showToast('Primary Voice Line must be exactly 10 digits (India +91).', 'error');
+      const primaryWrapper = document.getElementById('primaryPhoneWrapper');
+      primaryWrapper?.classList.add('has-error');
+      primaryInput?.focus();
+      return;
+    }
+
+    if (whatsappDigits.length !== 10) {
+      (window as any).showToast('WhatsApp Concierge Number must be exactly 10 digits (India +91).', 'error');
+      const whatsappWrapper = document.getElementById('whatsappConciergeWrapper');
+      whatsappWrapper?.classList.add('has-error');
+      whatsappInput?.focus();
+      return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving Settings...';
+
+    const formData = new FormData(form);
+    const payload: Record<string, any> = {};
+
+    formData.forEach((value, key) => {
+      const val = typeof value === 'string' ? value.trim() : value;
+      if (key === 'latitude' || key === 'longitude') {
+        const parsed = parseFloat(val as string);
+        payload[key] = isNaN(parsed) ? (key === 'latitude' ? 13.0068 : 77.5813) : parsed;
+      } else {
+        payload[key] = val;
+      }
+    });
+
+    // Ensure normalized +91 standard formats
+    payload.primaryPhone = `+91-${primaryDigits}`;
+    payload.whatsappConcierge = `+91${whatsappDigits}`;
+    payload.clientPortalVisible = Boolean(portalToggle?.checked);
+
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        (window as any).showToast('Studio Settings & Phone Numbers updated successfully!', 'success');
+        setTimeout(() => window.location.reload(), 400);
+      } else {
+        (window as any).showToast(data.error || 'Failed to save settings', 'error');
+      }
+    } catch {
+      (window as any).showToast('Network error saving settings', 'error');
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save Studio Settings';
+    }
+  });
+</script>

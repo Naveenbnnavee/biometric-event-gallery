@@ -1,0 +1,351 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { stories } from '../../data/stories';
+import { getStudioSettings } from '../../lib/db';
+
+export function getStaticPaths() {
+  return stories.map((story) => ({
+    params: { slug: story.slug },
+    props: { story }
+  }));
+}
+
+const { story } = Astro.props;
+const settings = getStudioSettings();
+const whatsappClean = (settings.whatsappConcierge || '917892706982').replace(/[^0-9]/g, '');
+const whatsappUrl = `https://wa.me/${whatsappClean}?text=${encodeURIComponent(`Hello Frames By Hithu, I just read the story of ${story.coupleOrFamily} and would love to discuss our celebration.`)}`;
+
+const storyArticleSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  'headline': `${story.title} - ${story.coupleOrFamily} by Frames By Hithu`,
+  'image': story.coverImage,
+  'datePublished': '2026-01-15T08:00:00+05:30',
+  'author': {
+    '@type': 'Person',
+    'name': 'Hithu'
+  },
+  'publisher': {
+    '@type': 'Organization',
+    'name': 'Frames By Hithu',
+    'logo': {
+      '@type': 'ImageObject',
+      'url': 'https://framesbyhithu.com/favicon.svg'
+    }
+  },
+  'description': story.summary
+};
+---
+
+<Layout
+  title={`${story.title} | ${story.coupleOrFamily} | Frames By Hithu`}
+  description={story.summary}
+  image={story.coverImage}
+  schema={storyArticleSchema}
+  type="article"
+>
+  <!-- Story Hero -->
+  <header class="story-hero-section">
+    <div class="story-hero-media protected-media">
+      <img src={story.coverImage} alt={story.title} class="story-hero-bg" />
+      <div class="hero-vignette"></div>
+      <div class="watermark-subtle">FRAMES BY HITHU • FINE-ART</div>
+    </div>
+
+    <div class="container story-hero-content text-center">
+      <a href="/stories" class="back-stories-link">← All Client Stories</a>
+      <div class="gold-pill hero-badge">{story.ceremonyType}</div>
+      <h1 class="story-headline">{story.title}</h1>
+      <h2 class="story-subtitle font-sans">{story.coupleOrFamily}</h2>
+
+      <div class="story-meta-pills">
+        <span class="meta-pill">📍 {story.venue}, {story.location}</span>
+        <span class="meta-pill">🗓️ {story.date}</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Editorial Narrative Article -->
+  <article class="story-body-section section-py">
+    <div class="container story-container">
+      <div class="story-lead-box glass-card">
+        <h3 class="lead-headline">{story.heroHeadline}</h3>
+        <p class="lead-summary">{story.summary}</p>
+      </div>
+
+      <div class="story-synopsis">
+        {story.synopsis.map((para) => (
+          <p class="synopsis-paragraph">{para}</p>
+        ))}
+      </div>
+
+      <!-- Pull Quote -->
+      <blockquote class="editorial-pullquote glass-card">
+        <span class="quote-mark">“</span>
+        <p class="quote-text">{story.quote.text}</p>
+        <cite class="quote-author">— {story.quote.author}</cite>
+      </blockquote>
+
+      <!-- High-Res Editorial Gallery -->
+      <section class="story-gallery">
+        <h3 class="gallery-title text-center">Visual Storytelling Highlights</h3>
+        <div class="gold-divider"></div>
+
+        <div class="gallery-grid">
+          {story.gallery.map((item) => (
+            <figure class="gallery-item glass-card protected-media">
+              <img src={item.image} alt={item.caption} loading="lazy" class="gallery-img" />
+              <div class="protected-overlay"></div>
+              <div class="watermark-subtle">FRAMES BY HITHU</div>
+              <figcaption class="gallery-caption">{item.caption}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
+
+      <!-- Consultation Trigger -->
+      <div class="story-consultation-banner glass-card text-center">
+        <div class="gold-pill">PLAN YOUR SACRED COMMISSIONS</div>
+        <h3 class="banner-title">Crafting Your Visual Heirloom in {story.location}</h3>
+        <p class="banner-desc">
+          Interested in similar bespoke coverage for your wedding, Gruhapravesham, or pooja in {story.location}? Check your dates directly with our team.
+        </p>
+        <div class="banner-actions">
+          <a href={`/contact#inquiry-form?venue=${encodeURIComponent(story.venue)}&location=${encodeURIComponent(story.location)}`} class="btn-gold">Request Bespoke Consultation</a>
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
+            Discuss on WhatsApp
+          </a>
+        </div>
+      </div>
+    </div>
+  </article>
+</Layout>
+
+<style>
+  .text-center {
+    text-align: center;
+  }
+
+  .story-hero-section {
+    position: relative;
+    min-height: 65vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6rem 0 4rem 0;
+    overflow: hidden;
+  }
+
+  .story-hero-media {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  .story-hero-bg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .hero-vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse at center,
+      rgba(11, 12, 16, 0.5) 0%,
+      rgba(11, 12, 16, 0.88) 70%,
+      rgba(11, 12, 16, 0.98) 100%
+    );
+  }
+
+  .story-hero-content {
+    position: relative;
+    z-index: 5;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .back-stories-link {
+    display: inline-block;
+    color: var(--gold-primary);
+    font-size: 0.825rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.05em;
+  }
+
+  .hero-badge {
+    margin-bottom: 1.25rem;
+  }
+
+  .story-headline {
+    font-size: clamp(2.6rem, 5.5vw, 4.4rem);
+    line-height: 1.1;
+    margin-bottom: 0.5rem;
+  }
+
+  .story-subtitle {
+    font-size: 1.4rem;
+    color: var(--gold-light);
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+  }
+
+  .story-meta-pills {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  .meta-pill {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    background: rgba(20, 22, 29, 0.7);
+    padding: 6px 14px;
+    border-radius: 9999px;
+    border: 1px solid var(--border-subtle);
+    backdrop-filter: blur(8px);
+  }
+
+  /* Body */
+  .story-container {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  .story-lead-box {
+    padding: 2.25rem;
+    margin-bottom: 3rem;
+    border-left: 3px solid var(--gold-primary);
+  }
+
+  .lead-headline {
+    font-size: 1.6rem;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+  }
+
+  .lead-summary {
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  .story-synopsis {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 3.5rem;
+  }
+
+  .synopsis-paragraph {
+    font-size: 1.05rem;
+    color: #D1D1D6;
+    line-height: 1.85;
+  }
+
+  /* Pull Quote */
+  .editorial-pullquote {
+    padding: 2.5rem 2rem;
+    margin-bottom: 4rem;
+    text-align: center;
+    border: 1px solid var(--gold-border);
+  }
+
+  .quote-mark {
+    font-family: var(--font-serif);
+    font-size: 3.5rem;
+    color: var(--gold-primary);
+    line-height: 1;
+    display: block;
+    margin-bottom: -1rem;
+  }
+
+  .quote-text {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: clamp(1.2rem, 2.5vw, 1.55rem);
+    color: var(--text-primary);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+  }
+
+  .quote-author {
+    font-family: var(--font-sans);
+    font-style: normal;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gold-light);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* Gallery */
+  .story-gallery {
+    margin-bottom: 4rem;
+  }
+
+  .gallery-title {
+    font-size: 2rem;
+  }
+
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  @media (min-width: 640px) {
+    .gallery-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .gallery-item {
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .gallery-img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    display: block;
+  }
+
+  .gallery-caption {
+    padding: 0.85rem 1rem;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+
+  /* Consultation Banner */
+  .story-consultation-banner {
+    padding: 3rem 2rem;
+    border: 1px solid var(--gold-border);
+  }
+
+  .banner-title {
+    font-size: 2rem;
+    color: var(--gold-light);
+    margin-top: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .banner-desc {
+    max-width: 600px;
+    margin: 0 auto 2rem auto;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+  }
+
+  .banner-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+</style>

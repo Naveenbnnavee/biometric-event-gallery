@@ -1,0 +1,2735 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { getLiveEventByIdAsync, getLiveEventBySlugAsync } from '../../../lib/db';
+import { getCloudflareEnv } from '../../../lib/cloudflare';
+
+export const prerender = false;
+
+const env = await getCloudflareEnv();
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/admin/live-events');
+}
+
+const event = (await getLiveEventByIdAsync(id, env)) || (await getLiveEventBySlugAsync(id, env));
+if (!event) {
+  return Astro.redirect('/admin/live-events');
+}
+
+const photos = event.photos || [];
+---
+
+<AdminLayout title={`${event.title} | Live Event Dashboard`} activeNav="live-events">
+  <div class="admin-event-page" data-event-id={event.id} data-event-slug={event.slug} data-token={event.ingestionToken}>
+    <!-- Top Nav / Back Breadcrumb -->
+    <div class="breadcrumb-bar">
+      <a href="/admin/live-events" class="back-link">← Back to All Live Events</a>
+      <div class="top-status-pills">
+        <span class:list={['mode-pill', {
+          'mode-face': event.accessMode === 'face_only',
+          'mode-open': event.accessMode === 'open_gallery',
+          'mode-hybrid': event.accessMode === 'face_and_all' || event.accessMode === 'face_match'
+        }]}>
+          {event.accessMode === 'face_only' ? '🔒 1. Face Only' : (event.accessMode === 'open_gallery' ? '🌐 2. Whole Event' : '✨ 3. Face + Whole Event')}
+        </span>
+      </div>
+    </div>
+
+    <!-- Event Title Bar -->
+    <div class="event-headline-card glass-card">
+      <div class="headline-content">
+        <div class="admin-gold-pill">EVENT STREAM CONTROL</div>
+        <h1 class="event-title">{event.title}</h1>
+        <p class="event-meta">
+          <span>🏛️ {event.venue}</span>
+          <span class="meta-dot">•</span>
+          <span>📅 {event.date}</span>
+          <span class="meta-dot">•</span>
+          <span>🏷️ {event.ceremonyType}</span>
+          <span class="meta-dot">•</span>
+          <span>🔑 Token: <code>{event.ingestionToken}</code></span>
+        </p>
+      </div>
+
+      <div class="headline-actions">
+        <!-- Print QR Kit -->
+        <button type="button" class="btn-action btn-action-gold" id="open-tent-card-btn" title="Generate Luxury Printable Guest Tent-Card QR Kit">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-svg">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Print QR Kit</span>
+        </button>
+
+        <!-- Complete Event (One-Click Handover) -->
+        <button type="button" class="btn-action btn-action-emerald" id="open-complete-event-btn" title="Complete Event and Move to Client Portal with WhatsApp Handover">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="btn-svg">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          <span>Complete Event</span>
+        </button>
+
+        <!-- Edit Details -->
+        <button type="button" class="btn-action btn-action-subtle" id="open-edit-details-btn" title="Edit Event Title, Venue & Ceremony">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-svg">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          <span>Edit Details</span>
+        </button>
+
+        <!-- Guest Gallery -->
+        <a href={`/live/${event.slug}`} target="_blank" rel="noopener noreferrer" class="btn-action btn-action-blue" title="Open Guest Gallery Portal">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-svg">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+            <line x1="12" y1="18" x2="12.01" y2="18"></line>
+          </svg>
+          <span>Guest Gallery</span>
+          <span class="btn-external-icon">↗</span>
+        </a>
+
+        <!-- Projector Wall -->
+        <a href={`/live/${event.slug}/screen`} target="_blank" rel="noopener noreferrer" class="btn-action btn-action-purple" title="Open Ballroom Projector LED Screen Mode">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-svg">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+          <span>Projector Wall</span>
+          <span class="btn-external-icon">↗</span>
+        </a>
+
+        <!-- Mobile Ingest (Hero Action) -->
+        <a href={`/live-upload?token=${event.ingestionToken}`} target="_blank" rel="noopener noreferrer" class="btn-action btn-action-primary" title="Open Wireless Mobile Ingest Uploader">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" class="btn-svg">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          <span>Mobile Ingest</span>
+          <span class="btn-external-icon">↗</span>
+        </a>
+
+        <!-- Delete Event -->
+        <button type="button" class="btn-action btn-action-danger" id="delete-this-event-btn" title="Delete this entire live event">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-svg">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          <span>Delete</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Settings Bar -->
+    <div class="quick-settings-strip glass-card">
+      <div class="setting-item">
+        <span class="setting-title">Access Mode:</span>
+        <select id="quick-mode-select" class="quick-select">
+          <option value="face_only" selected={event.accessMode === 'face_only'}>1. Only Face Enabled (Strictly Their Photos Only)</option>
+          <option value="open_gallery" selected={event.accessMode === 'open_gallery'}>2. Whole Event (Open Chronological Stream)</option>
+          <option value="face_and_all" selected={event.accessMode === 'face_and_all' || event.accessMode === 'face_match'}>3. Face Enabled + Whole Event (Smart Hybrid)</option>
+        </select>
+      </div>
+
+      <div class="setting-item">
+        <span class="setting-title">High-Res Downloads:</span>
+        <select id="quick-download-select" class="quick-select">
+          <option value="true" selected={event.allowDownload}>Allowed (High-Res Buttons)</option>
+          <option value="false" selected={!event.allowDownload}>Locked (View Only, Protected)</option>
+        </select>
+      </div>
+
+      <div class="setting-item">
+        <span class="setting-title">Studio Watermark:</span>
+        <select id="quick-watermark-select" class="quick-select">
+          <option value="true" selected={event.watermarkPreview}>Enabled (Frames By Hithu)</option>
+          <option value="false" selected={!event.watermarkPreview}>Disabled</option>
+        </select>
+      </div>
+
+      <div class="setting-item">
+        <span class="setting-title">Stream Status:</span>
+        <select id="quick-status-select" class="quick-select">
+          <option value="live" selected={event.status === 'live'}>Live (Active)</option>
+          <option value="upcoming" selected={event.status === 'upcoming'}>Upcoming</option>
+          <option value="archived" selected={event.status === 'archived'}>Archived</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Method A: SD Card Assistant Batch Upload Dropzone -->
+    <div class="sd-dropzone-section section-mb">
+      <div class="dropzone-card glass-card">
+        <div class="dropzone-header">
+          <div>
+            <span class="gold-pill">METHOD A • HIGH SPEED BATCH PIPELINE</span>
+            <h2 class="dropzone-title">Camera SD Card Batch Dropzone</h2>
+            <p class="dropzone-sub">
+              Swap camera SD Card slot 2 directly into your laptop or card reader. Drag and drop multiple ceremony JPEGs below for instant live ingestion.
+            </p>
+          </div>
+          <div class="dropzone-actions">
+            <button type="button" class="btn-action btn-action-primary btn-sd-select" id="trigger-sd-upload-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="btn-svg">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Select SD Card Files</span>
+            </button>
+          </div>
+        </div>
+
+        <input
+          type="file"
+          id="sd-file-input"
+          accept="image/jpeg,image/png,image/webp,image/heic"
+          multiple
+          class="hidden-input"
+        />
+
+        <div class="sd-drop-target" id="sd-drop-target">
+          <div class="sd-icon">⚡</div>
+          <h3>Drag & Drop SD Card Photos Here</h3>
+          <p>Instant client-side thumbnail previews & rapid parallel Cloudflare KV persistence</p>
+          <span class="sd-badge">JPG • JPEG • PNG • WEBP</span>
+        </div>
+
+        <!-- Progress Box -->
+        <div class="batch-progress-box" id="batch-progress-box" style="display: none;">
+          <div class="progress-info-row">
+            <strong id="batch-status-text">Ingesting batch frames...</strong>
+            <span id="batch-percent-text">0%</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="batch-bar-fill"></div>
+          </div>
+          <div class="progress-sub-details" id="batch-sub-details">0 of 0 uploaded</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Uploaded Photos Grid Header -->
+    <div class="photos-management-header">
+      <div>
+        <h2 class="section-title">Live Ingested Frames ({photos.length})</h2>
+        <p class="section-sub">Chronological feed of master photographs beamed into this live stream.</p>
+      </div>
+
+      <div class="photo-tools">
+        {photos.length > 0 && (
+          <button type="button" class="btn-action btn-action-danger btn-clear-feed" id="clear-all-photos-btn" title="Permanently remove all images from this event">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-svg">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <span>Clear All ({photos.length}) Frames</span>
+          </button>
+        )}
+        <button type="button" class="btn-action btn-action-subtle btn-refresh-feed" id="refresh-grid-btn" title="Refresh Live Ingested Feed">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-svg spin-icon">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          <span>Refresh Stream</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Photos Grid -->
+    <div class="live-photos-grid" id="live-photos-grid">
+      {photos.map((p, idx) => (
+        <div class="live-photo-card glass-card" data-photo-id={p.id}>
+          <div class="photo-media-box protected-media">
+            <img src={p.url} alt={`Live Frame #${idx + 1}`} loading="lazy" class="live-img" />
+            <div class="photo-badge-idx">#{photos.length - idx}</div>
+            <button
+              type="button"
+              class="photo-delete-btn"
+              data-photo-id={p.id}
+              title="Delete Frame from Live Stream"
+            >
+              🗑️
+            </button>
+          </div>
+          <div class="photo-info-bar">
+            <span class="photo-time">⏱️ {new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+            {p.faces && p.faces.length > 0 && (
+              <span class="face-tag" title={`${p.faces.length} faces detected`}>
+                👤 {p.faces.length}
+              </span>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <!-- Edit Event Details Modal -->
+    <div id="edit-details-modal" class="modal-backdrop" style="display: none;">
+      <div class="modal-box glass-card">
+        <div class="modal-header">
+          <h2 class="modal-headline">Edit Live Event Details</h2>
+          <button type="button" class="close-modal-btn" id="close-edit-details-btn">✕</button>
+        </div>
+
+        <form id="edit-details-form" class="event-form">
+          <div class="form-grid">
+            <div class="form-group col-2">
+              <label class="form-label" for="edit-event-title">Event Title *</label>
+              <input type="text" id="edit-event-title" name="title" class="form-input" value={event.title} required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="edit-event-slug">URL Slug *</label>
+              <input type="text" id="edit-event-slug" name="slug" class="form-input" value={event.slug} required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="edit-event-ceremony">Ceremony Type</label>
+              <select id="edit-event-ceremony" name="ceremonyType" class="form-input">
+                <option value="weddings" selected={event.ceremonyType === 'weddings'}>Weddings & Muhurtham</option>
+                <option value="housewarming" selected={event.ceremonyType === 'housewarming'}>Gruhapravesham</option>
+                <option value="poojas" selected={event.ceremonyType === 'poojas'}>Poojas & Sacred Rites</option>
+                <option value="milestones" selected={event.ceremonyType === 'milestones'}>Milestones</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="edit-event-venue">Venue & City *</label>
+              <input type="text" id="edit-event-venue" name="venue" class="form-input" value={event.venue} required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="edit-event-date">Ceremony Date *</label>
+              <input type="date" id="edit-event-date" name="date" class="form-input" value={event.date} required />
+            </div>
+
+            <div class="form-group col-2">
+              <label class="form-label" for="edit-event-token">Wireless Ingestion Token</label>
+              <input type="text" id="edit-event-token" name="ingestionToken" class="form-input" value={event.ingestionToken} required />
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel" id="cancel-edit-details-btn">Cancel</button>
+            <button type="submit" class="btn-gold" id="save-details-submit-btn">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Printable Luxury Tent-Card QR Modal -->
+    <div id="tent-card-modal" class="modal-backdrop" style="display: none;">
+      <div class="tent-card-modal-content glass-card">
+        <div class="modal-header">
+          <h2 class="modal-headline">Printable Luxury Guest Tent-Card QR Kit</h2>
+          <button type="button" class="close-modal-btn" id="close-tent-card-btn">✕</button>
+        </div>
+
+        <!-- Printable Area -->
+        <div class="tent-card-print-viewport" id="tent-card-print-area">
+          <div class="tent-card-luxury-frame">
+            <div class="tent-card-rim"></div>
+            <div class="tent-card-corner tl"></div>
+            <div class="tent-card-corner tr"></div>
+            <div class="tent-card-corner bl"></div>
+            <div class="tent-card-corner br"></div>
+
+            <div class="tent-card-header">
+              <span class="tent-brand-monogram">FBH</span>
+              <h3 class="tent-brand-title">FRAMES BY HITHU</h3>
+              <span class="tent-brand-sub">FINE-ART PHOTOGRAPHY • KARNATAKA</span>
+            </div>
+
+            <div class="tent-divider">
+              <span class="divider-diamond">♦</span>
+            </div>
+
+            <div class="tent-event-info">
+              <span class="tent-welcome">WELCOME TO THE CELEBRATION OF</span>
+              <h2 class="tent-event-title" id="tent-preview-title">{event.title}</h2>
+              <p class="tent-event-venue" id="tent-preview-venue">📍 {event.venue}</p>
+            </div>
+
+            <div class="tent-qr-box">
+              <img id="tent-qr-image" src="" alt="Live Event QR Code" class="tent-qr-img" />
+              <div class="qr-glow"></div>
+            </div>
+
+            <div class="tent-instructions">
+              <strong class="instruction-lead">Scan with Your Smartphone Camera</strong>
+              <p id="tent-instruction-detail" class="instruction-sub">
+                {event.accessMode === 'face_match'
+                  ? 'Take a quick selfie to discover and download every frame you appear in as sacred moments unfold.'
+                  : 'Explore the full live ceremony stream and download high-resolution master frames live.'}
+              </p>
+            </div>
+
+            <div class="tent-card-footer">
+              <span>framesbyhithu.com</span>
+              <span class="footer-dot">•</span>
+              <span>Live AI Ceremony Stream</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer tent-footer-actions">
+          <button type="button" class="btn-cancel" id="cancel-tent-btn">Close</button>
+          <button type="button" class="btn-outline" id="download-qr-image-btn" title="Download QR Code image directly">
+            <span>⬇️ Download QR Only (PNG)</span>
+          </button>
+          <button type="button" class="btn-outline" id="download-full-card-btn" title="Download Entire Luxury Card as High-Res Image">
+            <span>🖼️ Download Card (PNG)</span>
+          </button>
+          <button type="button" class="btn-gold" id="do-print-card-btn" title="Print or save full-page PDF without headers/footers">
+            <span>🖨️ Print Clean Full-Page PDF</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Complete Event & Client Portal Handover Modal -->
+    <div id="complete-event-modal" class="modal-backdrop" style="display: none;">
+      <div class="modal-box glass-card complete-modal-box">
+        <div class="modal-header">
+          <div>
+            <div class="gold-pill">ONE-CLICK AUTOMATION</div>
+            <h2 class="modal-headline">Complete Event & Client Portal Handover</h2>
+          </div>
+          <button type="button" class="close-modal-btn" id="close-complete-event-btn">✕</button>
+        </div>
+
+        <!-- Step 1: Pre-Confirmation Form -->
+        <div id="complete-step-form">
+          <div class="complete-summary-strip">
+            <div class="complete-stat-badge">
+              <span class="stat-big-num" id="complete-summary-photos">{photos.length}</span>
+              <span class="stat-small-label">Ceremony Frames</span>
+            </div>
+            <div class="complete-meta-block">
+              <h3 class="complete-event-name">{event.title}</h3>
+              <p class="complete-venue-line">📍 {event.venue} &bull; 📅 {event.date}</p>
+              <div class="complete-transition-badge">
+                <span class="pill-from">Status: <strong>{event.status.toUpperCase()}</strong></span>
+                <span class="arrow-trans">&rarr;</span>
+                <span class="pill-to">Transfers to: <strong>CLIENT PROOFING SUITE</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <form id="complete-event-form" class="event-form">
+            <div class="form-grid">
+              <div class="form-group col-2">
+                <label class="form-label" for="complete-client-name">Client / Couple Name *</label>
+                <input
+                  type="text"
+                  id="complete-client-name"
+                  name="clientName"
+                  class="form-input"
+                  value={event.title.split(' ')[0] || 'Esteemed Couple'}
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="complete-client-phone">Client WhatsApp Number</label>
+                <input
+                  type="tel"
+                  id="complete-client-phone"
+                  name="clientPhone"
+                  class="form-input"
+                  placeholder="+91 98765 43210"
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="complete-album-count">Target Album Favorites</label>
+                <input
+                  type="number"
+                  id="complete-album-count"
+                  name="targetAlbumCount"
+                  class="form-input"
+                  value={Math.min(100, Math.max(40, Math.floor(photos.length * 0.3) || 50))}
+                  min="10"
+                  max="500"
+                />
+              </div>
+
+              <div class="form-group col-2">
+                <label class="form-label" for="complete-custom-pin">
+                  Secure 6-Digit PIN (Optional: Leave empty to auto-generate)
+                </label>
+                <input
+                  type="text"
+                  id="complete-custom-pin"
+                  name="pin"
+                  class="form-input"
+                  placeholder="e.g. 849201"
+                  maxlength="6"
+                  pattern="[0-9]{6}"
+                />
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn-cancel" id="cancel-complete-event-btn">Cancel</button>
+              <button type="submit" class="btn-action btn-action-emerald" id="submit-complete-event-btn">
+                <span>🚀 Complete & Generate Handover Card</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Step 2: Generated Handover Credentials & WhatsApp Card -->
+        <div id="complete-step-result" style="display: none;">
+          <div class="complete-success-banner">
+            <span class="success-icon">✨</span>
+            <div>
+              <strong class="success-title">Event Successfully Moved to Client Portal!</strong>
+              <p class="success-sub">Private proofing link and 6-digit access PIN generated. Send the WhatsApp card below.</p>
+            </div>
+          </div>
+
+          <!-- Credentials Display -->
+          <div class="credentials-card glass-card">
+            <div class="credential-row">
+              <div class="cred-label">SECURE 6-DIGIT PASSCODE</div>
+              <div class="pin-display-wrap">
+                <span class="pin-code-large" id="res-pin-display">------</span>
+                <button type="button" class="btn-copy-small" id="copy-pin-btn" title="Copy 6-digit PIN">
+                  📋 Copy PIN
+                </button>
+              </div>
+            </div>
+
+            <div class="credential-row">
+              <div class="cred-label">PRIVATE PROOFING LINK</div>
+              <div class="link-display-wrap">
+                <input type="text" id="res-link-input" class="form-input link-input" readonly />
+                <button type="button" class="btn-copy-small" id="copy-link-btn" title="Copy Proofing URL">
+                  📋 Copy Link
+                </button>
+                <a id="res-portal-link" href="#" target="_blank" rel="noopener noreferrer" class="btn-open-small" title="Open Proofing Portal">
+                  Open ↗
+                </a>
+              </div>
+            </div>
+
+            <div class="credential-row">
+              <div class="cred-label">GOOGLE REVIEW DIRECT LINK (REVIEW VELOCITY ENGINE)</div>
+              <div class="link-display-wrap">
+                <input type="text" id="res-review-input" class="form-input link-input" readonly />
+                <button type="button" class="btn-copy-small" id="copy-review-btn" title="Copy Google Review Shortlink">
+                  📋 Copy Review Link
+                </button>
+                <a id="res-review-link" href="#" target="_blank" rel="noopener noreferrer" class="btn-open-small" title="Test Google Review Link">
+                  Test ↗
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- WhatsApp Handover Card Preview -->
+          <div class="whatsapp-card-section">
+            <div class="wa-header">
+              <span class="wa-badge">📱 ONE-TAP WHATSAPP HANDOVER CARD</span>
+              <button type="button" class="btn-copy-text" id="copy-wa-text-btn">📋 Copy Message Text</button>
+            </div>
+
+            <div class="wa-message-bubble" id="wa-message-preview">
+              <!-- Message dynamically inserted here -->
+            </div>
+
+            <div class="wa-actions">
+              <a id="wa-direct-send-btn" href="#" target="_blank" rel="noopener noreferrer" class="btn-whatsapp-large">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/>
+                </svg>
+                <span>Send on WhatsApp (1-Tap)</span>
+              </a>
+              <button type="button" class="btn-gold" id="done-complete-modal-btn">
+                <span>Done & Refresh Page</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  .admin-event-page {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .section-mb {
+    margin-bottom: 2rem;
+  }
+
+  /* Breadcrumb */
+  .breadcrumb-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .back-link {
+    color: var(--gold-primary);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .back-link:hover {
+    text-decoration: underline;
+  }
+
+  .top-status-pills {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  /* Headline Card */
+  .event-headline-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding: 1.75rem 2rem;
+    border-radius: 14px;
+    background: rgba(14, 16, 22, 0.85);
+    border: 1px solid var(--gold-border);
+    margin-bottom: 1.5rem;
+  }
+
+  .admin-gold-pill {
+    display: inline-block;
+    font-size: 0.725rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--gold-light);
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid var(--gold-border);
+    padding: 3px 10px;
+    border-radius: 9999px;
+    margin-bottom: 0.5rem;
+  }
+
+  .event-title {
+    font-family: var(--font-serif);
+    font-size: clamp(1.8rem, 3vw, 2.4rem);
+    color: var(--text-primary);
+    margin: 0 0 0.4rem 0;
+  }
+
+  .event-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  .meta-dot {
+    opacity: 0.4;
+  }
+
+  .event-meta code {
+    color: var(--gold-light);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .headline-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+  }
+
+  /* ==========================================================================
+     Luxury Unified Admin Action Buttons
+     ========================================================================== */
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    height: 38px;
+    padding: 0 1rem;
+    font-family: var(--font-sans, 'Plus Jakarta Sans', sans-serif);
+    font-size: 0.825rem;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+    border-radius: 8px;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+    line-height: 1;
+    user-select: none;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+  }
+
+  .btn-action .btn-svg {
+    flex-shrink: 0;
+    transition: transform 0.25s ease;
+  }
+
+  .btn-action .btn-external-icon {
+    font-size: 0.85rem;
+    font-weight: 600;
+    opacity: 0.7;
+    margin-left: -0.15rem;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+
+  .btn-action:hover .btn-external-icon {
+    opacity: 1;
+    transform: translate(2px, -2px);
+  }
+
+  /* 1. Gold Accented Button (Print QR Kit) */
+  .btn-action-gold {
+    background: rgba(212, 175, 55, 0.08);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    color: #F7E4A8;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  }
+
+  .btn-action-gold:hover {
+    background: rgba(212, 175, 55, 0.18);
+    border-color: #D4AF37;
+    color: #FFFFFF;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.25);
+  }
+
+  /* 2. Subtle Dark Glass Control Button (Edit Details, Refresh Stream) */
+  .btn-action-subtle {
+    background: rgba(22, 26, 36, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #E2E8F0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  }
+
+  .btn-action-subtle:hover {
+    background: rgba(30, 36, 50, 0.95);
+    border-color: rgba(212, 175, 55, 0.45);
+    color: #FFFFFF;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  }
+
+  .btn-refresh-feed:hover .spin-icon {
+    transform: rotate(180deg);
+  }
+
+  /* 3. Blue Accent Button (Guest Gallery Portal) */
+  .btn-action-blue {
+    background: rgba(23, 37, 84, 0.25);
+    border: 1px solid rgba(96, 165, 250, 0.28);
+    color: #BFDBFE;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  }
+
+  .btn-action-blue:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(96, 165, 250, 0.6);
+    color: #FFFFFF;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.25);
+  }
+
+  /* 4. Purple Accent Button (Projector Wall) */
+  .btn-action-purple {
+    background: rgba(46, 16, 101, 0.25);
+    border: 1px solid rgba(167, 139, 250, 0.28);
+    color: #DDD6FE;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  }
+
+  .btn-action-purple:hover {
+    background: rgba(139, 92, 246, 0.2);
+    border-color: rgba(167, 139, 250, 0.6);
+    color: #FFFFFF;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.25);
+  }
+
+  /* 5. Primary Champagne Gold Button (Mobile Ingest, Select SD Card Files) */
+  .btn-action-primary {
+    background: linear-gradient(135deg, #F7E4A8 0%, #D4AF37 50%, #9B781E 100%);
+    color: #07080B;
+    font-weight: 600;
+    border: 1px solid rgba(255, 240, 180, 0.5);
+    box-shadow: 0 4px 18px rgba(212, 175, 55, 0.35);
+  }
+
+  .btn-action-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.55);
+    filter: brightness(1.08);
+    color: #000000;
+  }
+
+  /* 6. Crimson Danger Button (Delete Event, Clear All Frames) */
+  .btn-action-danger {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #FCA5A5;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  }
+
+  .btn-action-danger:hover {
+    background: rgba(239, 68, 68, 0.22);
+    border-color: #EF4444;
+    color: #FFFFFF;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
+  }
+
+  /* 7. Emerald Success Button (Complete Event & Handover) */
+  .btn-action-emerald {
+    background: rgba(6, 78, 59, 0.35);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    color: #A7F3D0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  }
+
+  .btn-action-emerald:hover {
+    background: rgba(16, 185, 129, 0.25);
+    border-color: #34D399;
+    color: #FFFFFF;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+  }
+
+  /* Specific Sizing & Fine-tuning */
+  .btn-sd-select {
+    height: 42px;
+    padding: 0 1.4rem;
+    font-size: 0.865rem;
+    border-radius: 9px;
+  }
+
+  .btn-clear-feed {
+    padding: 0 0.95rem;
+  }
+
+  .btn-refresh-feed {
+    padding: 0 0.95rem;
+  }
+
+  .photo-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+  }
+
+  /* Quick Settings Strip */
+  .quick-settings-strip {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    background: rgba(14, 16, 22, 0.7);
+    border: 1px solid var(--border-subtle);
+    margin-bottom: 2rem;
+  }
+
+  .setting-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .setting-title {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .quick-select {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-subtle);
+    color: var(--gold-light);
+    font-size: 0.825rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .quick-select:focus {
+    border-color: var(--gold-primary);
+  }
+
+  /* SD Dropzone */
+  .dropzone-card {
+    padding: 2rem;
+    border-radius: 14px;
+    background: rgba(14, 16, 22, 0.8);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .dropzone-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .dropzone-title {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin: 0.35rem 0 0.25rem 0;
+  }
+
+  .dropzone-sub {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    max-width: 680px;
+    margin: 0;
+  }
+
+  .hidden-input {
+    display: none;
+  }
+
+  .sd-drop-target {
+    border: 2px dashed rgba(212, 175, 55, 0.4);
+    background: rgba(212, 175, 55, 0.02);
+    border-radius: 12px;
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+  }
+
+  .sd-drop-target:hover,
+  .sd-drop-target.drag-over {
+    border-color: var(--gold-primary);
+    background: rgba(212, 175, 55, 0.08);
+    transform: scale(1.005);
+  }
+
+  .sd-icon {
+    font-size: 3rem;
+    color: var(--gold-primary);
+    margin-bottom: 0.5rem;
+  }
+
+  .sd-drop-target h3 {
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    margin: 0 0 0.35rem 0;
+  }
+
+  .sd-drop-target p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: 0 0 1rem 0;
+  }
+
+  .sd-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    color: var(--gold-light);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 3px 10px;
+    border-radius: 9999px;
+    border: 1px solid var(--border-subtle);
+  }
+
+  /* Progress Box */
+  .batch-progress-box {
+    margin-top: 1.5rem;
+    padding: 1.25rem;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .progress-info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+  }
+
+  .progress-bar-wrap {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--gold-gradient);
+    transition: width 0.2s ease;
+  }
+
+  .progress-sub-details {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  /* Photos Section */
+  .photos-management-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+
+  .section-title {
+    font-family: var(--font-serif);
+    font-size: 1.35rem;
+    color: var(--text-primary);
+    margin: 0 0 0.2rem 0;
+  }
+
+  .section-sub {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  .live-photos-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+  }
+
+  @media (max-width: 1200px) {
+    .live-photos-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .live-photos-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .live-photo-card {
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(14, 16, 22, 0.8);
+    border: 1px solid var(--border-subtle);
+    transition: var(--transition-smooth);
+  }
+
+  .live-photo-card:hover {
+    border-color: var(--gold-border);
+    transform: translateY(-2px);
+  }
+
+  .photo-media-box {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    background: #000;
+    overflow: hidden;
+  }
+
+  .live-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .photo-badge-idx {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 2px 6px;
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
+  }
+
+  .photo-delete-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.8);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .live-photo-card:hover .photo-delete-btn {
+    opacity: 1;
+  }
+
+  .photo-delete-btn:hover {
+    transform: scale(1.1);
+    background: #EF4444;
+  }
+
+  .photo-info-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+
+  .face-tag {
+    background: rgba(139, 92, 246, 0.2);
+    color: #C4B5FD;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  /* Modal Button Refinements */
+  .btn-cancel {
+    height: 38px;
+    padding: 0 1.25rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 0.825rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
+  }
+
+  .modal-footer .btn-gold {
+    height: 38px;
+    padding: 0 1.4rem;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #F7E4A8 0%, #D4AF37 50%, #9B781E 100%);
+    color: #07080B;
+    font-family: var(--font-sans);
+    font-size: 0.825rem;
+    font-weight: 600;
+    border: 1px solid rgba(255, 240, 180, 0.5);
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(212, 175, 55, 0.35);
+    transition: all 0.25s ease;
+  }
+
+  .modal-footer .btn-gold:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
+    filter: brightness(1.08);
+  }
+
+  .modal-footer .btn-outline {
+    height: 38px;
+    padding: 0 1.15rem;
+    border-radius: 8px;
+    background: rgba(20, 24, 33, 0.85);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    color: #F7E4A8;
+    font-family: var(--font-sans);
+    font-size: 0.825rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .modal-footer .btn-outline:hover {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: #D4AF37;
+    color: #FFFFFF;
+  }
+
+  /* Modal Backdrop & Box */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+
+  .modal-box {
+    width: 100%;
+    max-width: 650px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 16px;
+    background: #0E1016;
+    border: 1px solid var(--gold-border);
+    padding: 2rem;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .modal-headline {
+    font-family: var(--font-serif);
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--gold-light);
+  }
+
+  .close-modal-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.25rem;
+    cursor: pointer;
+  }
+
+  .close-modal-btn:hover {
+    color: #fff;
+  }
+
+  .event-form .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+
+  .col-2 {
+    grid-column: span 2;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .form-label {
+    font-size: 0.775rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .form-input {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 0.65rem 0.85rem;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-family: inherit;
+    outline: none;
+    transition: var(--transition-smooth);
+  }
+
+  .form-input:focus {
+    border-color: var(--gold-primary);
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.15);
+  }
+
+  .modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .btn-cancel {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    padding: 0.65rem 1.25rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .btn-cancel:hover {
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+  }
+
+  /* Luxury Tent-Card Preview Styling */
+  .tent-card-modal-content {
+    width: 100%;
+    max-width: 580px;
+    background: #0B0C10;
+    border: 1px solid var(--gold-border);
+    border-radius: 16px;
+    padding: 2rem;
+  }
+
+  .tent-card-print-viewport {
+    background: #05060A;
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+  }
+
+  .tent-card-luxury-frame {
+    position: relative;
+    border: 2px solid #D4AF37;
+    padding: 2.25rem 1.5rem;
+    text-align: center;
+    background: radial-gradient(circle at center, #11141C 0%, #05060A 100%);
+  }
+
+  .tent-card-rim {
+    position: absolute;
+    inset: 4px;
+    border: 1px dashed rgba(212, 175, 55, 0.4);
+    pointer-events: none;
+  }
+
+  .tent-card-corner {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-color: #D4AF37;
+  }
+
+  .tent-card-corner.tl { top: 6px; left: 6px; border-top: 2px solid #D4AF37; border-left: 2px solid #D4AF37; }
+  .tent-card-corner.tr { top: 6px; right: 6px; border-top: 2px solid #D4AF37; border-right: 2px solid #D4AF37; }
+  .tent-card-corner.bl { bottom: 6px; left: 6px; border-bottom: 2px solid #D4AF37; border-left: 2px solid #D4AF37; }
+  .tent-card-corner.br { bottom: 6px; right: 6px; border-bottom: 2px solid #D4AF37; border-right: 2px solid #D4AF37; }
+
+  .tent-brand-monogram {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
+    border-radius: 50%;
+    background: var(--gold-gradient);
+    color: #0B0C10;
+    font-weight: 800;
+    font-size: 0.8rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .tent-brand-title {
+    font-family: var(--font-serif);
+    font-size: 1.15rem;
+    letter-spacing: 0.16em;
+    color: #D4AF37;
+    margin: 0;
+  }
+
+  .tent-brand-sub {
+    display: block;
+    font-size: 0.65rem;
+    letter-spacing: 0.14em;
+    color: var(--text-muted);
+    margin-top: 0.15rem;
+  }
+
+  .tent-divider {
+    margin: 1rem 0;
+    position: relative;
+  }
+
+  .tent-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 15%;
+    right: 15%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #D4AF37, transparent);
+  }
+
+  .divider-diamond {
+    color: #D4AF37;
+    font-size: 0.75rem;
+    background: #0E1016;
+    padding: 0 8px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .tent-welcome {
+    display: block;
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    color: #D4AF37;
+    margin-bottom: 0.25rem;
+  }
+
+  .tent-event-title {
+    font-family: var(--font-serif);
+    font-size: 1.65rem;
+    color: #FFFFFF;
+    margin: 0;
+    line-height: 1.25;
+  }
+
+  .tent-event-venue {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0.35rem 0 1.25rem 0;
+  }
+
+  .tent-qr-box {
+    width: 170px;
+    height: 170px;
+    margin: 0 auto 1.25rem auto;
+    background: #FFFFFF;
+    padding: 8px;
+    border-radius: 8px;
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+    position: relative;
+  }
+
+  .tent-qr-img {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .instruction-lead {
+    display: block;
+    font-size: 0.95rem;
+    color: #D4AF37;
+    margin-bottom: 0.25rem;
+  }
+
+  .instruction-sub {
+    font-size: 0.775rem;
+    color: #E2E8F0;
+    max-width: 320px;
+    margin: 0 auto;
+    line-height: 1.4;
+  }
+
+  .tent-card-footer {
+    margin-top: 1.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(212, 175, 55, 0.2);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .footer-dot {
+    color: #D4AF37;
+  }
+
+  .tent-footer-actions {
+    margin-top: 1.5rem;
+  }
+
+  /* Luxury Print Styles - Full-Page Card Only, Zero Browser Margins/Headers */
+  @page {
+    size: portrait;
+    margin: 0 !important;
+  }
+
+  @media print {
+    html,
+    body {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      max-height: 100vh !important;
+      background: #05060A !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      overflow: hidden !important;
+    }
+
+    /* Completely hide everything on the page */
+    body * {
+      visibility: hidden !important;
+    }
+
+    /* Make only the tent card modal and its descendants visible */
+    #tent-card-modal,
+    #tent-card-modal * {
+      visibility: visible !important;
+    }
+
+    #tent-card-modal {
+      position: fixed !important;
+      inset: 0 !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: 100vw !important;
+      max-height: 100vh !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #05060A !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
+      justify-content: stretch !important;
+      z-index: 9999999 !important;
+      overflow: hidden !important;
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    .tent-card-modal-content {
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: 100vw !important;
+      max-height: 100vh !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #05060A !important;
+      border: none !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: stretch !important;
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+    }
+
+    .modal-header,
+    .tent-footer-actions {
+      display: none !important;
+    }
+
+    .tent-card-print-viewport {
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: 100vw !important;
+      max-height: 100vh !important;
+      margin: 0 !important;
+      padding: 8mm 10mm !important;
+      box-sizing: border-box !important;
+      background: #05060A !important;
+      border: none !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: stretch !important;
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    .tent-card-luxury-frame {
+      width: 100% !important;
+      height: 100% !important;
+      flex: 1 !important;
+      box-sizing: border-box !important;
+      border: 3.5mm solid #D4AF37 !important;
+      border-radius: 4px !important;
+      padding: 10mm 10mm !important;
+      background: #05060A !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      text-align: center !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      position: relative !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    .tent-card-rim {
+      position: absolute !important;
+      inset: 3.5mm !important;
+      border: 1px dashed rgba(212, 175, 55, 0.45) !important;
+      pointer-events: none !important;
+    }
+
+    .tent-card-corner {
+      position: absolute !important;
+      width: 18px !important;
+      height: 18px !important;
+    }
+    .tent-card-corner.tl { top: 5mm !important; left: 5mm !important; border-top: 2.5px solid #D4AF37 !important; border-left: 2.5px solid #D4AF37 !important; }
+    .tent-card-corner.tr { top: 5mm !important; right: 5mm !important; border-top: 2.5px solid #D4AF37 !important; border-right: 2.5px solid #D4AF37 !important; }
+    .tent-card-corner.bl { bottom: 5mm !important; left: 5mm !important; border-bottom: 2.5px solid #D4AF37 !important; border-left: 2.5px solid #D4AF37 !important; }
+    .tent-card-corner.br { bottom: 5mm !important; right: 5mm !important; border-bottom: 2.5px solid #D4AF37 !important; border-right: 2.5px solid #D4AF37 !important; }
+
+    .tent-brand-monogram {
+      width: 44px !important;
+      height: 44px !important;
+      line-height: 44px !important;
+      font-size: 1.1rem !important;
+      margin-bottom: 0.25rem !important;
+    }
+
+    .tent-brand-title {
+      font-size: 1.75rem !important;
+      letter-spacing: 0.22em !important;
+      color: #D4AF37 !important;
+      margin: 0 !important;
+    }
+
+    .tent-brand-sub {
+      font-size: 0.8rem !important;
+      letter-spacing: 0.18em !important;
+      color: #E2E8F0 !important;
+      margin-top: 0.2rem !important;
+    }
+
+    .tent-divider {
+      margin: 0.85rem auto !important;
+      width: 60% !important;
+    }
+
+    .divider-diamond {
+      font-size: 0.9rem !important;
+      color: #D4AF37 !important;
+      background: #05060A !important;
+    }
+
+    .tent-welcome {
+      font-size: 0.9rem !important;
+      letter-spacing: 0.22em !important;
+      color: #D4AF37 !important;
+      margin-bottom: 0.25rem !important;
+    }
+
+    .tent-event-title {
+      font-size: 2.35rem !important;
+      line-height: 1.2 !important;
+      color: #FFFFFF !important;
+      margin: 0 !important;
+      max-width: 90% !important;
+    }
+
+    .tent-event-venue {
+      font-size: 1.1rem !important;
+      color: #E2E8F0 !important;
+      margin: 0.4rem 0 0.85rem 0 !important;
+    }
+
+    .tent-qr-box {
+      width: 230px !important;
+      height: 230px !important;
+      padding: 10px !important;
+      margin: 0 auto 1rem auto !important;
+      background: #FFFFFF !important;
+      border-radius: 12px !important;
+      box-shadow: 0 0 25px rgba(212, 175, 55, 0.4) !important;
+    }
+
+    .instruction-lead {
+      font-size: 1.25rem !important;
+      color: #D4AF37 !important;
+      margin-bottom: 0.25rem !important;
+    }
+
+    .instruction-sub {
+      font-size: 0.9rem !important;
+      color: #E2E8F0 !important;
+      max-width: 480px !important;
+      margin: 0 auto !important;
+      line-height: 1.4 !important;
+    }
+
+    .tent-card-footer {
+      font-size: 0.825rem !important;
+      color: #D4AF37 !important;
+      margin-top: 0.85rem !important;
+      padding-top: 0.65rem !important;
+      border-top: 1px solid rgba(212, 175, 55, 0.3) !important;
+    }
+  }
+
+  /* ==========================================================================
+     Complete Event & WhatsApp Handover Modal Styles
+     ========================================================================== */
+  .complete-modal-box {
+    max-width: 680px;
+    width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .complete-summary-strip {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.25rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+  }
+
+  .complete-stat-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 100px;
+    padding: 0.75rem 1rem;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    border-radius: 10px;
+  }
+
+  .stat-big-num {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #34D399;
+    line-height: 1;
+    font-family: var(--font-serif);
+  }
+
+  .stat-small-label {
+    font-size: 0.72rem;
+    color: #A7F3D0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 4px;
+  }
+
+  .complete-meta-block {
+    flex: 1;
+  }
+
+  .complete-event-name {
+    font-family: var(--font-serif);
+    font-size: 1.35rem;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+  }
+
+  .complete-venue-line {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: 0 0 0.6rem 0;
+  }
+
+  .complete-transition-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .pill-from {
+    color: #FBBF24;
+    background: rgba(245, 158, 11, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(245, 158, 11, 0.25);
+  }
+
+  .arrow-trans {
+    color: var(--gold-light);
+  }
+
+  .pill-to {
+    color: #34D399;
+    background: rgba(16, 185, 129, 0.12);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(52, 211, 153, 0.3);
+  }
+
+  /* Step 2 Result Styles */
+  .complete-success-banner {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+  }
+
+  .complete-success-banner .success-icon {
+    font-size: 2rem;
+  }
+
+  .success-title {
+    display: block;
+    font-size: 1.1rem;
+    color: #34D399;
+    margin-bottom: 0.2rem;
+  }
+
+  .success-sub {
+    font-size: 0.85rem;
+    color: #E2E8F0;
+    margin: 0;
+  }
+
+  .credentials-card {
+    padding: 1.25rem;
+    border-radius: 12px;
+    background: rgba(14, 16, 22, 0.9);
+    border: 1px solid var(--gold-border);
+    margin-bottom: 1.5rem;
+  }
+
+  .credential-row {
+    margin-bottom: 1rem;
+  }
+
+  .credential-row:last-child {
+    margin-bottom: 0;
+  }
+
+  .cred-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--gold-light);
+    margin-bottom: 0.4rem;
+  }
+
+  .pin-display-wrap {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .pin-code-large {
+    font-family: monospace;
+    font-size: 1.85rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    color: #FFFFFF;
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px dashed var(--gold-primary);
+    padding: 4px 16px;
+    border-radius: 8px;
+  }
+
+  .btn-copy-small, .btn-open-small {
+    height: 36px;
+    padding: 0 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .btn-copy-small {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #F8FAFC;
+  }
+
+  .btn-copy-small:hover {
+    background: rgba(212, 175, 55, 0.2);
+    border-color: var(--gold-primary);
+    color: #FFFFFF;
+  }
+
+  .btn-open-small {
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(96, 165, 250, 0.4);
+    color: #BFDBFE;
+  }
+
+  .btn-open-small:hover {
+    background: rgba(59, 130, 246, 0.35);
+    color: #FFFFFF;
+  }
+
+  .link-display-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .link-input {
+    flex: 1;
+    font-size: 0.8rem;
+    padding: 0.55rem 0.75rem;
+    background: rgba(0, 0, 0, 0.4);
+    color: #CBD5E1;
+  }
+
+  /* WhatsApp Preview Box */
+  .whatsapp-card-section {
+    background: rgba(18, 22, 30, 0.9);
+    border: 1px solid rgba(37, 211, 102, 0.3);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+
+  .wa-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.85rem;
+  }
+
+  .wa-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #25D366;
+    letter-spacing: 0.04em;
+  }
+
+  .btn-copy-text {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #CBD5E1;
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-copy-text:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
+  }
+
+  .wa-message-bubble {
+    background: #0b141a;
+    border-left: 4px solid #25D366;
+    padding: 1rem 1.15rem;
+    border-radius: 8px;
+    font-size: 0.865rem;
+    line-height: 1.55;
+    color: #E2E8F0;
+    white-space: pre-wrap;
+    max-height: 220px;
+    overflow-y: auto;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin-bottom: 1.25rem;
+  }
+
+  .wa-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-whatsapp-large {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    background: #25D366;
+    color: #07080B;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 0.75rem 1.4rem;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 15px rgba(37, 211, 102, 0.35);
+  }
+
+  .btn-whatsapp-large:hover {
+    background: #1EBE5D;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 211, 102, 0.5);
+    color: #000;
+  }
+</style>
+
+<script>
+  function initEventDashboard() {
+    const pageEl = document.querySelector('.admin-event-page') as HTMLElement;
+    if (!pageEl) return;
+
+    const eventId = pageEl.getAttribute('data-event-id') || '';
+    const token = pageEl.getAttribute('data-token') || '';
+
+    // Quick Settings Changes
+    const modeSelect = document.getElementById('quick-mode-select') as HTMLSelectElement;
+    const downloadSelect = document.getElementById('quick-download-select') as HTMLSelectElement;
+    const watermarkSelect = document.getElementById('quick-watermark-select') as HTMLSelectElement;
+    const statusSelect = document.getElementById('quick-status-select') as HTMLSelectElement;
+
+    async function updateEventSetting(updates: Record<string, any>) {
+      try {
+        const res = await fetch(`/api/live-events/${eventId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates)
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          (window as any).showToast('Event settings updated!', 'success');
+        } else {
+          (window as any).showToast(data.error || 'Failed to update settings', 'error');
+        }
+      } catch {
+        (window as any).showToast('Network error saving settings', 'error');
+      }
+    }
+
+    modeSelect?.addEventListener('change', () => {
+      updateEventSetting({ accessMode: modeSelect.value });
+    });
+
+    downloadSelect?.addEventListener('change', () => {
+      updateEventSetting({ allowDownload: downloadSelect.value === 'true' });
+    });
+
+    watermarkSelect?.addEventListener('change', () => {
+      updateEventSetting({ watermarkPreview: watermarkSelect.value === 'true' });
+    });
+
+    statusSelect?.addEventListener('change', () => {
+      updateEventSetting({ status: statusSelect.value });
+    });
+
+    // SD Card Drag and Drop Batch Ingestion
+    const dropTarget = document.getElementById('sd-drop-target');
+    const fileInput = document.getElementById('sd-file-input') as HTMLInputElement;
+    const triggerBtn = document.getElementById('trigger-sd-upload-btn');
+    const progressBox = document.getElementById('batch-progress-box');
+    const barFill = document.getElementById('batch-bar-fill');
+    const statusText = document.getElementById('batch-status-text');
+    const percentText = document.getElementById('batch-percent-text');
+    const subDetails = document.getElementById('batch-sub-details');
+
+    triggerBtn?.addEventListener('click', () => fileInput?.click());
+    dropTarget?.addEventListener('click', () => fileInput?.click());
+
+    dropTarget?.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropTarget.classList.add('drag-over');
+    });
+
+    dropTarget?.addEventListener('dragleave', () => {
+      dropTarget.classList.remove('drag-over');
+    });
+
+    dropTarget?.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropTarget.classList.remove('drag-over');
+      if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+        handleBatchFiles(Array.from(e.dataTransfer.files));
+      }
+    });
+
+    fileInput?.addEventListener('change', () => {
+      if (fileInput.files && fileInput.files.length > 0) {
+        handleBatchFiles(Array.from(fileInput.files));
+      }
+    });
+
+    // Fast Client-Side Image Resizer & Thumbnail Generator
+    function resizeImageToDataUrl(file: File, maxDim = 1600, quality = 0.82): Promise<string> {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            let width = img.width;
+            let height = img.height;
+            if (width > maxDim || height > maxDim) {
+              if (width > height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, width, height);
+              resolve(canvas.toDataURL('image/jpeg', quality));
+            } else {
+              resolve(e.target?.result as string);
+            }
+          };
+          img.onerror = () => resolve(e.target?.result as string);
+          img.src = e.target?.result as string;
+        };
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // High-Efficiency Batch Upload Pipeline (Minimizing Cloudflare KV Writes)
+    async function handleBatchFiles(files: File[]) {
+      const validImages = files.filter(f => f.type.startsWith('image/') || /\.(jpe?g|png|webp|heic)$/i.test(f.name));
+      if (validImages.length === 0) {
+        (window as any).showToast('No valid image files found in dropzone', 'error');
+        return;
+      }
+
+      if (progressBox) progressBox.style.display = 'block';
+
+      // Smart Batch Chunking:
+      // - 1 to 30 photos: 1 single batch -> Exactly 1 Cloudflare KV write!
+      // - 100 to 2,000 photos: Chunks of 25-30 photos -> Only ~3-35 KV writes total (well below 1000/day limit)
+      const BATCH_SIZE = 25;
+      const totalPhotos = validImages.length;
+      const totalBatches = Math.ceil(totalPhotos / BATCH_SIZE);
+
+      let totalIngested = 0;
+      let totalKVWrites = 0;
+
+      for (let b = 0; b < totalBatches; b++) {
+        const chunk = validImages.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
+        const batchNum = b + 1;
+        const pct = Math.round((b / totalBatches) * 100);
+
+        if (barFill) barFill.style.width = `${pct}%`;
+        if (percentText) percentText.textContent = `${pct}%`;
+        if (statusText) statusText.textContent = `Optimizing batch ${batchNum} of ${totalBatches} (${chunk.length} photos)...`;
+        if (subDetails) subDetails.textContent = `Generating hardware-accelerated preview thumbnails client-side...`;
+
+        // 1. Generate client-side preview thumbnails concurrently
+        const framePromises = chunk.map(async (file, idx) => {
+          const dataUrl = await resizeImageToDataUrl(file, 1600, 0.82);
+          return {
+            id: `frame_${Date.now()}_b${batchNum}_${idx}_${Math.random().toString(36).slice(2, 6)}`,
+            url: dataUrl,
+            caption: file.name.replace(/\.[^/.]+$/, ""),
+            timestamp: new Date().toISOString()
+          };
+        });
+
+        const frames = (await Promise.all(framePromises)).filter(f => f.url);
+
+        if (frames.length === 0) continue;
+
+        if (statusText) statusText.textContent = `Ingesting batch ${batchNum} of ${totalBatches} • 1 atomic KV write for ${frames.length} frames...`;
+        if (subDetails) subDetails.textContent = `Conserving Cloudflare KV write quota (Batch ${batchNum}/${totalBatches})`;
+
+        // 2. Single POST batch-upload request for this entire chunk
+        try {
+          const res = await fetch('/api/admin/live/batch-upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              eventId: eventId,
+              token: token,
+              frames: frames
+            })
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            totalIngested += data.added || frames.length;
+            totalKVWrites++;
+          } else {
+            console.warn(`Batch ${batchNum} response warning:`, await res.text());
+          }
+        } catch (err) {
+          console.error(`Batch ${batchNum} network error:`, err);
+        }
+      }
+
+      if (barFill) barFill.style.width = '100%';
+      if (percentText) percentText.textContent = '100%';
+      if (statusText) statusText.textContent = `Batch upload complete: ${totalIngested} photos ingested in only ${totalKVWrites} KV write(s)! 🚀`;
+      if (subDetails) subDetails.textContent = `Free Tier Protected: Saved ${totalPhotos - totalKVWrites} redundant KV write requests!`;
+
+      (window as any).showToast(`Successfully ingested ${totalIngested} photos in only ${totalKVWrites} atomic write(s)!`, 'success');
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 1200);
+    }
+
+    // Delete Photo
+    const deletePhotoButtons = document.querySelectorAll('.photo-delete-btn');
+    deletePhotoButtons.forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const photoId = btn.getAttribute('data-photo-id');
+        if (!photoId || !confirm('Permanently remove this photo from the live event feed?')) return;
+
+        try {
+          const res = await fetch(`/api/live-events/${eventId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete_photo', photoId })
+          });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            (window as any).showToast('Photo removed from stream', 'success');
+            const card = btn.closest('.live-photo-card');
+            card?.remove();
+          } else {
+            (window as any).showToast(data.error || 'Failed to delete photo', 'error');
+          }
+        } catch {
+          (window as any).showToast('Network error deleting photo', 'error');
+        }
+      });
+    });
+
+    // Edit Details Modal Handlers
+    const editModal = document.getElementById('edit-details-modal');
+    const openEditBtn = document.getElementById('open-edit-details-btn');
+    const closeEditBtn = document.getElementById('close-edit-details-btn');
+    const cancelEditBtn = document.getElementById('cancel-edit-details-btn');
+    const editForm = document.getElementById('edit-details-form') as HTMLFormElement;
+
+    function openEditModal() {
+      if (editModal) editModal.style.display = 'flex';
+    }
+
+    function closeEditModal() {
+      if (editModal) editModal.style.display = 'none';
+    }
+
+    openEditBtn?.addEventListener('click', openEditModal);
+    closeEditBtn?.addEventListener('click', closeEditModal);
+    cancelEditBtn?.addEventListener('click', closeEditModal);
+
+    editForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('save-details-submit-btn') as HTMLButtonElement;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+      }
+
+      const formData = new FormData(editForm);
+      const title = formData.get('title') as string;
+      const slug = formData.get('slug') as string;
+      const ceremonyType = formData.get('ceremonyType') as string;
+      const venue = formData.get('venue') as string;
+      const date = formData.get('date') as string;
+      const ingestionToken = formData.get('ingestionToken') as string;
+
+      try {
+        const res = await fetch(`/api/live-events/${eventId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, slug, ceremonyType, venue, date, ingestionToken })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          (window as any).showToast('Event details updated successfully! ✓', 'success');
+          closeEditModal();
+          setTimeout(() => window.location.reload(), 300);
+        } else {
+          (window as any).showToast(data.error || 'Failed to update details', 'error');
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Save Changes';
+          }
+        }
+      } catch {
+        (window as any).showToast('Network error saving details', 'error');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Save Changes';
+        }
+      }
+    });
+
+    // Delete Entire Event
+    const deleteTopBtn = document.getElementById('delete-this-event-btn');
+    deleteTopBtn?.addEventListener('click', async () => {
+      if (!confirm('Are you sure you want to permanently delete this entire live event and all its uploaded frames?')) return;
+
+      try {
+        const res = await fetch(`/api/live-events/${eventId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          (window as any).showToast('Event permanently deleted! ✓', 'success');
+          setTimeout(() => {
+            window.location.href = '/admin/live-events';
+          }, 350);
+        } else {
+          (window as any).showToast(data.error || 'Failed to delete event', 'error');
+        }
+      } catch {
+        (window as any).showToast('Network error deleting event', 'error');
+      }
+    });
+
+    // Clear All Photos
+    const clearAllBtn = document.getElementById('clear-all-photos-btn');
+    clearAllBtn?.addEventListener('click', async () => {
+      if (!confirm('Are you sure you want to permanently clear ALL frames from this live stream?')) return;
+
+      try {
+        const res = await fetch(`/api/live-events/${eventId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'clear_all_photos' })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          (window as any).showToast('All photos cleared successfully! ✓', 'success');
+          const grid = document.getElementById('live-photos-grid');
+          if (grid) grid.innerHTML = '';
+          setTimeout(() => window.location.reload(), 350);
+        } else {
+          (window as any).showToast(data.error || 'Failed to clear photos', 'error');
+        }
+      } catch {
+        (window as any).showToast('Network error clearing photos', 'error');
+      }
+    });
+
+    // Refresh Grid Button
+    document.getElementById('refresh-grid-btn')?.addEventListener('click', () => {
+      window.location.reload();
+    });
+
+    // Printable Luxury Tent-Card QR Kit Modal & Handlers
+    const tentModal = document.getElementById('tent-card-modal');
+    const openTentBtn = document.getElementById('open-tent-card-btn');
+    const closeTentBtn = document.getElementById('close-tent-card-btn');
+    const cancelTentBtn = document.getElementById('cancel-tent-btn');
+    const doPrintBtn = document.getElementById('do-print-card-btn');
+    const downloadQrBtn = document.getElementById('download-qr-image-btn');
+    const downloadFullCardBtn = document.getElementById('download-full-card-btn');
+    const tentQrImg = document.getElementById('tent-qr-image') as HTMLImageElement;
+    const tentTitle = document.getElementById('tent-preview-title');
+    const tentVenue = document.getElementById('tent-preview-venue');
+    const tentDetail = document.getElementById('tent-instruction-detail');
+
+    // Get event properties from page element
+    const eventSlug = pageEl.getAttribute('data-event-slug') || pageEl.getAttribute('data-slug') || '';
+    const eventTitle = tentTitle?.textContent || 'Live Event';
+    const eventVenueText = tentVenue?.textContent || '';
+    const origin = window.location.origin;
+    const liveGalleryUrl = `${origin}/live/${eventSlug}`;
+
+    openTentBtn?.addEventListener('click', () => {
+      if (tentQrImg) {
+        tentQrImg.crossOrigin = 'anonymous';
+        tentQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(liveGalleryUrl)}&margin=1`;
+      }
+      if (tentModal) tentModal.style.display = 'flex';
+    });
+
+    function closeTentCardModal() {
+      if (tentModal) tentModal.style.display = 'none';
+    }
+
+    closeTentBtn?.addEventListener('click', closeTentCardModal);
+    cancelTentBtn?.addEventListener('click', closeTentCardModal);
+
+    // 1. Clean Full-Page Print & PDF Generation (Zero headers, dates, URLs or extra margin)
+    doPrintBtn?.addEventListener('click', () => {
+      const previousTitle = document.title;
+      // Clear title completely so browser print headers NEVER contain event name, date or time!
+      document.title = '';
+
+      window.print();
+
+      const restore = () => {
+        document.title = previousTitle;
+      };
+      window.addEventListener('afterprint', restore, { once: true });
+      setTimeout(restore, 2000);
+    });
+
+    // 2. Direct QR Code Image (PNG) Download
+    downloadQrBtn?.addEventListener('click', async () => {
+      if (!tentQrImg || !tentQrImg.src) return;
+      try {
+        const res = await fetch(tentQrImg.src);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${eventSlug || 'event'}-qr-code.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        (window as any).showToast('QR Code image downloaded successfully! ✓', 'success');
+      } catch {
+        const a = document.createElement('a');
+        a.href = tentQrImg.src;
+        a.target = '_blank';
+        a.download = `${eventSlug || 'event'}-qr-code.png`;
+        a.click();
+      }
+    });
+
+    // 3. Complete High-Res Luxury Tent Card (PNG) Standalone Download
+    downloadFullCardBtn?.addEventListener('click', () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1200;
+        canvas.height = 1700;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // Background Gradient
+        const grad = ctx.createRadialGradient(600, 850, 60, 600, 850, 950);
+        grad.addColorStop(0, '#11141C');
+        grad.addColorStop(1, '#05060A');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 1200, 1700);
+
+        // Outer Gold Border
+        ctx.strokeStyle = '#D4AF37';
+        ctx.lineWidth = 10;
+        ctx.strokeRect(40, 40, 1120, 1620);
+
+        // Inner Dashed Border
+        ctx.strokeStyle = 'rgba(212, 175, 55, 0.45)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([10, 8]);
+        ctx.strokeRect(58, 58, 1084, 1584);
+        ctx.setLineDash([]);
+
+        // Corner Ornamental Brackets
+        const cSize = 40;
+        ctx.strokeStyle = '#D4AF37';
+        ctx.lineWidth = 4;
+        // TL
+        ctx.beginPath(); ctx.moveTo(68, 68 + cSize); ctx.lineTo(68, 68); ctx.lineTo(68 + cSize, 68); ctx.stroke();
+        // TR
+        ctx.beginPath(); ctx.moveTo(1132 - cSize, 68); ctx.lineTo(1132, 68); ctx.lineTo(1132, 68 + cSize); ctx.stroke();
+        // BL
+        ctx.beginPath(); ctx.moveTo(68, 1632 - cSize); ctx.lineTo(68, 1632); ctx.lineTo(68 + cSize, 1632); ctx.stroke();
+        // BR
+        ctx.beginPath(); ctx.moveTo(1132 - cSize, 1632); ctx.lineTo(1132, 1632); ctx.lineTo(1132, 1632 - cSize); ctx.stroke();
+
+        // Monogram Circle Badge
+        ctx.beginPath();
+        ctx.arc(600, 170, 36, 0, Math.PI * 2);
+        const goldFill = ctx.createLinearGradient(564, 134, 636, 206);
+        goldFill.addColorStop(0, '#F59E0B');
+        goldFill.addColorStop(1, '#D4AF37');
+        ctx.fillStyle = goldFill;
+        ctx.fill();
+
+        ctx.fillStyle = '#0B0C10';
+        ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('FBH', 600, 170);
+
+        // Studio Title & Sub
+        ctx.fillStyle = '#D4AF37';
+        ctx.font = 'bold 36px "Cinzel", "Playfair Display", Georgia, serif';
+        ctx.fillText('FRAMES BY HITHU', 600, 245);
+
+        ctx.fillStyle = '#94A3B8';
+        ctx.font = '600 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillText('FINE-ART PHOTOGRAPHY • KARNATAKA', 600, 280);
+
+        // Divider
+        ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(360, 320); ctx.lineTo(570, 320); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(630, 320); ctx.lineTo(840, 320); ctx.stroke();
+        ctx.fillStyle = '#D4AF37';
+        ctx.font = '18px sans-serif';
+        ctx.fillText('♦', 600, 320);
+
+        // Welcome Line
+        ctx.fillStyle = '#D4AF37';
+        ctx.font = '600 18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillText('WELCOME TO THE CELEBRATION OF', 600, 375);
+
+        // Event Title (Text wrapping)
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 44px "Playfair Display", Georgia, serif';
+        const words = eventTitle.split(' ');
+        let curLine = '';
+        const titleLines: string[] = [];
+        const maxTextWidth = 920;
+        for (let i = 0; i < words.length; i++) {
+          const test = curLine + words[i] + ' ';
+          if (ctx.measureText(test).width > maxTextWidth && i > 0) {
+            titleLines.push(curLine);
+            curLine = words[i] + ' ';
+          } else {
+            curLine = test;
+          }
+        }
+        titleLines.push(curLine);
+
+        let textY = 440;
+        titleLines.forEach(l => {
+          ctx.fillText(l.trim(), 600, textY);
+          textY += 54;
+        });
+
+        // Venue
+        ctx.fillStyle = '#C5A059';
+        ctx.font = '22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillText(eventVenueText || '📍 Palace Grounds, Bengaluru', 600, textY + 10);
+
+        // QR Code Box
+        const qrBoxY = textY + 50;
+        const qrSize = 460;
+        const qrX = (1200 - qrSize) / 2;
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        if (typeof (ctx as any).roundRect === 'function') {
+          (ctx as any).roundRect(qrX, qrBoxY, qrSize, qrSize, 20);
+        } else {
+          ctx.rect(qrX, qrBoxY, qrSize, qrSize);
+        }
+        ctx.fill();
+
+        // Draw QR Image
+        if (tentQrImg && tentQrImg.complete && tentQrImg.naturalWidth > 0) {
+          try {
+            ctx.drawImage(tentQrImg, qrX + 24, qrBoxY + 24, qrSize - 48, qrSize - 48);
+          } catch (e) {
+            console.warn('Canvas QR draw fallback', e);
+          }
+        }
+
+        // Instructions
+        const instY = qrBoxY + qrSize + 55;
+        ctx.fillStyle = '#D4AF37';
+        ctx.font = 'bold 28px "Playfair Display", Georgia, serif';
+        ctx.fillText('Scan with Your Smartphone Camera', 600, instY);
+
+        ctx.fillStyle = '#CBD5E1';
+        ctx.font = '20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        const detail = tentDetail?.textContent || 'Discover and download every sacred moment live.';
+        ctx.fillText(detail.slice(0, 80), 600, instY + 38);
+
+        // Footer
+        ctx.strokeStyle = 'rgba(212, 175, 55, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(350, 1540); ctx.lineTo(850, 1540); ctx.stroke();
+
+        ctx.fillStyle = '#D4AF37';
+        ctx.font = '18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillText('framesbyhithu.com   •   Live AI Ceremony Stream', 600, 1580);
+
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${eventSlug || 'event'}-luxury-tent-card.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          (window as any).showToast('Luxury Tent-Card image downloaded! ✓', 'success');
+        }, 'image/png');
+      } catch (err: any) {
+        (window as any).showToast('Download error: ' + (err.message || 'Failed to render card'), 'error');
+      }
+    });
+
+    // ==========================================
+    // ONE-CLICK COMPLETE EVENT & HANDOVER SUITE
+    // ==========================================
+    const completeModal = document.getElementById('complete-event-modal');
+    const openCompleteBtn = document.getElementById('open-complete-event-btn');
+    const closeCompleteBtn = document.getElementById('close-complete-event-btn');
+    const cancelCompleteBtn = document.getElementById('cancel-complete-event-btn');
+    const completeForm = document.getElementById('complete-event-form') as HTMLFormElement;
+    const stepForm = document.getElementById('complete-step-form');
+    const stepResult = document.getElementById('complete-step-result');
+    const resPin = document.getElementById('res-pin-display');
+    const resLinkInput = document.getElementById('res-link-input') as HTMLInputElement;
+    const resPortalLink = document.getElementById('res-portal-link') as HTMLAnchorElement;
+    const waPreview = document.getElementById('wa-message-preview');
+    const waSendBtn = document.getElementById('wa-direct-send-btn') as HTMLAnchorElement;
+    const copyPinBtn = document.getElementById('copy-pin-btn');
+    const copyLinkBtn = document.getElementById('copy-link-btn');
+    const copyWaBtn = document.getElementById('copy-wa-text-btn');
+    const doneBtn = document.getElementById('done-complete-modal-btn');
+
+    openCompleteBtn?.addEventListener('click', () => {
+      if (completeModal) completeModal.style.display = 'flex';
+    });
+
+    if (new URLSearchParams(window.location.search).get('complete') === '1') {
+      if (completeModal) completeModal.style.display = 'flex';
+    }
+
+    function closeCompleteModal() {
+      if (completeModal) completeModal.style.display = 'none';
+    }
+
+    closeCompleteBtn?.addEventListener('click', closeCompleteModal);
+    cancelCompleteBtn?.addEventListener('click', closeCompleteModal);
+    completeModal?.addEventListener('click', (e) => {
+      if (e.target === completeModal) closeCompleteModal();
+    });
+
+    completeForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('submit-complete-event-btn') as HTMLButtonElement;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing Handover (1 Atomic Write)...';
+      }
+
+      const formData = new FormData(completeForm);
+      const clientName = (formData.get('clientName') as string) || '';
+      const clientPhone = (formData.get('clientPhone') as string) || '';
+      const targetAlbumCount = parseInt(formData.get('targetAlbumCount') as string, 10) || undefined;
+      const pin = (formData.get('pin') as string) || undefined;
+
+      try {
+        const res = await fetch(`/api/live-events/${eventId}/complete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clientName,
+            clientPhone,
+            targetAlbumCount,
+            pin: pin || undefined,
+            token: token
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          if (stepForm) stepForm.style.display = 'none';
+          if (stepResult) stepResult.style.display = 'block';
+
+          if (resPin) resPin.textContent = data.pin;
+          if (resLinkInput) resLinkInput.value = data.fullProofingUrl;
+          if (resPortalLink) resPortalLink.href = data.fullProofingUrl;
+          if (data.googleReviewUrl) {
+            const resReviewInput = document.getElementById('res-review-input') as HTMLInputElement | null;
+            const resReviewLink = document.getElementById('res-review-link') as HTMLAnchorElement | null;
+            if (resReviewInput) resReviewInput.value = data.googleReviewUrl;
+            if (resReviewLink) resReviewLink.href = data.googleReviewUrl;
+          }
+          if (waPreview) waPreview.textContent = data.whatsappMessage;
+          if (waSendBtn) waSendBtn.href = data.whatsappUrl;
+
+          (window as any).showToast('Event moved to Client Portal! Handover card ready ✨', 'success');
+        } else {
+          (window as any).showToast(data.error || 'Failed to complete event', 'error');
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '🚀 Complete & Generate Handover Card';
+          }
+        }
+      } catch (err: any) {
+        (window as any).showToast('Network error: ' + (err.message || 'Complete failed'), 'error');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '🚀 Complete & Generate Handover Card';
+        }
+      }
+    });
+
+    copyPinBtn?.addEventListener('click', () => {
+      const pinVal = resPin?.textContent?.trim();
+      if (pinVal) {
+        navigator.clipboard.writeText(pinVal);
+        copyPinBtn.textContent = 'Copied ✓';
+        setTimeout(() => { copyPinBtn.textContent = '📋 Copy PIN'; }, 2000);
+        (window as any).showToast('6-Digit PIN copied to clipboard!', 'success');
+      }
+    });
+
+    copyLinkBtn?.addEventListener('click', () => {
+      const linkVal = resLinkInput?.value;
+      if (linkVal) {
+        navigator.clipboard.writeText(linkVal);
+        copyLinkBtn.textContent = 'Copied ✓';
+        setTimeout(() => { copyLinkBtn.textContent = '📋 Copy Link'; }, 2000);
+        (window as any).showToast('Private Proofing Link copied to clipboard!', 'success');
+      }
+    });
+
+    const copyReviewBtn = document.getElementById('copy-review-btn');
+    copyReviewBtn?.addEventListener('click', () => {
+      const revVal = (document.getElementById('res-review-input') as HTMLInputElement | null)?.value;
+      if (revVal) {
+        navigator.clipboard.writeText(revVal);
+        copyReviewBtn.textContent = 'Copied ✓';
+        setTimeout(() => { copyReviewBtn.textContent = '📋 Copy Review Link'; }, 2000);
+        (window as any).showToast('Google Review shortlink copied to clipboard!', 'success');
+      }
+    });
+
+    copyWaBtn?.addEventListener('click', () => {
+      const msgVal = waPreview?.textContent;
+      if (msgVal) {
+        navigator.clipboard.writeText(msgVal);
+        copyWaBtn.textContent = 'Copied ✓';
+        setTimeout(() => { copyWaBtn.textContent = '📋 Copy Message Text'; }, 2000);
+        (window as any).showToast('WhatsApp message text copied to clipboard!', 'success');
+      }
+    });
+
+    doneBtn?.addEventListener('click', () => {
+      window.location.reload();
+    });
+  }
+
+  initEventDashboard();
+  document.addEventListener('astro:page-load', initEventDashboard);
+</script>

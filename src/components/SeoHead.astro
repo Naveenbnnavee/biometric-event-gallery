@@ -1,0 +1,253 @@
+---
+import { getStudioSettingsAsync } from '../lib/db';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  canonicalUrl?: string;
+  schema?: Record<string, any> | Record<string, any>[];
+  type?: 'website' | 'article';
+}
+
+const {
+  title: initialTitle,
+  description: initialDescription,
+  image: initialImage,
+  canonicalUrl: initialCanonical,
+  schema,
+  type = 'website'
+} = Astro.props;
+
+const settings = await getStudioSettingsAsync();
+const studioName = settings.studioName || 'Frames By Hithu';
+const studioTagline = settings.tagline || 'Luxury Wedding & Fine-Art Photography Karnataka';
+const whatsappClean = (settings.whatsappConcierge || settings.primaryPhone || '917892706982').replace(/[^0-9]/g, '');
+
+const siteOrigin = Astro.site ? Astro.site.toString().replace(/\/$/, '') : 'https://framesbyhithu.pages.dev';
+
+// Format Title: Ensure studio identity is clear
+const title = initialTitle 
+  ? (initialTitle.includes(studioName) ? initialTitle : `${initialTitle} | ${studioName}`)
+  : `${studioName} | ${studioTagline}`;
+
+// Format Description: Preserve custom page meta description exactly, or provide luxury default
+const description = initialDescription || `${studioTagline} • Karnataka’s premier fine-art photography studio for Luxury Weddings, Sacred Gruhapravesham (Housewarming), Pre-Weddings, and Traditional Vedic Poojas across Bengaluru, Mysuru, Mangaluru & statewide.`;
+
+// Canonical URL calculation based strictly on Astro.site + Astro.url.pathname (stripping trailing slash for consistency)
+const pathname = Astro.url.pathname.replace(/\/$/, '') || '';
+const canonicalUrl = initialCanonical || (pathname === '' ? `${siteOrigin}/` : `${siteOrigin}${pathname}`);
+
+// Google Search Console verification support via ENV or DB settings (auto-extracts content if user pastes whole tag)
+const rawGoogleVerification = import.meta.env.GOOGLE_SITE_VERIFICATION || (typeof process !== 'undefined' ? process.env?.GOOGLE_SITE_VERIFICATION : '') || settings.googleSiteVerification || '';
+let googleVerification = (typeof rawGoogleVerification === 'string' ? rawGoogleVerification : '').trim();
+if (googleVerification.includes('content=')) {
+  const match = googleVerification.match(/content=["']([^"']+)["']/i);
+  if (match && match[1]) {
+    googleVerification = match[1];
+  }
+}
+googleVerification = googleVerification.replace(/^[<"']|[>"']$/g, '').trim();
+
+// Ensure Image is High-Resolution Absolute HTTPS (Critical for WhatsApp Crawler)
+const defaultLuxuryImage = 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Lalitha_Mahal_Palace_Hotel.jpg/1280px-Lalitha_Mahal_Palace_Hotel.jpg';
+let rawImage = initialImage || defaultLuxuryImage;
+
+let absoluteImageUrl = rawImage;
+if (rawImage.startsWith('//')) {
+  absoluteImageUrl = `https:${rawImage}`;
+} else if (rawImage.startsWith('/')) {
+  absoluteImageUrl = `${siteOrigin}${rawImage}`;
+} else if (!rawImage.startsWith('http://') && !rawImage.startsWith('https://')) {
+  absoluteImageUrl = `${siteOrigin}/${rawImage}`;
+}
+
+// Determine image MIME type
+const imageType = absoluteImageUrl.toLowerCase().endsWith('.png') 
+  ? 'image/png' 
+  : (absoluteImageUrl.toLowerCase().endsWith('.webp') ? 'image/webp' : 'image/jpeg');
+
+// High-Authority Geo-Targeted PhotographyBusiness Schema (Exact Step 3 Pattern)
+const defaultBusinessSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'PhotographyBusiness',
+  'name': 'Frames By Hithu',
+  'image': 'https://framesbyhithu.com/images/og-hero.jpg',
+  '@id': 'https://framesbyhithu.com',
+  'url': 'https://framesbyhithu.com',
+  'telephone': '+917892706982',
+  'priceRange': '₹₹₹₹',
+  'address': {
+    '@type': 'PostalAddress',
+    'addressLocality': 'Bengaluru',
+    'addressRegion': 'Karnataka',
+    'addressCountry': 'IN'
+  },
+  'geo': {
+    '@type': 'GeoCoordinates',
+    'latitude': 13.0068,
+    'longitude': 77.5813
+  },
+  'areaServed': [
+    { '@type': 'City', 'name': 'Bengaluru' },
+    { '@type': 'City', 'name': 'Mysuru' },
+    { '@type': 'City', 'name': 'Mangaluru' },
+    { '@type': 'City', 'name': 'Udupi' },
+    { '@type': 'City', 'name': 'Hubballi' }
+  ],
+  'openingHours': 'Mo-Su 09:00-21:00',
+  'openingHoursSpecification': {
+    '@type': 'OpeningHoursSpecification',
+    'dayOfWeek': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+    'opens': '09:00',
+    'closes': '21:00'
+  },
+  'sameAs': [
+    settings.instagramUrl || 'https://www.instagram.com/framesbyhithu',
+    `https://wa.me/${whatsappClean}`
+  ].filter(Boolean)
+};
+
+// BreadcrumbList Schema for hierarchical navigation
+const pathSegments = pathname.split('/').filter(Boolean);
+let breadcrumbSchema: Record<string, any> | null = null;
+
+if (pathSegments.length > 0) {
+  const itemListElement = [
+    {
+      '@type': 'ListItem',
+      'position': 1,
+      'name': 'Home',
+      'item': `${siteOrigin}/`
+    }
+  ];
+
+  let accumulatedPath = '';
+  pathSegments.forEach((segment, idx) => {
+    accumulatedPath += `/${segment}`;
+    const formattedName = segment
+      .split('-')
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+
+    itemListElement.push({
+      '@type': 'ListItem',
+      'position': idx + 2,
+      'name': formattedName,
+      'item': `${siteOrigin}${accumulatedPath}`
+    });
+  });
+
+  breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    'itemListElement': itemListElement
+  };
+}
+
+// FAQPage Schema for rich Google search snippet answers
+const defaultFaqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  'mainEntity': [
+    {
+      '@type': 'Question',
+      'name': 'How far in advance should we reserve our Karnataka wedding or Muhurtham dates?',
+      'acceptedAnswer': {
+        '@type': 'Answer',
+        'text': 'We recommend reserving your dates 4 to 8 months in advance, especially for auspicious wedding dates across Karnataka.'
+      }
+    },
+    {
+      '@type': 'Question',
+      'name': 'What is the delivery timeline for edited fine-art photographs and cinematic films?',
+      'acceptedAnswer': {
+        '@type': 'Answer',
+        'text': 'Curated preview highlights are shared within 48 to 72 hours. Complete heirloom galleries and 4K films are delivered in 3 to 4 weeks via the private Client Portal.'
+      }
+    },
+    {
+      '@type': 'Question',
+      'name': 'Do you maintain backup camera equipment and data redundancy for live ceremonies?',
+      'acceptedAnswer': {
+        '@type': 'Answer',
+        'text': 'Yes. Every lead photographer operates dual professional bodies with dual memory card recording, followed by instant triple-redundant NVMe on-site backups.'
+      }
+    },
+    {
+      '@type': 'Question',
+      'name': 'How are heirloom wedding albums crafted and approved?',
+      'acceptedAnswer': {
+        '@type': 'Answer',
+        'text': 'Clients review and select their favourite frames directly inside our private Client Portal, with bespoke archival leather and silk binding options.'
+      }
+    }
+  ]
+};
+
+const finalSchemas: Record<string, any>[] = [defaultBusinessSchema];
+
+if (breadcrumbSchema) {
+  finalSchemas.push(breadcrumbSchema);
+}
+
+// Include FAQ schema on home, contact, and faq pages
+if (pathname === '' || pathname === '/contact') {
+  finalSchemas.push(defaultFaqSchema);
+}
+
+if (schema) {
+  if (Array.isArray(schema)) {
+    finalSchemas.push(...schema);
+  } else {
+    finalSchemas.push(schema);
+  }
+}
+---
+
+<!-- Essential Meta -->
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>{title}</title>
+<meta name="description" content={description} />
+<meta name="author" content={studioName} />
+<link rel="canonical" href={canonicalUrl} />
+
+<!-- Google Search Console Verification -->
+{googleVerification && <meta name="google-site-verification" content={googleVerification} />}
+
+<!-- WhatsApp & Facebook OpenGraph Protocol -->
+<meta property="og:site_name" content={studioName} />
+<meta property="og:type" content={type} />
+<meta property="og:url" content={canonicalUrl} />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={absoluteImageUrl} />
+<meta property="og:image:secure_url" content={absoluteImageUrl} />
+<meta property="og:image:type" content={imageType} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content={`${title} - ${studioTagline}`} />
+<meta property="og:locale" content="en_IN" />
+
+<!-- Legacy & Fallback Crawler Image Hint (WhatsApp Scraper Compatibility) -->
+<link rel="image_src" href={absoluteImageUrl} />
+
+<!-- Twitter / X Card Metadata -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content={settings.instagramHandle || "@framesbyhithu"} />
+<meta name="twitter:creator" content={settings.instagramHandle || "@framesbyhithu"} />
+<meta name="twitter:url" content={canonicalUrl} />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={absoluteImageUrl} />
+<meta name="twitter:image:alt" content={`${title} - ${studioTagline}`} />
+
+<!-- Favicon & Touch Icons -->
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="apple-touch-icon" href="/favicon.svg" />
+
+<!-- JSON-LD Structured Data -->
+{finalSchemas.map((s) => (
+  <script type="application/ld+json" set:html={JSON.stringify(s)} />
+))}

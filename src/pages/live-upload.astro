@@ -1,0 +1,599 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getLiveEventsAsync } from '../lib/db';
+import { getCloudflareEnv } from '../lib/cloudflare';
+
+export const prerender = false;
+
+const env = await getCloudflareEnv();
+const token = (Astro.url.searchParams.get('token') || '').trim();
+
+const allEvents = await getLiveEventsAsync(env);
+const event = allEvents.find(e => e.ingestionToken === token && token.length > 0);
+---
+
+<Layout
+  title={event ? `Live Ingest: ${event.title} | Frames By Hithu` : "Photographer Live Ingest | Frames By Hithu"}
+  description="Ultra-fast wireless camera and mobile ingestion portal for Frames By Hithu live events."
+>
+  <div class="ingest-page-wrapper">
+    <div class="ingest-container">
+      {!event ? (
+        <div class="ingest-card error-card glass-card text-center">
+          <div class="error-badge">🔒</div>
+          <h1 class="ingest-title">Authentication Required</h1>
+          <p class="error-desc">
+            No active live event matched this wireless token. Please ensure you clicked the exact upload link provided in your live event console.
+          </p>
+          <div class="token-helper-box">
+            <label class="token-label">Enter Token Manually:</label>
+            <form method="GET" action="/live-upload" class="token-form">
+              <input
+                type="text"
+                name="token"
+                placeholder="e.g. live_xyz..."
+                class="token-input"
+                required
+              />
+              <button type="submit" class="btn-gold">Connect</button>
+            </form>
+          </div>
+          <a href="/admin/live-events" class="back-link">← Return to Admin Console</a>
+        </div>
+      ) : (
+        <div class="ingest-card glass-card">
+          <!-- Top Header -->
+          <div class="ingest-header">
+            <div class="header-badge-row">
+              <span class="gold-pill">WIRELESS CAMERA INGEST</span>
+              <span class="live-pulse-badge">
+                <span class="pulse-dot"></span>
+                <span>READY TO BEAM</span>
+              </span>
+            </div>
+
+            <h1 class="event-headline">{event.title}</h1>
+            <p class="event-subline">📍 {event.venue} • {event.date}</p>
+
+            <div class="stats-pills-row">
+              <div class="stat-chip">
+                <span class="stat-label">Stream Mode:</span>
+                <span class="stat-val">{event.accessMode === 'face_only' ? '🔒 Face Only (Strict)' : (event.accessMode === 'open_gallery' ? '🌐 Whole Event' : '✨ Face + Whole Event')}</span>
+              </div>
+              <div class="stat-chip">
+                <span class="stat-label">Live Photos:</span>
+                <span class="stat-val" id="live-photos-counter">{event.photos.length}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Upload Dropzone -->
+          <div class="upload-stage" id="upload-stage">
+            <input
+              type="file"
+              id="file-input"
+              accept="image/*"
+              multiple
+              class="hidden-file-input"
+            />
+
+            <div class="dropzone-box" id="dropzone-box">
+              <div class="dropzone-icon">⚡</div>
+              <h2 class="dropzone-title">Tap to Beam Photos Live</h2>
+              <p class="dropzone-desc">
+                Select camera-synced starred frames from your mobile camera roll (Sony Creators’ App, Canon Connect, Nikon SnapBridge).
+              </p>
+              <button type="button" class="btn-gold select-btn" id="trigger-select-btn">
+                <span>📸 Pick / Shoot Photos</span>
+              </button>
+              <span class="dropzone-tip">Supports high-res JPEGs & HEIC • Instant Live Relay</span>
+            </div>
+
+            <!-- Upload Progress Status -->
+            <div class="upload-progress-container" id="upload-progress-container" style="display: none;">
+              <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" id="progress-bar-fill"></div>
+              </div>
+              <div class="progress-text-row">
+                <span id="progress-status-text">Uploading frames to live feed...</span>
+                <span id="progress-percent-text">0%</span>
+              </div>
+            </div>
+
+            <!-- Recent Ingested Photos Grid -->
+            <div class="recent-uploads-box">
+              <div class="recent-header">
+                <h3>Recently Ingested in this Session</h3>
+                <span class="recent-count" id="session-count">0 uploaded</span>
+              </div>
+              <div class="recent-grid" id="recent-grid">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Navigation Links -->
+          <div class="ingest-footer-links">
+            <a href={`/live/${event.slug}`} target="_blank" rel="noopener noreferrer" class="footer-btn">
+              <span>📱 View Guest Live Gallery</span>
+              <span>↗</span>
+            </a>
+            <a href={`/live/${event.slug}/screen`} target="_blank" rel="noopener noreferrer" class="footer-btn">
+              <span>📺 Open Big-Screen Projector</span>
+              <span>↗</span>
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .ingest-page-wrapper {
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem 1rem;
+    background: radial-gradient(circle at top, #141721 0%, #05060A 100%);
+    display: flex;
+    justify-content: center;
+  }
+
+  .ingest-container {
+    width: 100%;
+    max-width: 640px;
+  }
+
+  .ingest-card {
+    padding: 2rem 1.75rem;
+    border-radius: 16px;
+    background: rgba(14, 16, 22, 0.85);
+    border: 1px solid var(--gold-border);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(212, 175, 55, 0.08);
+  }
+
+  .text-center {
+    text-align: center;
+  }
+
+  /* Header */
+  .ingest-header {
+    margin-bottom: 1.75rem;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 1.25rem;
+  }
+
+  .header-badge-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+
+  .live-pulse-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.725rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #10B981;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    padding: 3px 10px;
+    border-radius: 9999px;
+  }
+
+  .pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10B981;
+    box-shadow: 0 0 8px #10B981;
+    animation: pulse 1.8s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+  }
+
+  .event-headline {
+    font-family: var(--font-serif);
+    font-size: 1.6rem;
+    color: var(--text-primary);
+    margin: 0.25rem 0 0.25rem 0;
+  }
+
+  .event-subline {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: 0 0 1rem 0;
+  }
+
+  .stats-pills-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .stat-chip {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    display: inline-flex;
+    gap: 0.4rem;
+  }
+
+  .stat-label {
+    color: var(--text-muted);
+  }
+
+  .stat-val {
+    color: var(--gold-light);
+    font-weight: 600;
+  }
+
+  /* Dropzone Stage */
+  .hidden-file-input {
+    display: none;
+  }
+
+  .dropzone-box {
+    border: 2px dashed rgba(212, 175, 55, 0.4);
+    background: rgba(212, 175, 55, 0.03);
+    border-radius: 12px;
+    padding: 2.25rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    user-select: none;
+  }
+
+  .dropzone-box:hover,
+  .dropzone-box.drag-over {
+    border-color: var(--gold-primary);
+    background: rgba(212, 175, 55, 0.08);
+    transform: scale(1.01);
+  }
+
+  .dropzone-icon {
+    font-size: 2.75rem;
+    margin-bottom: 0.5rem;
+    color: var(--gold-primary);
+    filter: drop-shadow(0 0 12px rgba(212, 175, 55, 0.5));
+  }
+
+  .dropzone-title {
+    font-family: var(--font-serif);
+    font-size: 1.35rem;
+    color: var(--text-primary);
+    margin-bottom: 0.35rem;
+  }
+
+  .dropzone-desc {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    max-width: 440px;
+    margin: 0 auto 1.25rem auto;
+    line-height: 1.5;
+  }
+
+  .select-btn {
+    padding: 0.75rem 1.75rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+  }
+
+  .dropzone-tip {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    opacity: 0.8;
+  }
+
+  /* Progress */
+  .upload-progress-container {
+    margin-top: 1.25rem;
+    padding: 1rem;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .progress-bar-wrap {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--gold-gradient);
+    transition: width 0.2s ease;
+  }
+
+  .progress-text-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  /* Recent Grid */
+  .recent-uploads-box {
+    margin-top: 2rem;
+  }
+
+  .recent-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+
+  .recent-header h3 {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .recent-count {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .recent-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.6rem;
+  }
+
+  @media (max-width: 480px) {
+    .recent-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  :global(.recent-thumb-card) {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #000;
+    border: 1px solid var(--border-subtle);
+  }
+
+  :global(.recent-thumb-img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  :global(.live-beamed-badge) {
+    position: absolute;
+    bottom: 3px;
+    right: 3px;
+    background: rgba(16, 185, 129, 0.9);
+    color: #fff;
+    font-size: 0.55rem;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+
+  /* Footer Links */
+  .ingest-footer-links {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .footer-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: var(--transition-smooth);
+  }
+
+  .footer-btn:hover {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: var(--gold-primary);
+    color: var(--gold-light);
+  }
+
+  /* Error Card */
+  .error-card {
+    padding: 3rem 2rem;
+  }
+
+  .error-badge {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .ingest-title {
+    font-family: var(--font-serif);
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+  }
+
+  .error-desc {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+  }
+
+  .token-helper-box {
+    max-width: 380px;
+    margin: 0 auto 2rem auto;
+  }
+
+  .token-label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .token-form {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .token-input {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 0.6rem 0.85rem;
+    color: #fff;
+    font-size: 0.9rem;
+  }
+
+  .back-link {
+    color: var(--gold-primary);
+    font-size: 0.85rem;
+    text-decoration: none;
+  }
+</style>
+
+<script define:vars={{ token }}>
+  function initMobileIngest() {
+    const fileInput = document.getElementById('file-input');
+    const dropzone = document.getElementById('dropzone-box');
+    const triggerBtn = document.getElementById('trigger-select-btn');
+    const progressBox = document.getElementById('upload-progress-container');
+    const progressFill = document.getElementById('progress-bar-fill');
+    const statusText = document.getElementById('progress-status-text');
+    const percentText = document.getElementById('progress-percent-text');
+    const recentGrid = document.getElementById('recent-grid');
+    const sessionCount = document.getElementById('session-count');
+    const liveCounter = document.getElementById('live-photos-counter');
+
+    if (!fileInput || !dropzone || !token) return;
+
+    let sessionUploaded = 0;
+
+    triggerBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      fileInput.click();
+    });
+
+    dropzone.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('drag-over');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('drag-over');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('drag-over');
+      if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+        handleFiles(Array.from(e.dataTransfer.files));
+      }
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files && fileInput.files.length > 0) {
+        handleFiles(Array.from(fileInput.files));
+      }
+    });
+
+    async function handleFiles(files) {
+      if (!files.length) return;
+
+      if (progressBox) progressBox.style.display = 'block';
+      let uploadedCount = 0;
+      const total = files.length;
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (!file.type.startsWith('image/')) continue;
+
+        const currentPct = Math.round(((i) / total) * 100);
+        if (progressFill) progressFill.style.width = `${currentPct}%`;
+        if (percentText) percentText.textContent = `${currentPct}%`;
+        if (statusText) statusText.textContent = `Beaming frame ${i + 1} of ${total} live...`;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+          const res = await fetch(`/api/live-events/ingest?token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            body: formData
+          });
+
+          const data = await res.json();
+          if (res.ok && data.success && data.photos && data.photos[0]) {
+            uploadedCount++;
+            sessionUploaded++;
+            addRecentThumbnail(data.photos[0].url);
+
+            if (sessionCount) sessionCount.textContent = `${sessionUploaded} beamed live`;
+            if (liveCounter) {
+              const current = parseInt(liveCounter.textContent || '0', 10);
+              liveCounter.textContent = (current + 1).toString();
+            }
+
+            // Haptic feedback vibration on mobile devices if supported
+            if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+              navigator.vibrate([40]);
+            }
+          }
+        } catch (err) {
+          console.error('Ingest error:', err);
+        }
+      }
+
+      if (progressFill) progressFill.style.width = '100%';
+      if (percentText) percentText.textContent = '100%';
+      if (statusText) statusText.textContent = `Successfully beamed ${uploadedCount} photo(s) live! 🚀`;
+
+      setTimeout(() => {
+        if (progressBox) progressBox.style.display = 'none';
+        if (progressFill) progressFill.style.width = '0%';
+      }, 3500);
+
+      fileInput.value = '';
+    }
+
+    function addRecentThumbnail(url) {
+      if (!recentGrid) return;
+      const card = document.createElement('div');
+      card.className = 'recent-thumb-card';
+      card.innerHTML = `
+        <img src="${url}" class="recent-thumb-img" alt="Live Photo" loading="lazy" />
+        <span class="live-beamed-badge">LIVE ✓</span>
+      `;
+      recentGrid.prepend(card);
+    }
+  }
+
+  initMobileIngest();
+  document.addEventListener('astro:page-load', initMobileIngest);
+</script>

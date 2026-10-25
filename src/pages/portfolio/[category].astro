@@ -1,0 +1,159 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PortfolioGrid from '../../components/PortfolioGrid.astro';
+
+export function getStaticPaths() {
+  const categories = [
+    {
+      category: 'weddings',
+      title: 'Weddings & Muhurtham Photography | Frames By Hithu',
+      heading: 'Weddings & Muhurtham Archive',
+      description: 'Sacred agni rituals, Kanyadaana, Sapthapadi, and regal reception celebrations captured with Vedic reverence across Karnataka.'
+    },
+    {
+      category: 'pre-wedding',
+      title: 'Cinematic Pre-Wedding Stories | Frames By Hithu',
+      heading: 'Pre-Wedding & Couple Essays',
+      description: 'Intimate editorial portraiture set against ancient Hoysala ruins, Melukote stepwells, and misty Western Ghats coffee estates.'
+    },
+    {
+      category: 'housewarming',
+      title: 'Gruhapravesham (Housewarming) Photography | Frames By Hithu',
+      heading: 'Gruhapravesham & Sacred Sanctuaries',
+      description: 'Documenting the consecration of architectural dream homes: Gau Pooja, Halu Ubbisuvudu (milk boiling), and Navagraha Homas.'
+    },
+    {
+      category: 'poojas-rituals',
+      title: 'Traditional Poojas & Vedic Rites | Frames By Hithu',
+      heading: 'Traditional Poojas & Sacred Rites',
+      description: 'Upanayana (sacred thread ceremonies), Satyanarayana Poojas, and family Sanatana rituals preserved for future generations.'
+    },
+    {
+      category: 'milestones',
+      title: 'Family Milestones & Seemantha | Frames By Hithu',
+      heading: 'Family Milestones & Celebrations',
+      description: 'Maternal Seemantha, Namakarana, and generational milestone portraits steeped in warmth and authentic joy.'
+    }
+  ];
+
+  return categories.map((cat) => ({
+    params: { category: cat.category },
+    props: { catInfo: cat }
+  }));
+}
+
+import { getStudioSettings } from '../../lib/db';
+
+const { category } = Astro.params;
+const { catInfo } = Astro.props;
+const settings = getStudioSettings();
+const whatsappClean = (settings.whatsappConcierge || '917892706982').replace(/[^0-9]/g, '');
+const whatsappUrl = `https://wa.me/${whatsappClean}?text=${encodeURIComponent('Hello Frames By Hithu, I would like to inquire about coverage for our ceremony.')}`;
+---
+
+<Layout
+  title={catInfo.title}
+  description={catInfo.description}
+>
+  <div class="page-header section-py text-center">
+    <div class="container">
+      <div class="gold-pill">CATEGORIZED ARCHIVE</div>
+      <h1 class="page-title">{catInfo.heading}</h1>
+      <div class="gold-divider"></div>
+      <p class="page-subtitle">{catInfo.description}</p>
+    </div>
+  </div>
+
+  <section class="portfolio-container-section">
+    <div class="container">
+      <div class="category-back-bar">
+        <a href="/portfolio" class="back-link">← Back to All Portfolios</a>
+      </div>
+      <PortfolioGrid initialCategory={category} showFilters={true} />
+    </div>
+  </section>
+
+  <!-- CTA Banner -->
+  <section class="section-py text-center">
+    <div class="container">
+      <div class="glass-card cta-banner">
+        <h3>Inquire About {catInfo.heading}</h3>
+        <p>Connect directly with lead photographer Hithu to check dates and discuss custom coverage.</p>
+        <div class="cta-actions">
+          <a href={`/contact#inquiry-form?service=${catInfo.id}`} class="btn-gold">Request Custom Quote</a>
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
+            Chat on WhatsApp
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .text-center {
+    text-align: center;
+  }
+
+  .page-header {
+    background: radial-gradient(ellipse at top, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
+    padding-bottom: 2rem;
+  }
+
+  .page-title {
+    font-size: clamp(2.2rem, 5vw, 3.8rem);
+    margin-top: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .page-subtitle {
+    max-width: 680px;
+    margin: 0 auto;
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  .category-back-bar {
+    margin-bottom: 2rem;
+  }
+
+  .back-link {
+    font-size: 0.85rem;
+    color: var(--gold-primary);
+    font-weight: 500;
+  }
+
+  .back-link:hover {
+    text-decoration: underline;
+  }
+
+  .portfolio-container-section {
+    padding-bottom: 4rem;
+  }
+
+  .cta-banner {
+    padding: 3rem 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+    border: 1px solid var(--gold-border);
+  }
+
+  .cta-banner h3 {
+    font-size: 2rem;
+    color: var(--gold-light);
+    margin-bottom: 0.75rem;
+  }
+
+  .cta-banner p {
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+  }
+
+  .cta-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+</style>

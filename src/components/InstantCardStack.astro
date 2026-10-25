@@ -1,0 +1,1003 @@
+---
+import { getInstantDeckPhotosAsync, getCategoriesAsync, getStudioSettingsAsync } from '../lib/db';
+
+const dbInstantPhotos = await getInstantDeckPhotosAsync();
+const dbCategories = await getCategoriesAsync();
+const settings = await getStudioSettingsAsync();
+const whatsappClean = (settings.whatsappConcierge || '917892706982').replace(/[^0-9]/g, '');
+const initialWaText = `✨ *Frames By Hithu — Instant Deck Inquiry*\n\nHello Frames By Hithu! I love your curated ceremony instants. Could you please confirm date availability and package options for our celebration?`;
+const initialWaUrl = `https://wa.me/${whatsappClean}?text=${encodeURIComponent(initialWaText)}`;
+
+// Dynamically construct ceremony decks directly from the database
+const instantDecks = dbCategories.map(cat => {
+  const matchingDbPhotos = dbInstantPhotos.filter(p => p.category === cat.id);
+  
+  const cards = matchingDbPhotos.map((p, idx) => ({
+    id: p.id,
+    title: p.title,
+    caption: p.subline || p.headline || p.title,
+    location: p.location || 'Karnataka, India',
+    venue: p.venue || 'Heritage Venue',
+    image: p.image,
+    badge: p.deckBadge || (idx === 0 ? 'Muhurtham Finery' : 'Fine-Art Moment')
+  }));
+
+  return {
+    id: cat.id,
+    label: cat.label,
+    kannadaLabel: cat.kannadaLabel,
+    emoji: cat.emoji,
+    cards
+  };
+}).filter(deck => deck.cards.length > 0);
+---
+
+<div class="instant-experience-wrapper" id="instant-experience">
+  <!-- Category Selector Deck Switcher -->
+  <div class="deck-category-nav">
+    <div class="category-tabs-row" id="deck-category-tabs">
+      {instantDecks.map((deck, idx) => (
+        <button
+          class:list={['category-pill-btn', { active: idx === 0 }]}
+          data-category-id={deck.id}
+          aria-label={`Switch to ${deck.label} deck`}
+        >
+          <span class="pill-emoji">{deck.emoji}</span>
+          <span class="pill-label">{deck.label}</span>
+          <span class="pill-kannada">{deck.kannadaLabel}</span>
+        </button>
+      ))}
+    </div>
+  </div>
+
+  <!-- The Tactile Instant Stack Container -->
+  <div class="instant-stage-container">
+    <div class="deck-guide-hint">
+      <span class="pulse-spark">✨</span>
+      <span>Click or tap the photo — watch it glide to the back of the deck</span>
+    </div>
+
+    <!-- Active Deck Frame -->
+    <div class="card-stack-viewport" id="card-stack-viewport">
+      <!-- Cards rendered per deck -->
+      {instantDecks.map((deck, deckIdx) => (
+        <div
+          class:list={['deck-group', { active: deckIdx === 0 }]}
+          id={`deck-${deck.id}`}
+          data-deck-id={deck.id}
+        >
+          {deck.cards.map((card, cardIdx) => (
+            <div
+              class="instant-card"
+              data-card-index={cardIdx}
+              data-total-cards={deck.cards.length}
+              data-card-title={card.title}
+              data-card-venue={card.venue}
+              data-card-location={card.location}
+              style={`--initial-index: ${cardIdx};`}
+            >
+              <div class="card-media-box protected-media">
+                <img
+                  src={card.image}
+                  alt={card.title}
+                  loading={cardIdx === 0 ? 'eager' : 'lazy'}
+                  class="instant-photo"
+                  onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Bangalore_Palace.jpg/1280px-Bangalore_Palace.jpg'"
+                />
+                <div class="card-glass-rim"></div>
+                <div class="protected-overlay"></div>
+                <div class="watermark-subtle">FRAMES BY HITHU</div>
+
+                <!-- Floating Badge in card -->
+                <div class="card-moment-badge">
+                  <span class="badge-text">{card.badge}</span>
+                </div>
+
+                <!-- Flip indicator on active card -->
+                <div class="tap-hint-pill">
+                  <span>Tap to send to back ↻</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+
+    <!-- Meta Instant Metadata & Profile Info -->
+    <div class="instant-meta-container">
+      <div class="instant-author-row">
+        <div class="instant-avatar-ring">
+          <span class="instant-avatar-inner">FH</span>
+        </div>
+        <div class="instant-author-text">
+          <div class="author-title-line">
+            <strong class="handle-name">framesbyhithu</strong>
+            <span class="gold-check">✓</span>
+            <span class="instant-card-counter" id="active-card-counter">Frame 1 of 4</span>
+          </div>
+          <span class="instant-venue-geotag" id="active-card-venue">
+            📍 Lalitha Mahal Palace Heritage Lawn, Mysuru
+          </span>
+        </div>
+      </div>
+
+      <!-- Active Photo Headline & Caption -->
+      <div class="instant-caption-card">
+        <h3 class="active-photo-title" id="active-card-title">Golden Hour Kanjeevaram Elegance</h3>
+        <p class="active-photo-caption" id="active-card-caption">Pure Mysore silk zari shimmering under natural morning temple light.</p>
+      </div>
+
+      <!-- Dynamic WhatsApp & Website Form Consultation Pills -->
+      <div class="instant-cta-row">
+        <a
+          id="instant-whatsapp-link"
+          data-whatsapp={whatsappClean}
+          href={initialWaUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="instant-wa-pill"
+        >
+          <svg class="wa-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/>
+          </svg>
+          <span class="pill-text" id="wa-pill-text">Inquire about this frame on WhatsApp</span>
+          <span class="pill-arrow">→</span>
+        </a>
+
+        <a
+          id="instant-form-link"
+          href="#inquire"
+          class="instant-form-pill"
+          title="Check date availability and request quote on booking form"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <span class="pill-text" id="form-pill-text">Check Date Availability on Form</span>
+          <span class="pill-arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .instant-experience-wrapper {
+    width: 100%;
+    max-width: 1060px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Category Switcher Tabs */
+  .deck-category-nav {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2.25rem;
+    padding: 0 1rem;
+    box-sizing: border-box;
+  }
+
+  .category-tabs-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(20, 22, 29, 0.75);
+    padding: 6px 10px;
+    border-radius: 9999px;
+    border: 1px solid var(--border-subtle);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+    max-width: 100%;
+  }
+
+  .category-pill-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 0.825rem;
+    font-weight: 500;
+    padding: 0.5rem 0.95rem;
+    border-radius: 9999px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: var(--transition-smooth);
+    user-select: none;
+  }
+
+  .pill-emoji {
+    font-size: 0.95rem;
+  }
+
+  .pill-kannada {
+    font-size: 0.7rem;
+    color: var(--gold-primary);
+    opacity: 0.85;
+    margin-left: 2px;
+  }
+
+  .category-pill-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .category-pill-btn.active {
+    background: var(--gold-gradient);
+    color: #0B0C10;
+    font-weight: 600;
+    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.35);
+  }
+
+  .category-pill-btn.active .pill-kannada {
+    color: #3b2f0a;
+  }
+
+  /* Responsive sub-nav for tablets and mobile */
+  @media (max-width: 820px) {
+    .deck-category-nav {
+      justify-content: flex-start;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; /* Hide scrollbar Firefox */
+      -ms-overflow-style: none; /* IE/Edge */
+      padding: 0 1rem 8px 1rem;
+    }
+
+    .deck-category-nav::-webkit-scrollbar {
+      display: none; /* Hide scrollbar Chrome/Safari */
+    }
+
+    .category-tabs-row {
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+      border-radius: 9999px;
+    }
+
+    .category-pill-btn {
+      padding: 0.45rem 0.85rem;
+      font-size: 0.775rem;
+    }
+  }
+
+  /* Stage & Hint */
+  .instant-stage-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .deck-guide-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--gold-light);
+    background: rgba(212, 175, 55, 0.08);
+    border: 1px dashed var(--gold-border);
+    padding: 6px 16px;
+    border-radius: 9999px;
+    margin-bottom: 2.25rem;
+  }
+
+  .pulse-spark {
+    animation: sparkPulse 1.5s infinite;
+  }
+
+  @keyframes sparkPulse {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.3); opacity: 1; }
+  }
+
+  /* 3D Perspective Viewport for Stack */
+  .card-stack-viewport {
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    height: 480px;
+    perspective: 1200px;
+    margin-bottom: 2rem;
+  }
+
+  @media (min-width: 640px) {
+    .card-stack-viewport {
+      height: 520px;
+    }
+  }
+
+  .deck-group {
+    position: absolute;
+    inset: 0;
+    display: none;
+    transform-style: preserve-3d;
+  }
+
+  .deck-group.active {
+    display: block;
+  }
+
+  /* Individual Cards with Tactile Stacking Physics */
+  .instant-card {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 24px;
+    overflow: hidden;
+    user-select: none;
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.45s ease;
+    will-change: transform, opacity;
+  }
+
+  /* Layering formulas based on position in stack (0 = Top, 1 = Next, 2 = Next) */
+  .instant-card.pos-0 {
+    z-index: 10;
+    transform: translateY(0) scale(1) rotate(0deg);
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.8), var(--gold-glow-subtle);
+    cursor: pointer;
+    filter: brightness(1);
+    opacity: 1;
+  }
+
+  .instant-card.pos-1 {
+    z-index: 8;
+    transform: translateY(18px) scale(0.95) rotate(3.2deg);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
+    filter: brightness(0.88);
+    opacity: 0.95;
+    pointer-events: none;
+  }
+
+  .instant-card.pos-2 {
+    z-index: 6;
+    transform: translateY(34px) scale(0.90) rotate(-3.5deg);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65);
+    filter: brightness(0.76);
+    opacity: 0.88;
+    pointer-events: none;
+  }
+
+  .instant-card.pos-3 {
+    z-index: 4;
+    transform: translateY(48px) scale(0.85) rotate(2deg);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    filter: brightness(0.65);
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  .instant-card.pos-hidden {
+    z-index: 1;
+    transform: translateY(60px) scale(0.8) rotate(0deg);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Animation: Lift & Glide to the Back */
+  .instant-card.flipping-to-back {
+    animation: sendToBack 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  }
+
+  @keyframes sendToBack {
+    0% {
+      transform: translateY(0) scale(1) rotate(0deg);
+      z-index: 12;
+      box-shadow: 0 30px 60px rgba(212, 175, 55, 0.4);
+    }
+    45% {
+      transform: translateY(-95px) translateX(25px) scale(1.05) rotate(11deg);
+      z-index: 12;
+      opacity: 0.96;
+    }
+    50% {
+      z-index: 2; /* Drops behind stack at apex of flight */
+    }
+    100% {
+      transform: translateY(34px) scale(0.90) rotate(-3.5deg);
+      z-index: 2;
+      filter: brightness(0.76);
+      opacity: 0.88;
+    }
+  }
+
+  /* Card Inner Box */
+  .card-media-box {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    border-radius: 24px;
+    overflow: hidden;
+    border: 2px solid rgba(212, 175, 55, 0.35);
+  }
+
+  .instant-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  .card-glass-rim {
+    position: absolute;
+    inset: 0;
+    border-radius: 22px;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+  }
+
+  .card-moment-badge {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: rgba(11, 12, 16, 0.8);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--gold-border);
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 0.725rem;
+    font-weight: 600;
+    color: var(--gold-light);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    z-index: 5;
+  }
+
+  .tap-hint-pill {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    color: #FFFFFF;
+    font-weight: 500;
+    z-index: 5;
+    opacity: 0.85;
+    transition: opacity 0.2s ease;
+  }
+
+  .instant-card.pos-0:hover .tap-hint-pill {
+    opacity: 1;
+    border-color: var(--gold-primary);
+    color: var(--gold-light);
+  }
+
+  /* Author Row & Metadata */
+  .instant-meta-container {
+    width: 100%;
+    max-width: 440px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .instant-author-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1rem;
+    padding: 0 4px;
+  }
+
+  .instant-avatar-ring {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #D4AF37, #F3E5AB, #9B781E);
+    padding: 2px;
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.35);
+    flex-shrink: 0;
+  }
+
+  .instant-avatar-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #0B0C10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gold-light);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .instant-author-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .author-title-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .handle-name {
+    font-size: 0.925rem;
+    color: #FFFFFF;
+  }
+
+  .gold-check {
+    color: var(--gold-primary);
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+
+  .instant-card-counter {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.08);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .instant-venue-geotag {
+    font-size: 0.775rem;
+    color: var(--gold-light);
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Caption Card */
+  .instant-caption-card {
+    width: 100%;
+    background: rgba(20, 22, 29, 0.6);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    backdrop-filter: blur(12px);
+  }
+
+  .active-photo-title {
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    margin-bottom: 0.3rem;
+  }
+
+  .active-photo-caption {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* Reactions Arc Cluster */
+  .reactions-cluster-stage {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.75rem;
+  }
+
+  .reaction-buttons-arc {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: rgba(20, 22, 29, 0.8);
+    padding: 8px 18px;
+    border-radius: 9999px;
+    border: 1px solid var(--gold-border);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  }
+
+  .arc-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.25rem;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.2s ease;
+  }
+
+  .arc-btn:hover {
+    transform: scale(1.22);
+    background: rgba(212, 175, 55, 0.2);
+    border-color: var(--gold-primary);
+  }
+
+  .arc-btn.main-heart-btn {
+    width: 52px;
+    height: 52px;
+    background: rgba(255, 51, 102, 0.15);
+    border-color: rgba(255, 51, 102, 0.4);
+    font-size: 1.5rem;
+  }
+
+  .arc-btn.main-heart-btn:hover {
+    background: rgba(255, 51, 102, 0.3);
+    border-color: #FF3366;
+  }
+
+  .heart-pulse {
+    animation: heartBeat 2s infinite;
+  }
+
+  @keyframes heartBeat {
+    0%, 100% { transform: scale(1); }
+    15% { transform: scale(1.15); }
+    30% { transform: scale(1); }
+    45% { transform: scale(1.12); }
+  }
+
+  /* Burst Particles Layer */
+  .burst-particles-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 100;
+  }
+
+  :global(.particle-burst) {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    font-size: 2rem;
+    pointer-events: none;
+    animation: particleFly 1s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+  }
+
+  @keyframes particleFly {
+    0% {
+      transform: translate(-50%, 0) scale(0.6);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(calc(-50% + var(--dx)), -180px) scale(1.5);
+      opacity: 0;
+    }
+  }
+
+  /* Dynamic Action Pills */
+  .instant-cta-row {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .instant-wa-pill {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: var(--whatsapp-emerald);
+    color: #FFFFFF;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.95rem 1.4rem;
+    border-radius: 9999px;
+    text-decoration: none;
+    box-shadow: 0 4px 20px rgba(37, 211, 102, 0.35);
+    transition: var(--transition-smooth);
+    box-sizing: border-box;
+  }
+
+  .instant-wa-pill:hover {
+    background: var(--whatsapp-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(37, 211, 102, 0.55);
+  }
+
+  .instant-form-pill {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid var(--gold-border);
+    color: var(--gold-light);
+    font-size: 0.88rem;
+    font-weight: 600;
+    padding: 0.9rem 1.4rem;
+    border-radius: 9999px;
+    text-decoration: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    transition: var(--transition-smooth);
+    box-sizing: border-box;
+  }
+
+  .instant-form-pill:hover {
+    background: linear-gradient(135deg, #F7E4A8 0%, #D4AF37 50%, #9B781E 100%);
+    color: #07080B;
+    border-color: #F7E4A8;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.45);
+  }
+
+  .instant-form-pill svg {
+    color: currentColor;
+    flex-shrink: 0;
+  }
+
+  .pill-arrow {
+    transition: transform 0.2s ease;
+  }
+
+  .instant-wa-pill:hover .pill-arrow,
+  .instant-form-pill:hover .pill-arrow {
+    transform: translateX(4px);
+  }
+</style>
+
+<script define:vars={{ instantDecks }}>
+  function initInstantDeck() {
+    const root = document.getElementById('instant-experience');
+    if (!root) return;
+
+    let activeDeckId = instantDecks[0].id;
+    // Map of deckId -> array of card element indices in current physical order
+    const deckStates = {};
+
+    instantDecks.forEach((deck) => {
+      deckStates[deck.id] = {
+        cardOrder: Array.from({ length: deck.cards.length }, (_, i) => i),
+        isFlipping: false
+      };
+    });
+
+    const counterElem = document.getElementById('active-card-counter');
+    const titleElem = document.getElementById('active-card-title');
+    const captionElem = document.getElementById('active-card-caption');
+    const venueElem = document.getElementById('active-card-venue');
+    const waLink = document.getElementById('instant-whatsapp-link');
+    const waTextElem = document.getElementById('wa-pill-text');
+
+    function updateDeckPositions(deckId) {
+      const deckElem = document.getElementById(`deck-${deckId}`);
+      if (!deckElem) return;
+
+      const state = deckStates[deckId];
+      const cards = deckElem.querySelectorAll('.instant-card');
+
+      state.cardOrder.forEach((cardOriginalIdx, positionIdx) => {
+        const card = cards[cardOriginalIdx];
+        if (!card) return;
+
+        // Remove all previous position classes
+        card.classList.remove('pos-0', 'pos-1', 'pos-2', 'pos-3', 'pos-hidden', 'flipping-to-back');
+
+        if (positionIdx === 0) {
+          card.classList.add('pos-0');
+        } else if (positionIdx === 1) {
+          card.classList.add('pos-1');
+        } else if (positionIdx === 2) {
+          card.classList.add('pos-2');
+        } else if (positionIdx === 3) {
+          card.classList.add('pos-3');
+        } else {
+          card.classList.add('pos-hidden');
+        }
+      });
+
+      // Update metadata based on top card (position 0)
+      const activeOriginalIdx = state.cardOrder[0];
+      const activeDeck = instantDecks.find(d => d.id === deckId);
+      if (!activeDeck) return;
+      const activeCard = activeDeck.cards[activeOriginalIdx];
+
+      if (counterElem) counterElem.textContent = `Frame ${activeOriginalIdx + 1} of ${activeDeck.cards.length}`;
+      if (titleElem) titleElem.textContent = activeCard.title;
+      if (captionElem) captionElem.textContent = activeCard.caption;
+      if (venueElem) venueElem.textContent = `📍 ${activeCard.venue}, ${activeCard.location}`;
+
+      // Update WhatsApp pre-filled action with royal studio formatting
+      if (waLink) {
+        const waNum = waLink.getAttribute('data-whatsapp') || '917892706982';
+        const deckLabel = activeDeck.label || 'Karnataka Ceremony';
+        const deckKannada = activeDeck.kannadaLabel ? ` (${activeDeck.kannadaLabel})` : '';
+        const text =
+          `✨ *Frames By Hithu — Instant Deck Inquiry*\n\n` +
+          `🖼️ *Featured Frame:* "${activeCard.title}"\n` +
+          `🏛️ *Venue & Location:* ${activeCard.venue}, ${activeCard.location}\n` +
+          `🏷️ *Ceremony Collection:* ${deckLabel}${deckKannada}\n\n` +
+          `Hello Frames By Hithu! I love this photograph from your Instant Deck. Could you please confirm date availability and share a tailored fine-art proposal for our ceremony?`;
+        waLink.href = `https://wa.me/${waNum}?text=${encodeURIComponent(text)}`;
+      }
+      if (waTextElem) {
+        waTextElem.textContent = `Inquire about "${activeCard.title}" on WhatsApp`;
+      }
+
+      // Update Form button target and prefill attributes
+      const formLink = document.getElementById('instant-form-link');
+      if (formLink) {
+        const hasLocalInquire = !!document.getElementById('inquire');
+        if (hasLocalInquire) {
+          formLink.href = '#inquire';
+        } else {
+          formLink.href = `/contact#inquiry-form?title=${encodeURIComponent(activeCard.title)}&venue=${encodeURIComponent(activeCard.venue)}&location=${encodeURIComponent(activeCard.location)}`;
+        }
+        formLink.setAttribute('data-card-title', activeCard.title);
+        formLink.setAttribute('data-card-venue', activeCard.venue);
+        formLink.setAttribute('data-card-location', activeCard.location);
+      }
+    }
+
+    // Initialize all decks
+    instantDecks.forEach(deck => updateDeckPositions(deck.id));
+
+    // The "Send Old Photo To Back" Animation
+    function flipTopCardToBack(deckId) {
+      const state = deckStates[deckId];
+      if (state.isFlipping) return;
+      state.isFlipping = true;
+
+      const deckElem = document.getElementById(`deck-${deckId}`);
+      if (!deckElem) return;
+
+      const cards = deckElem.querySelectorAll('.instant-card');
+      const topOriginalIdx = state.cardOrder[0];
+      const topCard = cards[topOriginalIdx];
+
+      if (!topCard) {
+        state.isFlipping = false;
+        return;
+      }
+
+      // Add flip animation class
+      topCard.classList.add('flipping-to-back');
+
+      // Shift order: remove front, push to end of array
+      setTimeout(() => {
+        const movedCard = state.cardOrder.shift();
+        state.cardOrder.push(movedCard);
+
+        updateDeckPositions(deckId);
+        topCard.classList.remove('flipping-to-back');
+        state.isFlipping = false;
+      }, 350);
+    }
+
+    // Bind click / tap on top card
+    instantDecks.forEach(deck => {
+      const deckElem = document.getElementById(`deck-${deck.id}`);
+      if (!deckElem) return;
+
+      deckElem.addEventListener('click', (e) => {
+        const target = e.target;
+        const card = target && target.closest ? target.closest('.instant-card') : null;
+        if (card && card.classList.contains('pos-0')) {
+          flipTopCardToBack(deck.id);
+        }
+      });
+    });
+
+    // Category Tabs Switcher
+    const catButtons = root.querySelectorAll('.category-pill-btn');
+    catButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        catButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const newDeckId = btn.getAttribute('data-category-id');
+        if (!newDeckId) return;
+
+        activeDeckId = newDeckId;
+
+        // Switch active deck view
+        const allDecks = root.querySelectorAll('.deck-group');
+        allDecks.forEach(d => d.classList.remove('active'));
+
+        const targetDeck = document.getElementById(`deck-${newDeckId}`);
+        if (targetDeck) {
+          targetDeck.classList.add('active');
+          updateDeckPositions(newDeckId);
+        }
+      });
+    });
+
+    // Touch Swipe handling on mobile
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    const viewport = document.getElementById('card-stack-viewport');
+    viewport?.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    viewport?.addEventListener('touchend', (e) => {
+      const diffX = e.changedTouches[0].clientX - touchStartX;
+      const diffY = e.changedTouches[0].clientY - touchStartY;
+      if (Math.abs(diffX) > 40 || Math.abs(diffY) > 40) {
+        flipTopCardToBack(activeDeckId);
+      }
+    }, { passive: true });
+
+    // Keyboard arrow / space support
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        flipTopCardToBack(activeDeckId);
+      }
+    });
+
+    // Form Link click handler: smooth-scroll and auto-prefill form on current page if available
+    const formLinkBtn = document.getElementById('instant-form-link');
+    if (formLinkBtn) {
+      formLinkBtn.addEventListener('click', (e) => {
+        const inquireSection = document.getElementById('inquire');
+        if (inquireSection) {
+          e.preventDefault();
+          const cardTitle = formLinkBtn.getAttribute('data-card-title') || '';
+          const cardVenue = formLinkBtn.getAttribute('data-card-venue') || '';
+          const cardLocation = formLinkBtn.getAttribute('data-card-location') || '';
+
+          // Prefill the form inputs
+          const venueInput = document.getElementById('client-venue');
+          const notesInput = document.getElementById('client-notes');
+          const citySelect = document.getElementById('client-city');
+
+          if (venueInput && cardVenue) {
+            venueInput.value = cardVenue;
+          }
+          if (notesInput && cardTitle) {
+            notesInput.value = `Inquiring about Instant Deck frame: "${cardTitle}" at ${cardVenue} (${cardLocation})`;
+          }
+
+          if (citySelect && cardLocation) {
+            const locLower = cardLocation.toLowerCase();
+            for (let i = 0; i < citySelect.options.length; i++) {
+              const optVal = citySelect.options[i].value.toLowerCase();
+              if (optVal && (locLower.includes(optVal) || (optVal.includes('bengaluru') && locLower.includes('bangalore')) || (optVal.includes('mysuru') && locLower.includes('mysore')) || (optVal.includes('mangaluru') && locLower.includes('mangalore')))) {
+                citySelect.selectedIndex = i;
+                break;
+              }
+            }
+          }
+
+          // Smooth scroll to form
+          inquireSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+          // Subtle gold pulse effect on form
+          const formCard = document.getElementById('inquiry-card');
+          if (formCard) {
+            formCard.classList.remove('pulse-focus');
+            void formCard.offsetWidth; // trigger DOM reflow
+            formCard.classList.add('pulse-focus');
+          }
+        }
+      });
+    }
+  }
+
+  initInstantDeck();
+  document.addEventListener('astro:page-load', initInstantDeck);
+</script>

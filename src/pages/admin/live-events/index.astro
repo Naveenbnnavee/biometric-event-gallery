@@ -1,0 +1,1943 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { getLiveEventsAsync } from '../../../lib/db';
+import { getCloudflareEnv } from '../../../lib/cloudflare';
+
+export const prerender = false;
+
+const env = await getCloudflareEnv();
+const events = await getLiveEventsAsync(env);
+
+// Stats
+const totalEvents = events.length;
+const liveNow = events.filter(e => e.status === 'live').length;
+const totalPhotos = events.reduce((sum, e) => sum + (e.photos?.length || 0), 0);
+---
+
+<AdminLayout title="Live Event Streams & QR Consoles | Frames By Hithu" activeNav="live-events">
+  <div class="admin-page-container">
+    <!-- Header with Stats -->
+    <div class="page-top-bar">
+      <div>
+        <div class="admin-gold-pill">REAL-TIME INGESTION & GUEST GALLERIES</div>
+        <h1 class="page-heading">Live Event QR & AI Face-Match Consoles</h1>
+        <p class="page-subheading">
+          Manage live ceremony streams, wireless camera ingestion tokens, and generate luxury printable guest table tent-cards.
+        </p>
+      </div>
+
+      <div class="top-actions">
+        <button type="button" class="btn-gold" id="open-create-modal-btn">
+          <span>+ Create New Live Event</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Metrics Row -->
+    <div class="metrics-grid">
+      <div class="metric-card glass-card">
+        <div class="metric-icon">⚡</div>
+        <div class="metric-data">
+          <span class="metric-number">{liveNow}</span>
+          <span class="metric-label">Active Live Streams</span>
+        </div>
+      </div>
+
+      <div class="metric-card glass-card">
+        <div class="metric-icon">📸</div>
+        <div class="metric-data">
+          <span class="metric-number">{totalPhotos}</span>
+          <span class="metric-label">Live Ingested Frames</span>
+        </div>
+      </div>
+
+      <div class="metric-card glass-card">
+        <div class="metric-icon">🏛️</div>
+        <div class="metric-data">
+          <span class="metric-number">{totalEvents}</span>
+          <span class="metric-label">Total Registered Events</span>
+        </div>
+      </div>
+
+      <div class="metric-card glass-card">
+        <div class="metric-icon">🤖</div>
+        <div class="metric-data">
+          <span class="metric-number">{events.filter(e => e.accessMode === 'face_only' || e.accessMode === 'face_and_all' || e.accessMode === 'face_match').length}</span>
+          <span class="metric-label">AI Face-Match Deployed</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Events List Table -->
+    <div class="events-table-card glass-card">
+      <div class="table-card-header">
+        <h2 class="table-title">All Live Event Streams</h2>
+        <span class="table-badge">{events.length} configured</span>
+      </div>
+
+      {events.length === 0 ? (
+        <div class="empty-state text-center">
+          <div class="empty-icon">⚡</div>
+          <h3>No Live Events Created Yet</h3>
+          <p>Create your first real-time event to generate guest QR tent-cards and wireless camera ingestion tokens.</p>
+          <button type="button" class="btn-gold" id="empty-create-btn">+ Create First Live Event</button>
+        </div>
+      ) : (
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Event Title & Venue</th>
+                <th>Ceremony & Date</th>
+                <th>Live Frames</th>
+                <th>Access Mode</th>
+                <th>Download & Protection</th>
+                <th>Status</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.map((evt) => (
+                <tr data-event-id={evt.id} data-event-slug={evt.slug}>
+                  <td>
+                    <div class="event-title-cell">
+                      <strong class="evt-title">{evt.title}</strong>
+                      <span class="evt-venue">📍 {evt.venue}</span>
+                      <span class="evt-slug">Path: /live/{evt.slug}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="ceremony-cell">
+                      <span class="ceremony-pill">{evt.ceremonyType}</span>
+                      <span class="evt-date">{evt.date}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="photos-count-cell">
+                      <span class="count-badge">{evt.photos?.length || 0}</span>
+                      <a href={`/admin/live-events/${evt.id}`} class="manage-photos-link">Manage SD Dropzone →</a>
+                    </div>
+                  </td>
+                  <td>
+                    <span class:list={['mode-pill', {
+                      'mode-face': evt.accessMode === 'face_only',
+                      'mode-open': evt.accessMode === 'open_gallery',
+                      'mode-hybrid': evt.accessMode === 'face_and_all' || evt.accessMode === 'face_match'
+                    }]}>
+                      {evt.accessMode === 'face_only' ? '🔒 1. Face Only' : (evt.accessMode === 'open_gallery' ? '🌐 2. Whole Event' : '✨ 3. Face + Whole Event')}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="protection-cell">
+                      <span class="protect-badge" title="Download Policy">
+                        {evt.allowDownload ? '⬇️ Download Allowed' : '🔒 Download Locked'}
+                      </span>
+                      <span class="watermark-sub-badge">
+                        {evt.watermarkPreview ? '🛡️ Studio Watermark ON' : 'Off'}
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class:list={['status-pill', `status-${evt.status}`]}>
+                      {evt.status.toUpperCase()}
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    <div class="action-buttons-group">
+                      <!-- Dropzone Dashboard -->
+                      <a
+                        href={`/admin/live-events/${evt.id}`}
+                        class="table-btn primary-btn"
+                        title="Open Event Dashboard & SD Card Dropzone"
+                      >
+                        ⚡ Ingest SD
+                      </a>
+
+                      <!-- Complete Event & Handover -->
+                      {evt.status !== 'archived' && (
+                        <a
+                          href={`/admin/live-events/${evt.id}?complete=1`}
+                          class="table-btn complete-btn"
+                          title="Complete Event and Move to Client Portal with WhatsApp Handover"
+                        >
+                          ✅ Complete
+                        </a>
+                      )}
+
+                      <!-- Wireless Link Copier -->
+                      <button
+                        type="button"
+                        class="table-btn copy-token-btn"
+                        data-token={evt.ingestionToken}
+                        title="Copy Photographer Wireless Mobile Link"
+                      >
+                        📱 Mobile Ingest
+                      </button>
+
+                      <!-- Printable Tent Card -->
+                      <button
+                        type="button"
+                        class="table-btn print-card-btn"
+                        data-slug={evt.slug}
+                        data-title={evt.title}
+                        data-venue={evt.venue}
+                        data-mode={evt.accessMode}
+                        title="Generate Printable Luxury Tent-Card QR"
+                      >
+                        🪧 Print QR Kit
+                      </button>
+
+                      <!-- Public View -->
+                      <a
+                        href={`/live/${evt.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="table-btn"
+                        title="View Live Guest Gallery"
+                      >
+                        👁️ Live
+                      </a>
+
+                      <!-- Projector -->
+                      <a
+                        href={`/live/${evt.slug}/screen`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="table-btn"
+                        title="Open Ballroom Projector LED Screen Mode"
+                      >
+                        📺 LED Wall
+                      </a>
+
+                      <!-- Edit -->
+                      <button
+                        type="button"
+                        class="table-btn edit-btn edit-event-btn"
+                        data-id={evt.id}
+                        data-title={evt.title}
+                        data-slug={evt.slug}
+                        data-ceremony={evt.ceremonyType}
+                        data-venue={evt.venue}
+                        data-date={evt.date}
+                        data-status={evt.status}
+                        data-mode={evt.accessMode}
+                        data-download={evt.allowDownload ? 'true' : 'false'}
+                        data-watermark={evt.watermarkPreview ? 'true' : 'false'}
+                        data-token={evt.ingestionToken}
+                        title="Edit Event Details & Settings"
+                      >
+                        ✏️ Edit
+                      </button>
+
+                      <!-- Delete -->
+                      <button
+                        type="button"
+                        class="table-btn delete-btn delete-event-btn"
+                        data-id={evt.id}
+                        data-title={evt.title}
+                        title="Delete Event"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  </div>
+
+  <!-- Create / Edit Event Drawer / Modal -->
+  <div id="event-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-box glass-card">
+      <div class="modal-header">
+        <h2 id="modal-title" class="modal-headline">Create New Real-Time Live Event</h2>
+        <button type="button" class="close-modal-btn" id="close-modal-btn">✕</button>
+      </div>
+
+      <form id="create-event-form" class="event-form">
+        <input type="hidden" id="edit-event-id" name="id" value="" />
+
+        <div class="form-grid">
+          <div class="form-group col-2">
+            <label class="form-label" for="event-title">Event Title *</label>
+            <input
+              type="text"
+              id="event-title"
+              name="title"
+              class="form-input"
+              placeholder="e.g. Ananya & Rohit Wedding Muhurtham"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="event-slug">URL Slug *</label>
+            <div class="slug-input-wrap">
+              <span class="slug-prefix">/live/</span>
+              <input
+                type="text"
+                id="event-slug"
+                name="slug"
+                class="form-input"
+                placeholder="ananya-rohit-wedding"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="event-ceremony">Ceremony Type *</label>
+            <select id="event-ceremony" name="ceremonyType" class="form-input">
+              <option value="weddings">Weddings & Muhurtham</option>
+              <option value="housewarming">Gruhapravesham (Housewarming)</option>
+              <option value="poojas">Traditional Poojas & Sacred Rites</option>
+              <option value="milestones">Milestones & Celebrations</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="event-venue">Venue & City *</label>
+            <input
+              type="text"
+              id="event-venue"
+              name="venue"
+              class="form-input"
+              placeholder="e.g. Palace Grounds, Bengaluru"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="event-date">Ceremony Date *</label>
+            <input
+              type="date"
+              id="event-date"
+              name="date"
+              class="form-input"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="event-status">Event Status</label>
+            <select id="event-status" name="status" class="form-input">
+              <option value="live">Live (Active Streaming)</option>
+              <option value="upcoming">Upcoming (Pre-Event)</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="event-token">Wireless Ingestion Token</label>
+            <input
+              type="text"
+              id="event-token"
+              name="ingestionToken"
+              class="form-input"
+              placeholder="e.g. live_ananya_2026"
+            />
+          </div>
+
+          <!-- 3-Mode Setting -->
+          <div class="form-group col-2 setting-highlight-box">
+            <label class="form-label">Guest Gallery Access Mode</label>
+            <div class="mode-options-grid">
+              <label class="mode-radio-card">
+                <input type="radio" name="accessMode" value="face_only" checked />
+                <div class="radio-card-body">
+                  <strong>🔒 1. Only Face Enabled (Private)</strong>
+                  <p>Guests take a selfie and see ONLY their matched photos. Viewing other ceremony photos is completely disabled.</p>
+                </div>
+              </label>
+
+              <label class="mode-radio-card">
+                <input type="radio" name="accessMode" value="open_gallery" />
+                <div class="radio-card-body">
+                  <strong>🌐 2. Whole Event (Open Stream)</strong>
+                  <p>No selfie required. All guests scan QR and immediately view the full chronological ceremony gallery.</p>
+                </div>
+              </label>
+
+              <label class="mode-radio-card">
+                <input type="radio" name="accessMode" value="face_and_all" />
+                <div class="radio-card-body">
+                  <strong>✨ 3. Face Enabled + Whole Event</strong>
+                  <p>Guests take a selfie to view their photos first, with an active toggle button to also browse all ceremony photos.</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Protection & Download Controls -->
+          <div class="form-group col-2 setting-highlight-box">
+            <label class="form-label">Admin Download & Protection Controls</label>
+            <div class="toggles-row">
+              <label class="toggle-control">
+                <input type="checkbox" id="allow-download-toggle" name="allowDownload" value="true" checked />
+                <span>Allow Guests to Download High-Res Master Frames</span>
+              </label>
+
+              <label class="toggle-control">
+                <input type="checkbox" id="watermark-toggle" name="watermarkPreview" value="true" checked />
+                <span>Display Subtle Gold Studio Watermark Overlay</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" id="cancel-modal-btn">Cancel</button>
+          <button type="submit" class="btn-gold" id="save-event-submit-btn">Save Live Event</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Printable Luxury Tent-Card QR Modal -->
+  <div id="tent-card-modal" class="modal-backdrop" style="display: none;">
+    <div class="tent-card-modal-content glass-card">
+      <div class="modal-header">
+        <h2 class="modal-headline">Printable Luxury Guest Tent-Card QR Kit</h2>
+        <button type="button" class="close-modal-btn" id="close-tent-card-btn">✕</button>
+      </div>
+
+      <!-- Printable Area -->
+      <div class="tent-card-print-viewport" id="tent-card-print-area">
+        <div class="tent-card-luxury-frame">
+          <div class="tent-card-rim"></div>
+          <div class="tent-card-corner tl"></div>
+          <div class="tent-card-corner tr"></div>
+          <div class="tent-card-corner bl"></div>
+          <div class="tent-card-corner br"></div>
+
+          <div class="tent-card-header">
+            <span class="tent-brand-monogram">FBH</span>
+            <h3 class="tent-brand-title">FRAMES BY HITHU</h3>
+            <span class="tent-brand-sub">FINE-ART PHOTOGRAPHY • KARNATAKA</span>
+          </div>
+
+          <div class="tent-divider">
+            <span class="divider-diamond">♦</span>
+          </div>
+
+          <div class="tent-event-info">
+            <span class="tent-welcome">WELCOME TO THE CELEBRATION OF</span>
+            <h2 class="tent-event-title" id="tent-preview-title">Ananya & Rohit Wedding</h2>
+            <p class="tent-event-venue" id="tent-preview-venue">📍 Palace Grounds, Bengaluru</p>
+          </div>
+
+          <div class="tent-qr-box">
+            <img id="tent-qr-image" src="" alt="Live Event QR Code" class="tent-qr-img" />
+            <div class="qr-glow"></div>
+          </div>
+
+          <div class="tent-instructions">
+            <strong class="instruction-lead">Scan with Your Smartphone Camera</strong>
+            <p id="tent-instruction-detail" class="instruction-sub">
+              Instantly discover and download your personal photos live as the sacred rituals unfold.
+            </p>
+          </div>
+
+          <div class="tent-card-footer">
+            <span>framesbyhithu.com</span>
+            <span class="footer-dot">•</span>
+            <span>Live AI Ceremony Stream</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer tent-footer-actions">
+        <button type="button" class="btn-cancel" id="cancel-tent-btn">Close</button>
+        <button type="button" class="btn-outline" id="download-qr-image-btn" title="Download QR Code image directly">
+          <span>⬇️ Download QR Only (PNG)</span>
+        </button>
+        <button type="button" class="btn-outline" id="download-full-card-btn" title="Download Entire Luxury Card as High-Res Image">
+          <span>🖼️ Download Card (PNG)</span>
+        </button>
+        <button type="button" class="btn-gold" id="do-print-card-btn" title="Print or save full-page PDF without headers/footers">
+          <span>🖨️ Print Clean Full-Page PDF</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  .admin-page-container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .page-top-bar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .admin-gold-pill {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--gold-light);
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid var(--gold-border);
+    padding: 4px 12px;
+    border-radius: 9999px;
+    margin-bottom: 0.5rem;
+  }
+
+  .page-heading {
+    font-family: var(--font-serif);
+    font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+    color: var(--text-primary);
+    margin: 0 0 0.35rem 0;
+  }
+
+  .page-subheading {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    max-width: 760px;
+    margin: 0;
+  }
+
+  /* Metrics Grid */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  @media (max-width: 1024px) {
+    .metrics-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .metrics-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .metric-card {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.25rem;
+    border-radius: 12px;
+    background: rgba(14, 16, 22, 0.75);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .metric-icon {
+    font-size: 2.2rem;
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid var(--gold-border);
+  }
+
+  .metric-data {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .metric-number {
+    font-family: var(--font-serif);
+    font-size: 1.85rem;
+    font-weight: 700;
+    color: var(--gold-light);
+    line-height: 1.1;
+  }
+
+  .metric-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  /* Table Card */
+  .events-table-card {
+    border-radius: 14px;
+    background: rgba(14, 16, 22, 0.75);
+    border: 1px solid var(--border-subtle);
+    overflow: hidden;
+  }
+
+  .table-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .table-title {
+    font-family: var(--font-serif);
+    font-size: 1.35rem;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .table-badge {
+    font-size: 0.8rem;
+    color: var(--gold-light);
+    background: rgba(212, 175, 55, 0.12);
+    padding: 3px 10px;
+    border-radius: 9999px;
+    border: 1px solid var(--gold-border);
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+  }
+
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.875rem;
+  }
+
+  .admin-table th {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.85rem 1.25rem;
+    font-size: 0.775rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .admin-table td {
+    padding: 1.1rem 1.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    vertical-align: middle;
+  }
+
+  .admin-table tr:hover {
+    background: rgba(212, 175, 55, 0.03);
+  }
+
+  .event-title-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .evt-title {
+    color: var(--text-primary);
+    font-size: 1rem;
+  }
+
+  .evt-venue {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+
+  .evt-slug {
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: var(--gold-light);
+    opacity: 0.9;
+  }
+
+  .ceremony-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .ceremony-pill {
+    display: inline-block;
+    font-size: 0.725rem;
+    text-transform: capitalize;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 8px;
+    border-radius: 4px;
+    width: fit-content;
+  }
+
+  .evt-date {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .photos-count-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .count-badge {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--gold-light);
+  }
+
+  .manage-photos-link {
+    font-size: 0.75rem;
+    color: var(--gold-primary);
+    text-decoration: none;
+  }
+
+  .manage-photos-link:hover {
+    text-decoration: underline;
+  }
+
+  .mode-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.775rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .mode-pill.mode-face {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #FCA5A5;
+  }
+
+  .mode-pill.mode-open {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.4);
+    color: #93C5FD;
+  }
+
+  .mode-pill.mode-hybrid {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: rgba(212, 175, 55, 0.4);
+    color: var(--gold-light);
+  }
+
+  .protection-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-size: 0.75rem;
+  }
+
+  .protect-badge {
+    color: var(--text-muted);
+  }
+
+  .watermark-sub-badge {
+    font-size: 0.7rem;
+    color: var(--gold-light);
+    opacity: 0.85;
+  }
+
+  .status-pill {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+
+  .status-live {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10B981;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+  }
+
+  .status-upcoming {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60A5FA;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+  }
+
+  .status-archived {
+    background: rgba(156, 163, 175, 0.2);
+    color: #9CA3AF;
+  }
+
+  .text-right {
+    text-align: right;
+  }
+
+  .action-buttons-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .table-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    padding: 0.45rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.775rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: var(--transition-smooth);
+    white-space: nowrap;
+  }
+
+  .table-btn:hover {
+    background: rgba(212, 175, 55, 0.2);
+    border-color: var(--gold-primary);
+    color: var(--gold-light);
+  }
+
+  .table-btn.primary-btn {
+    background: var(--gold-gradient);
+    color: #0B0C10;
+    border-color: var(--gold-primary);
+    font-weight: 700;
+  }
+
+  .table-btn.primary-btn:hover {
+    filter: brightness(1.15);
+  }
+
+  .table-btn.complete-btn {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(52, 211, 153, 0.4);
+    color: #34D399;
+    font-weight: 600;
+  }
+
+  .table-btn.complete-btn:hover {
+    background: rgba(16, 185, 129, 0.3);
+    border-color: #34D399;
+    color: #FFFFFF;
+  }
+
+  .table-btn.delete-btn:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: #EF4444;
+    color: #EF4444;
+  }
+
+  /* Empty State */
+  .empty-state {
+    padding: 4rem 1.5rem;
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Modal Backdrop & Box */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(5, 6, 10, 0.85);
+    backdrop-filter: blur(16px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    overflow-y: auto;
+  }
+
+  .modal-box {
+    width: 100%;
+    max-width: 680px;
+    background: #0E1016;
+    border: 1px solid var(--gold-border);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.9);
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 1rem;
+  }
+
+  .modal-headline {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .close-modal-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.35rem;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+
+  .close-modal-btn:hover {
+    color: #EF4444;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+
+  @media (max-width: 640px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .col-2 {
+    grid-column: span 2;
+  }
+
+  @media (max-width: 640px) {
+    .col-2 {
+      grid-column: span 1;
+    }
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .form-label {
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .form-input {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 0.65rem 0.85rem;
+    color: #FFFFFF;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .form-input:focus {
+    border-color: var(--gold-primary);
+  }
+
+  .slug-input-wrap {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .slug-prefix {
+    padding: 0.65rem 0.5rem 0.65rem 0.85rem;
+    color: var(--gold-light);
+    font-size: 0.85rem;
+    font-family: monospace;
+  }
+
+  .slug-input-wrap .form-input {
+    border: none;
+    padding-left: 0;
+    flex: 1;
+  }
+
+  .setting-highlight-box {
+    background: rgba(212, 175, 55, 0.04);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    border-radius: 10px;
+    padding: 1rem;
+  }
+
+  .mode-options-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-top: 0.35rem;
+  }
+
+  @media (max-width: 880px) {
+    .mode-options-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .mode-radio-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 0.85rem;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+  }
+
+  .mode-radio-card:hover {
+    border-color: var(--gold-border);
+  }
+
+  .mode-radio-card input:checked + .radio-card-body strong {
+    color: var(--gold-light);
+  }
+
+  .radio-card-body strong {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .radio-card-body p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .toggles-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-top: 0.35rem;
+  }
+
+  .toggle-control {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    cursor: pointer;
+  }
+
+  .modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 1.25rem;
+  }
+
+  .btn-cancel {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    padding: 0.65rem 1.25rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+
+  .btn-cancel:hover {
+    color: #fff;
+    border-color: #fff;
+  }
+
+  /* Luxury Tent-Card Preview Styling */
+  .tent-card-modal-content {
+    width: 100%;
+    max-width: 580px;
+    background: #0B0C10;
+    border: 1px solid var(--gold-border);
+    border-radius: 16px;
+    padding: 2rem;
+  }
+
+  .tent-card-print-viewport {
+    background: #05060A;
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+  }
+
+  .tent-card-luxury-frame {
+    position: relative;
+    border: 2px solid #D4AF37;
+    padding: 2.25rem 1.5rem;
+    text-align: center;
+    background: radial-gradient(circle at center, #11141C 0%, #05060A 100%);
+  }
+
+  .tent-card-rim {
+    position: absolute;
+    inset: 4px;
+    border: 1px dashed rgba(212, 175, 55, 0.4);
+    pointer-events: none;
+  }
+
+  .tent-card-corner {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-color: #D4AF37;
+  }
+
+  .tent-card-corner.tl { top: 6px; left: 6px; border-top: 2px solid #D4AF37; border-left: 2px solid #D4AF37; }
+  .tent-card-corner.tr { top: 6px; right: 6px; border-top: 2px solid #D4AF37; border-right: 2px solid #D4AF37; }
+  .tent-card-corner.bl { bottom: 6px; left: 6px; border-bottom: 2px solid #D4AF37; border-left: 2px solid #D4AF37; }
+  .tent-card-corner.br { bottom: 6px; right: 6px; border-bottom: 2px solid #D4AF37; border-right: 2px solid #D4AF37; }
+
+  .tent-brand-monogram {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
+    border-radius: 50%;
+    background: var(--gold-gradient);
+    color: #0B0C10;
+    font-weight: 800;
+    font-size: 0.8rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .tent-brand-title {
+    font-family: var(--font-serif);
+    font-size: 1.15rem;
+    letter-spacing: 0.16em;
+    color: #D4AF37;
+    margin: 0;
+  }
+
+  .tent-brand-sub {
+    display: block;
+    font-size: 0.65rem;
+    letter-spacing: 0.14em;
+    color: var(--text-muted);
+    margin-top: 0.15rem;
+  }
+
+  .tent-divider {
+    margin: 1rem 0;
+    position: relative;
+  }
+
+  .tent-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 15%;
+    right: 15%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #D4AF37, transparent);
+  }
+
+  .divider-diamond {
+    color: #D4AF37;
+    font-size: 0.75rem;
+    background: #0E1016;
+    padding: 0 8px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .tent-welcome {
+    display: block;
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    color: #D4AF37;
+    margin-bottom: 0.25rem;
+  }
+
+  .tent-event-title {
+    font-family: var(--font-serif);
+    font-size: 1.65rem;
+    color: #FFFFFF;
+    margin: 0;
+    line-height: 1.25;
+  }
+
+  .tent-event-venue {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0.35rem 0 1.25rem 0;
+  }
+
+  .tent-qr-box {
+    width: 170px;
+    height: 170px;
+    margin: 0 auto 1.25rem auto;
+    background: #FFFFFF;
+    padding: 8px;
+    border-radius: 8px;
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+    position: relative;
+  }
+
+  .tent-qr-img {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .instruction-lead {
+    display: block;
+    font-size: 0.95rem;
+    color: #D4AF37;
+    margin-bottom: 0.25rem;
+  }
+
+  .instruction-sub {
+    font-size: 0.775rem;
+    color: #E2E8F0;
+    max-width: 320px;
+    margin: 0 auto;
+    line-height: 1.4;
+  }
+
+  .tent-card-footer {
+    margin-top: 1.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(212, 175, 55, 0.2);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .footer-dot {
+    color: #D4AF37;
+  }
+
+  .tent-footer-actions {
+    margin-top: 1.5rem;
+  }
+
+  /* Luxury Print Styles - Full-Page Card Only, Zero Browser Margins/Headers */
+  @page {
+    size: portrait;
+    margin: 0 !important;
+  }
+
+  @media print {
+    html,
+    body {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      max-height: 100vh !important;
+      background: #05060A !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      overflow: hidden !important;
+    }
+
+    /* Completely hide everything on the page */
+    body * {
+      visibility: hidden !important;
+    }
+
+    /* Make only the tent card modal and its descendants visible */
+    #tent-card-modal,
+    #tent-card-modal * {
+      visibility: visible !important;
+    }
+
+    #tent-card-modal {
+      position: fixed !important;
+      inset: 0 !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: 100vw !important;
+      max-height: 100vh !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #05060A !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
+      justify-content: stretch !important;
+      z-index: 9999999 !important;
+      overflow: hidden !important;
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    .tent-card-modal-content {
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: 100vw !important;
+      max-height: 100vh !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #05060A !important;
+      border: none !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: stretch !important;
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+    }
+
+    .modal-header,
+    .tent-footer-actions {
+      display: none !important;
+    }
+
+    .tent-card-print-viewport {
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: 100vw !important;
+      max-height: 100vh !important;
+      margin: 0 !important;
+      padding: 8mm 10mm !important;
+      box-sizing: border-box !important;
+      background: #05060A !important;
+      border: none !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: stretch !important;
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    .tent-card-luxury-frame {
+      width: 100% !important;
+      height: 100% !important;
+      flex: 1 !important;
+      box-sizing: border-box !important;
+      border: 3.5mm solid #D4AF37 !important;
+      border-radius: 4px !important;
+      padding: 10mm 10mm !important;
+      background: #05060A !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      text-align: center !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      position: relative !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    .tent-card-rim {
+      position: absolute !important;
+      inset: 3.5mm !important;
+      border: 1px dashed rgba(212, 175, 55, 0.45) !important;
+      pointer-events: none !important;
+    }
+
+    .tent-card-corner {
+      position: absolute !important;
+      width: 18px !important;
+      height: 18px !important;
+    }
+    .tent-card-corner.tl { top: 5mm !important; left: 5mm !important; border-top: 2.5px solid #D4AF37 !important; border-left: 2.5px solid #D4AF37 !important; }
+    .tent-card-corner.tr { top: 5mm !important; right: 5mm !important; border-top: 2.5px solid #D4AF37 !important; border-right: 2.5px solid #D4AF37 !important; }
+    .tent-card-corner.bl { bottom: 5mm !important; left: 5mm !important; border-bottom: 2.5px solid #D4AF37 !important; border-left: 2.5px solid #D4AF37 !important; }
+    .tent-card-corner.br { bottom: 5mm !important; right: 5mm !important; border-bottom: 2.5px solid #D4AF37 !important; border-right: 2.5px solid #D4AF37 !important; }
+
+    .tent-brand-monogram {
+      width: 44px !important;
+      height: 44px !important;
+      line-height: 44px !important;
+      font-size: 1.1rem !important;
+      margin-bottom: 0.25rem !important;
+    }
+
+    .tent-brand-title {
+      font-size: 1.75rem !important;
+      letter-spacing: 0.22em !important;
+      color: #D4AF37 !important;
+      margin: 0 !important;
+    }
+
+    .tent-brand-sub {
+      font-size: 0.8rem !important;
+      letter-spacing: 0.18em !important;
+      color: #E2E8F0 !important;
+      margin-top: 0.2rem !important;
+    }
+
+    .tent-divider {
+      margin: 0.85rem auto !important;
+      width: 60% !important;
+    }
+
+    .divider-diamond {
+      font-size: 0.9rem !important;
+      color: #D4AF37 !important;
+      background: #05060A !important;
+    }
+
+    .tent-welcome {
+      font-size: 0.9rem !important;
+      letter-spacing: 0.22em !important;
+      color: #D4AF37 !important;
+      margin-bottom: 0.25rem !important;
+    }
+
+    .tent-event-title {
+      font-size: 2.35rem !important;
+      line-height: 1.2 !important;
+      color: #FFFFFF !important;
+      margin: 0 !important;
+      max-width: 90% !important;
+    }
+
+    .tent-event-venue {
+      font-size: 1.1rem !important;
+      color: #E2E8F0 !important;
+      margin: 0.4rem 0 0.85rem 0 !important;
+    }
+
+    .tent-qr-box {
+      width: 230px !important;
+      height: 230px !important;
+      padding: 10px !important;
+      margin: 0 auto 1rem auto !important;
+      background: #FFFFFF !important;
+      border-radius: 12px !important;
+      box-shadow: 0 0 25px rgba(212, 175, 55, 0.4) !important;
+    }
+
+    .instruction-lead {
+      font-size: 1.25rem !important;
+      color: #D4AF37 !important;
+      margin-bottom: 0.25rem !important;
+    }
+
+    .instruction-sub {
+      font-size: 0.9rem !important;
+      color: #E2E8F0 !important;
+      max-width: 480px !important;
+      margin: 0 auto !important;
+      line-height: 1.4 !important;
+    }
+
+    .tent-card-footer {
+      font-size: 0.825rem !important;
+      color: #D4AF37 !important;
+      margin-top: 0.85rem !important;
+      padding-top: 0.65rem !important;
+      border-top: 1px solid rgba(212, 175, 55, 0.3) !important;
+    }
+  }
+</style>
+
+<script>
+  function initLiveEventsConsole() {
+    const createModal = document.getElementById('event-modal');
+    const openCreateBtn = document.getElementById('open-create-modal-btn');
+    const emptyCreateBtn = document.getElementById('empty-create-btn');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const cancelModalBtn = document.getElementById('cancel-modal-btn');
+    const createForm = document.getElementById('create-event-form') as HTMLFormElement;
+    const titleInput = document.getElementById('event-title') as HTMLInputElement;
+    const slugInput = document.getElementById('event-slug') as HTMLInputElement;
+    const tokenInput = document.getElementById('event-token') as HTMLInputElement;
+
+    // Tent Card Modal Elements
+    const tentModal = document.getElementById('tent-card-modal');
+    const closeTentBtn = document.getElementById('close-tent-card-btn');
+    const cancelTentBtn = document.getElementById('cancel-tent-btn');
+    const doPrintBtn = document.getElementById('do-print-card-btn');
+    const tentTitle = document.getElementById('tent-preview-title');
+    const tentVenue = document.getElementById('tent-preview-venue');
+    const tentQrImg = document.getElementById('tent-qr-image') as HTMLImageElement;
+    const tentDetail = document.getElementById('tent-instruction-detail');
+
+    function openCreateModal() {
+      if (createModal) {
+        if (createForm) createForm.reset();
+        const editIdInput = document.getElementById('edit-event-id') as HTMLInputElement;
+        if (editIdInput) editIdInput.value = '';
+        const modalTitle = document.getElementById('modal-title');
+        if (modalTitle) modalTitle.textContent = 'Create New Real-Time Live Event';
+        const submitBtn = document.getElementById('save-event-submit-btn');
+        if (submitBtn) submitBtn.textContent = 'Save Live Event';
+        if (slugInput) delete slugInput.dataset.manualEdit;
+        if (tokenInput) {
+          tokenInput.value = `live_${Math.random().toString(36).slice(2, 10)}`;
+        }
+        createModal.style.display = 'flex';
+      }
+    }
+
+    function closeModal() {
+      if (createModal) createModal.style.display = 'none';
+    }
+
+    openCreateBtn?.addEventListener('click', openCreateModal);
+    emptyCreateBtn?.addEventListener('click', openCreateModal);
+    closeModalBtn?.addEventListener('click', closeModal);
+    cancelModalBtn?.addEventListener('click', closeModal);
+
+    // Edit Event Handlers
+    const editButtons = document.querySelectorAll('.edit-event-btn');
+    editButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id') || '';
+        const title = btn.getAttribute('data-title') || '';
+        const slug = btn.getAttribute('data-slug') || '';
+        const ceremony = btn.getAttribute('data-ceremony') || 'weddings';
+        const venue = btn.getAttribute('data-venue') || '';
+        const date = btn.getAttribute('data-date') || '';
+        const status = btn.getAttribute('data-status') || 'live';
+        const mode = btn.getAttribute('data-mode') || 'face_match';
+        const allowDl = btn.getAttribute('data-download') === 'true';
+        const watermark = btn.getAttribute('data-watermark') === 'true';
+        const token = btn.getAttribute('data-token') || '';
+
+        const editIdInput = document.getElementById('edit-event-id') as HTMLInputElement;
+        const modalTitle = document.getElementById('modal-title');
+        const ceremonySelect = document.getElementById('event-ceremony') as HTMLSelectElement;
+        const venueInput = document.getElementById('event-venue') as HTMLInputElement;
+        const dateInput = document.getElementById('event-date') as HTMLInputElement;
+        const statusSelect = document.getElementById('event-status') as HTMLSelectElement;
+        const allowDlToggle = document.getElementById('allow-download-toggle') as HTMLInputElement;
+        const watermarkToggle = document.getElementById('watermark-toggle') as HTMLInputElement;
+        const modeRadios = document.querySelectorAll('input[name="accessMode"]') as NodeListOf<HTMLInputElement>;
+        const submitBtn = document.getElementById('save-event-submit-btn');
+
+        if (editIdInput) editIdInput.value = id;
+        if (titleInput) titleInput.value = title;
+        if (slugInput) {
+          slugInput.value = slug;
+          slugInput.dataset.manualEdit = 'true';
+        }
+        if (ceremonySelect) ceremonySelect.value = ceremony;
+        if (venueInput) venueInput.value = venue;
+        if (dateInput) dateInput.value = date;
+        if (statusSelect) statusSelect.value = status;
+        if (tokenInput) tokenInput.value = token;
+        if (allowDlToggle) allowDlToggle.checked = allowDl;
+        if (watermarkToggle) watermarkToggle.checked = watermark;
+        modeRadios.forEach(r => {
+          r.checked = r.value === mode || (mode === 'face_match' && r.value === 'face_and_all');
+        });
+
+        if (modalTitle) modalTitle.textContent = `Edit Live Event: ${title}`;
+        if (submitBtn) submitBtn.textContent = 'Save Changes';
+        if (createModal) createModal.style.display = 'flex';
+      });
+    });
+
+    // Auto-populate slug from title
+    titleInput?.addEventListener('input', () => {
+      if (slugInput && !slugInput.dataset.manualEdit) {
+        slugInput.value = titleInput.value
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+      }
+    });
+
+    slugInput?.addEventListener('input', () => {
+      slugInput.dataset.manualEdit = 'true';
+    });
+
+    // Save Event Form (Create & Update)
+    createForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('save-event-submit-btn') as HTMLButtonElement;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving Live Event...';
+      }
+
+      const formData = new FormData(createForm);
+      const id = (formData.get('id') as string)?.trim() || undefined;
+      const title = formData.get('title') as string;
+      const slug = formData.get('slug') as string;
+      const ceremonyType = formData.get('ceremonyType') as string;
+      const venue = formData.get('venue') as string;
+      const date = formData.get('date') as string;
+      const status = formData.get('status') as string;
+      const accessMode = formData.get('accessMode') as string;
+      const allowDownload = formData.get('allowDownload') === 'true';
+      const watermarkPreview = formData.get('watermarkPreview') === 'true';
+      const ingestionToken = (formData.get('ingestionToken') as string)?.trim() || `live_${Math.random().toString(36).slice(2, 10)}`;
+
+      try {
+        const res = await fetch('/api/live-events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id,
+            title,
+            slug,
+            ceremonyType,
+            venue,
+            date,
+            status,
+            accessMode,
+            allowDownload,
+            watermarkPreview,
+            ingestionToken
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          (window as any).showToast(id ? 'Live event updated successfully! ✓' : 'Live event created successfully! ✓', 'success');
+          closeModal();
+          setTimeout(() => window.location.reload(), 300);
+        } else {
+          (window as any).showToast(data.error || 'Failed to save event', 'error');
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = id ? 'Save Changes' : 'Save Live Event';
+          }
+        }
+      } catch (err: any) {
+        (window as any).showToast(err.message || 'Network error saving event', 'error');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = id ? 'Save Changes' : 'Save Live Event';
+        }
+      }
+    });
+
+    // Copy Wireless Mobile Ingest Link
+    const copyTokenButtons = document.querySelectorAll('.copy-token-btn');
+    copyTokenButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const token = btn.getAttribute('data-token');
+        const origin = window.location.origin;
+        const ingestUrl = `${origin}/live-upload?token=${encodeURIComponent(token || '')}`;
+
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(ingestUrl).then(() => {
+            (window as any).showToast('Wireless mobile upload link copied to clipboard! 📋', 'success');
+          });
+        } else {
+          prompt('Copy Photographer Ingestion Link:', ingestUrl);
+        }
+      });
+    });
+
+    // Delete Event Buttons
+    const deleteButtons = document.querySelectorAll('.delete-event-btn');
+    deleteButtons.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const title = btn.getAttribute('data-title');
+        if (!confirm(`Are you sure you want to permanently delete the live stream for "${title}"?`)) {
+          return;
+        }
+
+        try {
+          const res = await fetch(`/api/live-events/${id}`, { method: 'DELETE' });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            (window as any).showToast('Event deleted successfully! ✓', 'success');
+            const tr = btn.closest('tr');
+            if (tr) tr.remove();
+            setTimeout(() => window.location.reload(), 400);
+          } else {
+            (window as any).showToast(data.error || 'Failed to delete event', 'error');
+          }
+        } catch {
+          (window as any).showToast('Network error deleting event', 'error');
+        }
+      });
+    });
+
+    // Printable Luxury Tent-Card QR Kit Trigger & Handlers
+    let currentActiveSlug = '';
+    let currentActiveTitle = '';
+    let currentActiveVenue = '';
+    let currentActiveMode = '';
+    const printCardButtons = document.querySelectorAll('.print-card-btn');
+    const downloadQrBtn = document.getElementById('download-qr-image-btn');
+    const downloadFullCardBtn = document.getElementById('download-full-card-btn');
+
+    printCardButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const slug = btn.getAttribute('data-slug') || '';
+        const title = btn.getAttribute('data-title') || '';
+        const venue = btn.getAttribute('data-venue') || '';
+        const mode = btn.getAttribute('data-mode') || '';
+
+        currentActiveSlug = slug;
+        currentActiveTitle = title;
+        currentActiveVenue = venue;
+        currentActiveMode = mode;
+
+        const origin = window.location.origin;
+        const liveUrl = `${origin}/live/${slug}`;
+
+        if (tentTitle) tentTitle.textContent = title;
+        if (tentVenue) tentVenue.textContent = `📍 ${venue}`;
+        if (tentDetail) {
+          tentDetail.textContent = mode === 'face_match'
+            ? 'Take a quick selfie to discover and download every frame you appear in as sacred moments unfold.'
+            : 'Explore the full live ceremony stream and download high-resolution master frames live.';
+        }
+
+        if (tentQrImg) {
+          // Generates high-res QR code with CORS support for canvas drawing
+          tentQrImg.crossOrigin = 'anonymous';
+          tentQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(liveUrl)}&margin=1`;
+        }
+
+        if (tentModal) tentModal.style.display = 'flex';
+      });
+    });
+
+    function closeTentCardModal() {
+      if (tentModal) tentModal.style.display = 'none';
+    }
+
+    closeTentBtn?.addEventListener('click', closeTentCardModal);
+    cancelTentBtn?.addEventListener('click', closeTentCardModal);
+
+    // 1. Clean Full-Page Print & PDF Generation (Zero headers, dates, URLs or extra margin)
+    doPrintBtn?.addEventListener('click', () => {
+      const previousTitle = document.title;
+      // Strip document.title completely so browser print headers NEVER show event name, time or date!
+      document.title = '';
+
+      window.print();
+
+      const restoreTitle = () => {
+        document.title = previousTitle;
+      };
+      window.addEventListener('afterprint', restoreTitle, { once: true });
+      setTimeout(restoreTitle, 2000);
+    });
+
+    // 2. Direct QR Code Image (PNG) Download
+    downloadQrBtn?.addEventListener('click', async () => {
+      if (!tentQrImg || !tentQrImg.src) return;
+      try {
+        const res = await fetch(tentQrImg.src);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentActiveSlug || 'event'}-qr-code.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        (window as any).showToast('QR Code image downloaded successfully! ✓', 'success');
+      } catch {
+        const a = document.createElement('a');
+        a.href = tentQrImg.src;
+        a.target = '_blank';
+        a.download = `${currentActiveSlug || 'event'}-qr-code.png`;
+        a.click();
+      }
+    });
+
+    // 3. Complete High-Res Luxury Tent Card (PNG) Standalone Download
+    downloadFullCardBtn?.addEventListener('click', () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1200;
+        canvas.height = 1700;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // Background Gradient
+        const grad = ctx.createRadialGradient(600, 850, 60, 600, 850, 950);
+        grad.addColorStop(0, '#11141C');
+        grad.addColorStop(1, '#05060A');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 1200, 1700);
+
+        // Outer Gold Border
+        ctx.strokeStyle = '#D4AF37';
+        ctx.lineWidth = 10;
+        ctx.strokeRect(40, 40, 1120, 1620);
+
+        // Inner Dashed Border
+        ctx.strokeStyle = 'rgba(212, 175, 55, 0.45)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([10, 8]);
+        ctx.strokeRect(58, 58, 1084, 1584);
+        ctx.setLineDash([]);
+
+        // Corner Ornamental Brackets
+        const cSize = 40;
+        ctx.strokeStyle = '#D4AF37';
+        ctx.lineWidth = 4;
+        // TL
+        ctx.beginPath(); ctx.moveTo(68, 68 + cSize); ctx.lineTo(68, 68); ctx.lineTo(68 + cSize, 68); ctx.stroke();
+        // TR
+        ctx.beginPath(); ctx.moveTo(1132 - cSize, 68); ctx.lineTo(1132, 68); ctx.lineTo(1132, 68 + cSize); ctx.stroke();
+        // BL
+        ctx.beginPath(); ctx.moveTo(68, 1632 - cSize); ctx.lineTo(68, 1632); ctx.lineTo(68 + cSize, 1632); ctx.stroke();
+        // BR
+        ctx.beginPath(); ctx.moveTo(1132 - cSize, 1632); ctx.lineTo(1132, 1632); ctx.lineTo(1132, 1632 - cSize); ctx.stroke();
+
+        // Monogram Circle Badge
+        ctx.beginPath();
+        ctx.arc(600, 170, 36, 0, Math.PI * 2);
+        const goldFill = ctx.createLinearGradient(564, 134, 636, 206);
+        goldFill.addColorStop(0, '#F59E0B');
+        goldFill.addColorStop(1, '#D4AF37');
+        ctx.fillStyle = goldFill;
+        ctx.fill();
+
+        ctx.fillStyle = '#0B0C10';
+        ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('FBH', 600, 170);
+
+        // Studio Title & Sub
+        ctx.fillStyle = '#D4AF37';
+        ctx.font = 'bold 36px "Cinzel", "Playfair Display", Georgia, serif';
+        ctx.fillText('FRAMES BY HITHU', 600, 245);
+
+        ctx.fillStyle = '#94A3B8';
+        ctx.font = '600 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillText('FINE-ART PHOTOGRAPHY • KARNATAKA', 600, 280);
+
+        // Divider
+        ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(360, 320); ctx.lineTo(570, 320); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(630, 320); ctx.lineTo(840, 320); ctx.stroke();
+        ctx.fillStyle = '#D4AF37';
+        ctx.font = '18px sans-serif';
+        ctx.fillText('♦', 600, 320);
+
+        // Welcome Line
+        ctx.fillStyle = '#D4AF37';
+        ctx.font = '600 18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillText('WELCOME TO THE CELEBRATION OF', 600, 375);
+
+        // Event Title (Text wrapping)
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 44px "Playfair Display", Georgia, serif';
+        const words = (currentActiveTitle || 'Live Ceremony').split(' ');
+        let curLine = '';
+        const titleLines: string[] = [];
+        const maxTextWidth = 920;
+        for (let i = 0; i < words.length; i++) {
+          const test = curLine + words[i] + ' ';
+          if (ctx.measureText(test).width > maxTextWidth && i > 0) {
+            titleLines.push(curLine);
+            curLine = words[i] + ' ';
+          } else {
+            curLine = test;
+          }
+        }
+        titleLines.push(curLine);
+
+        let textY = 440;
+        titleLines.forEach(l => {
+          ctx.fillText(l.trim(), 600, textY);
+          textY += 54;
+        });
+
+        // Venue
+        ctx.fillStyle = '#C5A059';
+        ctx.font = '22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillText(`📍 ${currentActiveVenue || 'Palace Grounds, Bengaluru'}`, 600, textY + 10);
+
+        // QR Code Box
+        const qrBoxY = textY + 50;
+        const qrSize = 460;
+        const qrX = (1200 - qrSize) / 2;
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        if (typeof (ctx as any).roundRect === 'function') {
+          (ctx as any).roundRect(qrX, qrBoxY, qrSize, qrSize, 20);
+        } else {
+          ctx.rect(qrX, qrBoxY, qrSize, qrSize);
+        }
+        ctx.fill();
+
+        // Draw QR Image
+        if (tentQrImg && tentQrImg.complete && tentQrImg.naturalWidth > 0) {
+          try {
+            ctx.drawImage(tentQrImg, qrX + 24, qrBoxY + 24, qrSize - 48, qrSize - 48);
+          } catch (e) {
+            console.warn('Canvas QR draw fallback', e);
+          }
+        }
+
+        // Instructions
+        const instY = qrBoxY + qrSize + 55;
+        ctx.fillStyle = '#D4AF37';
+        ctx.font = 'bold 28px "Playfair Display", Georgia, serif';
+        ctx.fillText('Scan with Your Smartphone Camera', 600, instY);
+
+        ctx.fillStyle = '#CBD5E1';
+        ctx.font = '20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        const detail = currentActiveMode === 'face_match'
+          ? 'Take a quick selfie to discover and download every frame you appear in live.'
+          : 'Explore the full live ceremony stream and download high-resolution master frames live.';
+        ctx.fillText(detail, 600, instY + 38);
+
+        // Footer
+        ctx.strokeStyle = 'rgba(212, 175, 55, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(350, 1540); ctx.lineTo(850, 1540); ctx.stroke();
+
+        ctx.fillStyle = '#D4AF37';
+        ctx.font = '18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillText('framesbyhithu.com   •   Live AI Ceremony Stream', 600, 1580);
+
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${currentActiveSlug || 'event'}-luxury-tent-card.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          (window as any).showToast('Luxury Tent-Card image downloaded! ✓', 'success');
+        }, 'image/png');
+      } catch (err: any) {
+        (window as any).showToast('Download error: ' + (err.message || 'Failed to render card'), 'error');
+      }
+    });
+  }
+
+  initLiveEventsConsole();
+  document.addEventListener('astro:page-load', initLiveEventsConsole);
+</script>

@@ -1,0 +1,37 @@
+# Cloudflare Pages Configuration for Frames By Hithu
+# Documentation: https://developers.cloudflare.com/pages/functions/bindings/
+
+name = "frames-by-hithu"
+compatibility_date = "2026-10-11"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "dist"
+
+# ==============================================================================
+# Cloudflare KV Namespace Binding (Production Data Persistence)
+# ==============================================================================
+# Replace with your actual KV Namespace IDs created via:
+#   npx wrangler kv:namespace create FH_STUDIO_KV
+#   npx wrangler kv:namespace create FH_STUDIO_KV --preview
+#
+# In the Cloudflare Pages Dashboard, navigate to:
+#   Settings > Functions > KV Namespace Bindings > Add Binding:
+#   Variable name: FH_STUDIO_KV
+#   KV namespace: Select your created FH_STUDIO_KV namespace
+# ==============================================================================
+
+[[kv_namespaces]]
+binding = "FH_STUDIO_KV"
+id = "<REPLACE_WITH_PRODUCTION_KV_NAMESPACE_ID>"
+preview_id = "<REPLACE_WITH_PREVIEW_KV_NAMESPACE_ID>"
+
+# ==============================================================================
+# Environment Variables & Secrets
+# ==============================================================================
+# In Cloudflare Pages Dashboard, set these under:
+#   Settings > Environment Variables > Production (Encrypted Secrets):
+#
+#   1. ADMIN_PASSWORD: Your secret administrator password
+#   2. SESSION_SECRET: 32+ character random hex/string for HMAC-SHA256 signatures
+# ==============================================================================
+[vars]
+NODE_VERSION = "22"

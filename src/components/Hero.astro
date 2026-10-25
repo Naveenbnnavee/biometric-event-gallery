@@ -1,0 +1,750 @@
+---
+import { getStoreAsync } from '../lib/db';
+import Lightbox from './Lightbox.astro';
+
+// Fetch photos dynamically from database
+const store = await getStoreAsync();
+let heroItems = store.portfolio.filter(p => p.placements?.heroSlider);
+
+// Fallback to top featured portfolio items if fewer than 8 exist
+if (heroItems.length < 8) {
+  const remaining = store.portfolio.filter(p => !heroItems.some(h => h.id === p.id));
+  heroItems = [...heroItems, ...remaining];
+}
+
+// Curate 8-12 photographs for stream lanes
+const curatedItems = heroItems.slice(0, 12);
+
+// Lightbox catalog payload
+const lightboxCatalog = curatedItems.map(item => ({
+  id: item.id,
+  title: item.title,
+  categoryLabel: item.categoryLabel || item.category,
+  location: item.location || item.venue || 'Karnataka, India',
+  image: item.image,
+  caption: item.subline || item.headline || `${item.categoryLabel || item.category} captured with silent fine-art reverence.`
+}));
+
+type HeroCardItem = (typeof curatedItems)[number] & { originalIndex: number };
+
+// Distribute across 4 stream lanes
+const columnCount = 4;
+const columns: HeroCardItem[][] = [[], [], [], []];
+
+curatedItems.forEach((item, index) => {
+  columns[index % columnCount].push({ ...item, originalIndex: index });
+});
+
+// Ensure each column has at least 3 cards so that translating translateY(-50%) forms a seamless loop
+const preparedTracks = columns.map((col, colIdx) => {
+  let list: HeroCardItem[] = [...col];
+  while (list.length < 3 && curatedItems.length > 0) {
+    const fillerIdx = list.length % curatedItems.length;
+    list.push({ ...curatedItems[fillerIdx], originalIndex: fillerIdx });
+  }
+  return {
+    trackIdx: colIdx + 1,
+    cards: list
+  };
+});
+
+// Explicit aspect ratio helper for CLS elimination
+function getAspectClass(card: any, idx: number): string {
+  if (card.aspectRatio === 'landscape' || card.aspect === 'landscape') return 'aspect-landscape';
+  if (card.aspectRatio === 'square' || card.aspect === 'square') return 'aspect-square';
+  const patterns = ['aspect-portrait', 'aspect-classic', 'aspect-tall', 'aspect-portrait'];
+  return patterns[idx % patterns.length];
+}
+---
+
+<section class="hero-stage" id="hero-showcase" aria-label="Fine-Art Cinematic Hero Experience">
+  <!-- Layer 0: Ambient Obsidian Background + Subtle Warm Glows -->
+  <div class="hero-ambient-bg" aria-hidden="true">
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+    <div class="ambient-glow glow-3"></div>
+  </div>
+
+  <!-- Layer 1: Giant Animated Watermark Typography (z-index: 1) -->
+  <div class="hero-cinematic-title" id="heroWatermark" aria-hidden="true">
+    <span class="line-1">FRAMES</span>
+    <span class="line-2">BY HITHU</span>
+  </div>
+
+  <!-- Layer 2: Organic Floating Photo Stream Lanes (z-index: 2) -->
+  <div class="hero-photo-stream" aria-label="Passing Portfolio Frames">
+    {preparedTracks.map((track) => (
+      <div class={`stream-track track-${track.trackIdx}`}>
+        {/* Set A (Original Cards) */}
+        {track.cards.map((card, cardIdx) => {
+          const aspectClass = getAspectClass(card, cardIdx);
+          return (
+            <article
+              class={`stream-card ${aspectClass}`}
+              data-index={card.originalIndex}
+              role="button"
+              tabindex="0"
+              aria-label={`View photograph: ${card.title} at ${card.venue || card.location}`}
+            >
+              <div class="card-media protected-media">
+                <img
+                  src={card.image}
+                  alt={card.altText || card.title}
+                  loading="eager"
+                  decoding="async"
+                  class="card-img"
+                />
+                <div class="card-vignette-overlay"></div>
+                <div class="card-gold-shimmer"></div>
+                <div class="watermark-subtle">FRAMES BY HITHU</div>
+              </div>
+
+              <!-- Refined Card Caption (Illuminated on hover) -->
+              <div class="card-hover-info">
+                <span class="card-category-pill">{card.categoryLabel || 'Fine-Art'}</span>
+                <h3 class="card-name">{card.title}</h3>
+                <p class="card-loc">📍 {card.venue || card.location || 'Karnataka'}</p>
+              </div>
+            </article>
+          );
+        })}
+
+        {/* Set B (Exact Clone for Seamless Non-Breaking Infinite translateY(-50%) Loop) */}
+        {track.cards.map((card, cardIdx) => {
+          const aspectClass = getAspectClass(card, cardIdx);
+          return (
+            <article
+              class={`stream-card ${aspectClass}`}
+              data-index={card.originalIndex}
+              aria-hidden="true"
+              tabindex="-1"
+            >
+              <div class="card-media protected-media">
+                <img
+                  src={card.image}
+                  alt=""
+                  loading="eager"
+                  decoding="async"
+                  class="card-img"
+                />
+                <div class="card-vignette-overlay"></div>
+                <div class="card-gold-shimmer"></div>
+                <div class="watermark-subtle">FRAMES BY HITHU</div>
+              </div>
+
+              <div class="card-hover-info">
+                <span class="card-category-pill">{card.categoryLabel || 'Fine-Art'}</span>
+                <div class="card-name">{card.title}</div>
+                <div class="card-loc">📍 {card.venue || card.location || 'Karnataka'}</div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    ))}
+  </div>
+
+  <!-- Layer 3: Central Luxury Information Card (z-index: 10) -->
+  <div class="hero-central-card-wrapper" id="heroCentralCard">
+    <div class="hero-card-glass">
+      <div class="card-eyebrow">
+        <span class="gold-pip"></span>
+        <span>FINE-ART WEDDINGS & SACRED CEREMONIES • KARNATAKA</span>
+        <span class="gold-pip"></span>
+      </div>
+
+      <h1 class="card-heading">Frames By Hithu</h1>
+
+      <p class="card-tagline">
+        Capturing timeless South Indian traditions with silent reverence.
+      </p>
+
+      <div class="card-actions">
+        <a href="#inquire" class="btn-primary-gold" id="heroCheckAvailBtn">
+          <span>Check Availability</span>
+          <span class="btn-arrow" aria-hidden="true">→</span>
+        </a>
+        <a href="/portfolio" class="btn-secondary-frosted">
+          <span>Explore Portfolios</span>
+        </a>
+      </div>
+
+      <!-- Subtle Venue & Cultural Pill Strip -->
+      <div class="card-traditions-strip">
+        <span>🪔 Lalitha Mahal Palace</span>
+        <span class="strip-dot">•</span>
+        <span>Vedic Muhurthams</span>
+        <span class="strip-dot">•</span>
+        <span>Melukote Stepped Wells</span>
+        <span class="strip-dot">•</span>
+        <span>Sacred Gruhapravesham</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pass Lightbox Data to Client Script -->
+  <script type="application/json" id="hero-lightbox-data" set:html={JSON.stringify(lightboxCatalog)} />
+
+  <!-- Touch & Full-Screen Lightbox Component -->
+  <Lightbox />
+</section>
+
+<style>
+  /* =========================================================================
+     CONTAINER & HERO STAGE
+     ========================================================================= */
+  .hero-stage {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    min-height: 720px;
+    overflow: hidden;
+    background-color: #05060A;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
+  }
+
+  /* Layer 0: Ambient Background */
+  .hero-ambient-bg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background: #05060A;
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.08) 0%, rgba(5, 6, 10, 0.45) 50%, #05060A 85%),
+      radial-gradient(circle at 85% 15%, rgba(212, 175, 55, 0.04) 0%, transparent 40%),
+      radial-gradient(circle at 15% 85%, rgba(184, 134, 11, 0.04) 0%, transparent 40%);
+  }
+
+  .ambient-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    pointer-events: none;
+  }
+
+  .glow-1 {
+    width: 600px;
+    height: 600px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.14) 0%, transparent 70%);
+  }
+
+  .glow-2 {
+    width: 450px;
+    height: 450px;
+    top: -80px;
+    right: -80px;
+    background: radial-gradient(circle, rgba(184, 134, 11, 0.1) 0%, transparent 70%);
+  }
+
+  .glow-3 {
+    width: 450px;
+    height: 450px;
+    bottom: -80px;
+    left: -80px;
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
+  }
+
+  /* =========================================================================
+     LAYER 1: GIANT ANIMATED WATERMARK TYPOGRAPHY (Z-Index: 8 during Phase 1 -> 1 during Phase 2)
+     Phase 1: (0s – 4s) High-visibility prominent fine-art film title statement in front of photos
+     Phase 2: (4s onward) Transitions smoothly into a ghost background watermark behind photos
+     ========================================================================= */
+  .hero-cinematic-title {
+    position: absolute;
+    inset: 0;
+    z-index: 8; /* Sits in front of photos during intro */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    user-select: none;
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    line-height: 0.88;
+    font-size: clamp(4.5rem, 13vw, 15rem);
+    text-align: center;
+    color: #FAF8F5;
+    text-shadow: 0 10px 40px rgba(0, 0, 0, 0.9);
+    transition: opacity 1.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                transform 1.4s cubic-bezier(0.16, 1, 0.3, 1),
+                color 1.4s ease,
+                z-index 0s linear 1.4s; /* Drops z-index after fade */
+  }
+
+  /* Phase 2 (After 4.0s - .watermark-mode): transitions into background watermark */
+  .hero-cinematic-title.watermark-mode {
+    z-index: 1; /* Moves behind the photos and card */
+    opacity: 0.08;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(212, 175, 55, 0.2);
+    transform: scale(0.96);
+    text-shadow: none;
+  }
+
+  .line-1, .line-2 {
+    display: block;
+    white-space: nowrap;
+  }
+
+  /* =========================================================================
+     LAYER 2: PHOTO STREAM LANES (Z-Index: 2)
+     Continuous upward rolling animation with varied speeds and pause on hover
+     ========================================================================= */
+  .hero-photo-stream {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    padding: 0 2rem;
+    pointer-events: auto;
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      black 12%,
+      black 88%,
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      black 12%,
+      black 88%,
+      transparent 100%
+    );
+  }
+
+  .stream-track {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    will-change: transform;
+  }
+
+  /* Upward rolling animation with varied, smooth drift speeds */
+  .track-1 { animation: streamRoll 38s linear infinite; }
+  .track-2 { animation: streamRoll 46s linear infinite; margin-top: -120px; }
+  .track-3 { animation: streamRoll 42s linear infinite; margin-top: -60px; }
+  .track-4 { animation: streamRoll 50s linear infinite; margin-top: -180px; }
+
+  @keyframes streamRoll {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-50%); }
+  }
+
+  /* Pause drift when user hovers any track or card */
+  .stream-track:hover,
+  .stream-track:has(.stream-card:hover) {
+    animation-play-state: paused;
+  }
+
+  /* -------------------------------------------------------------------------
+     STREAM CARDS (Explicit Aspect Ratios for CLS Elimination)
+     ------------------------------------------------------------------------- */
+  .stream-card {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.4s ease,
+                box-shadow 0.4s ease;
+    cursor: pointer;
+    background: #0B0D13;
+    user-select: none;
+  }
+
+  /* Varied aspect ratios for organic, staggered fine-art rhythm */
+  .aspect-portrait { aspect-ratio: 4 / 5; }
+  .aspect-classic { aspect-ratio: 4 / 3; }
+  .aspect-tall { aspect-ratio: 2 / 3; }
+  .aspect-landscape { aspect-ratio: 16 / 10; }
+  .aspect-square { aspect-ratio: 1 / 1; }
+
+  .card-media {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .stream-card img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .card-vignette-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(5, 6, 10, 0.05) 0%, rgba(5, 6, 10, 0.35) 60%, rgba(5, 6, 10, 0.88) 100%);
+    pointer-events: none;
+  }
+
+  .card-gold-shimmer {
+    position: absolute;
+    inset: 0;
+    border-radius: 11px;
+    pointer-events: none;
+    box-shadow: inset 0 0 16px rgba(212, 175, 55, 0.08);
+    transition: box-shadow 0.4s ease;
+  }
+
+  /* Hover micro-interactions */
+  .stream-card:hover,
+  .stream-card:focus-visible {
+    transform: scale(1.05) translateY(-4px);
+    border-color: rgba(212, 175, 55, 0.75);
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(212, 175, 55, 0.25);
+    z-index: 5;
+  }
+
+  .stream-card:hover img {
+    transform: scale(1.06);
+  }
+
+  .stream-card:hover .card-gold-shimmer {
+    box-shadow: inset 0 0 24px rgba(212, 175, 55, 0.25);
+  }
+
+  /* Card Hover Info Caption */
+  .card-hover-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1.2rem 1rem 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    pointer-events: none;
+    transform: translateY(12px);
+    opacity: 0.85;
+    transition: transform 0.35s ease, opacity 0.35s ease;
+  }
+
+  .stream-card:hover .card-hover-info {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  .card-category-pill {
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gold-light, #F3E5AB);
+    font-weight: 600;
+  }
+
+  .card-name {
+    font-family: var(--font-serif, 'Cormorant Garamond', Georgia, serif);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #FFFFFF;
+    line-height: 1.25;
+    margin: 0;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+  }
+
+  .card-loc {
+    font-size: 0.75rem;
+    color: #D4D4D8;
+    margin: 0;
+    line-height: 1.3;
+  }
+
+  /* =========================================================================
+     LAYER 3: CENTRAL LUXURY INFORMATION CARD (Z-Index: 10)
+     Phase 1: (0s – 4s) opacity: 0, scale(0.96), pointer-events: none
+     Phase 2: (4s onward) Reveals smoothly with opacity: 1, scale(1)
+     ========================================================================= */
+  .hero-central-card-wrapper {
+    position: relative;
+    z-index: 10;
+    max-width: 680px;
+    width: 90%;
+    
+    /* Initial hidden state (Phase 1) */
+    opacity: 0;
+    transform: translateY(28px) scale(0.96);
+    pointer-events: none;
+    transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Active visible state after 4 seconds (Phase 2) */
+  .hero-central-card-wrapper.card-revealed {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+
+  /* Refined, semi-translucent frosted glass styling */
+  .hero-card-glass {
+    background: rgba(11, 13, 18, 0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(212, 175, 55, 0.08);
+    border-radius: 20px;
+    padding: 2.75rem 2.5rem;
+    text-align: center;
+    transition: border-color 0.4s ease, box-shadow 0.4s ease;
+  }
+
+  .hero-card-glass:hover {
+    border-color: rgba(212, 175, 55, 0.38);
+    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.9), 0 0 50px rgba(212, 175, 55, 0.14);
+  }
+
+  .card-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #D4AF37;
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+
+  .gold-pip {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #D4AF37;
+    box-shadow: 0 0 6px rgba(212, 175, 55, 0.6);
+  }
+
+  .card-heading {
+    font-family: var(--font-serif, 'Cormorant Garamond', Georgia, serif);
+    font-size: clamp(2.5rem, 5vw, 4.25rem);
+    font-weight: 600;
+    color: #FAF8F5;
+    line-height: 1.1;
+    margin-bottom: 0.75rem;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.9);
+    letter-spacing: 0.02em;
+  }
+
+  .card-tagline {
+    color: #A1A1AA;
+    font-style: italic;
+    font-family: var(--font-serif, 'Cormorant Garamond', Georgia, serif);
+    font-size: 1.25rem;
+    line-height: 1.45;
+    margin-bottom: 2rem;
+  }
+
+  .card-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.75rem;
+  }
+
+  .btn-primary-gold {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #D4AF37, #AA7C11);
+    color: #05060A;
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    padding: 0.75rem 1.75rem;
+    border-radius: 9999px;
+    text-decoration: none;
+    box-shadow: 0 4px 18px rgba(212, 175, 55, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  }
+
+  .btn-primary-gold:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(212, 175, 55, 0.5);
+    filter: brightness(1.08);
+  }
+
+  .btn-arrow {
+    transition: transform 0.25s ease;
+  }
+
+  .btn-primary-gold:hover .btn-arrow {
+    transform: translateX(3px);
+  }
+
+  .btn-secondary-frosted {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    color: #F4F4F6;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    padding: 0.75rem 1.75rem;
+    border-radius: 9999px;
+    text-decoration: none;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .btn-secondary-frosted:hover {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: #D4AF37;
+    transform: translateY(-2px);
+  }
+
+  .card-traditions-strip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    font-size: 0.72rem;
+    color: rgba(161, 161, 170, 0.75);
+    letter-spacing: 0.05em;
+    flex-wrap: wrap;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 1.25rem;
+  }
+
+  .strip-dot {
+    color: rgba(212, 175, 55, 0.4);
+  }
+
+  /* =========================================================================
+     TABLET & MOBILE RESPONSIVENESS (2 Gentle Lanes for 60 FPS)
+     ========================================================================= */
+  @media (max-width: 900px) {
+    .hero-photo-stream {
+      grid-template-columns: repeat(2, 1fr);
+      padding: 0 1rem;
+      gap: 1rem;
+    }
+
+    .track-3, .track-4 {
+      display: none;
+    }
+
+    .track-1 { animation-duration: 44s; }
+    .track-2 { animation-duration: 40s; }
+
+    .hero-cinematic-title {
+      font-size: clamp(3.2rem, 14vw, 7rem);
+      letter-spacing: 0.12em;
+    }
+
+    .hero-card-glass {
+      padding: 2rem 1.5rem;
+      border-radius: 16px;
+    }
+
+    .card-eyebrow {
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+    }
+
+    .card-heading {
+      font-size: clamp(2.2rem, 8vw, 3.2rem);
+    }
+
+    .card-tagline {
+      font-size: 1.05rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-actions {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .btn-primary-gold,
+    .btn-secondary-frosted {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .card-traditions-strip {
+      font-size: 0.68rem;
+      gap: 0.4rem;
+    }
+  }
+</style>
+
+<script>
+  // Choreographed 2-Phase Cinematic Sequence (0s-4s Intro -> 4s+ Card Reveal)
+  function initHeroCinematicExperience() {
+    const watermark = document.getElementById('heroWatermark');
+    const centralCard = document.getElementById('heroCentralCard');
+    const dataElem = document.getElementById('hero-lightbox-data');
+
+    // Register Lightbox catalog
+    if (dataElem) {
+      try {
+        const catalog = JSON.parse(dataElem.textContent || '[]');
+        if ((window as any).registerLightboxCatalog && catalog.length > 0) {
+          (window as any).registerLightboxCatalog(catalog);
+        }
+      } catch (e) {
+        console.warn('[Hero] Failed to parse lightbox catalog:', e);
+      }
+    }
+
+    // Attach click handlers to all stream cards for Lightbox interaction
+    const cards = document.querySelectorAll('.stream-card[data-index]');
+    cards.forEach((cardEl) => {
+      const idxStr = cardEl.getAttribute('data-index');
+      if (idxStr === null) return;
+      const originalIdx = parseInt(idxStr, 10);
+
+      const handleOpen = (e: Event) => {
+        e.preventDefault();
+        if ((window as any).openLightboxAt) {
+          (window as any).openLightboxAt(originalIdx);
+        }
+      };
+
+      cardEl.addEventListener('click', handleOpen);
+      cardEl.addEventListener('keydown', (e: any) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          handleOpen(e);
+        }
+      });
+    });
+
+    if (!watermark || !centralCard) return;
+
+    // Reset initial Phase 1 state
+    watermark.classList.remove('watermark-mode');
+    centralCard.classList.remove('card-revealed');
+
+    // Trigger transition after 4.0 seconds
+    const timer = setTimeout(() => {
+      if (watermark) watermark.classList.add('watermark-mode');
+      if (centralCard) centralCard.classList.add('card-revealed');
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }
+
+  // Bind on both initial load and Astro View Transitions
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initHeroCinematicExperience);
+  } else {
+    initHeroCinematicExperience();
+  }
+  document.addEventListener('astro:page-load', initHeroCinematicExperience);
+</script>

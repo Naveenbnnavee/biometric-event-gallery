@@ -1,0 +1,1535 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { isAuthenticated } from '../../lib/auth';
+import { getInquiriesAsync, getClientGalleriesAsync, getLiveEventsAsync } from '../../lib/db';
+
+export const prerender = false;
+
+const authed = await isAuthenticated(Astro.request);
+if (!authed) {
+  return Astro.redirect('/admin/login');
+}
+
+const inquiries = await getInquiriesAsync();
+const clients = await getClientGalleriesAsync();
+const liveEvents = await getLiveEventsAsync();
+
+// Build booked dates dictionary for instant clash detection
+// Format: date -> array of booked event descriptions
+const bookedDatesMap: Record<string, string[]> = {};
+
+clients.forEach(c => {
+  if (c.ceremonyDate) {
+    if (!bookedDatesMap[c.ceremonyDate]) bookedDatesMap[c.ceremonyDate] = [];
+    bookedDatesMap[c.ceremonyDate].push(`Client: ${c.clientName} (${c.eventTitle})`);
+  }
+});
+
+liveEvents.forEach(e => {
+  if (e.date) {
+    if (!bookedDatesMap[e.date]) bookedDatesMap[e.date] = [];
+    bookedDatesMap[e.date].push(`Live Stream: ${e.title}`);
+  }
+});
+
+// Also check for multiple confirmed inquiries on the same date
+const confirmedInquiries = inquiries.filter(i => i.status === 'confirmed');
+confirmedInquiries.forEach(ci => {
+  if (ci.eventDate) {
+    if (!bookedDatesMap[ci.eventDate]) bookedDatesMap[ci.eventDate] = [];
+    const desc = `Confirmed Lead: ${ci.clientName}`;
+    if (!bookedDatesMap[ci.eventDate].includes(desc)) {
+      bookedDatesMap[ci.eventDate].push(desc);
+    }
+  }
+});
+
+// Calculate statistics
+const totalInquiries = inquiries.length;
+const newLeads = inquiries.filter(i => i.status === 'new').length;
+const contactedLeads = inquiries.filter(i => i.status === 'contacted').length;
+const confirmedLeads = inquiries.filter(i => i.status === 'confirmed').length;
+
+// Inquiries with date clashes
+const clashingInquiries = inquiries.filter(i => {
+  const matches = (bookedDatesMap[i.eventDate] || []).filter(desc => !desc.includes(i.clientName));
+  return matches.length > 0;
+});
+---
+
+<AdminLayout title="Inquiries & Availability Inbox" activeNav="inquiries">
+  <div class="inquiries-page">
+    <!-- Header -->
+    <div class="page-header-row">
+      <div>
+        <h2 class="section-title">Inquiries & Date Availability Inbox</h2>
+        <p class="section-desc">
+          Monitor all incoming bespoke commission leads from the website and concierge. Detect schedule clashes against existing client bookings, dispatch pre-filled availability confirmations via WhatsApp, and manage lead pipelines.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button id="add-inquiry-btn" class="btn-gold">
+          <span>➕ Add In-Person / Phone Lead</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Metric KPI Cards -->
+    <div class="metrics-grid">
+      <div class="metric-card glass-card">
+        <div class="metric-icon-wrap gold">
+          <span>📬</span>
+        </div>
+        <div class="metric-meta">
+          <span class="metric-val">{totalInquiries}</span>
+          <span class="metric-label">Total Inquiries</span>
+        </div>
+      </div>
+
+      <div class="metric-card glass-card">
+        <div class="metric-icon-wrap emerald">
+          <span>✨</span>
+        </div>
+        <div class="metric-meta">
+          <span class="metric-val text-emerald">{newLeads}</span>
+          <span class="metric-label">New Unread Leads</span>
+        </div>
+      </div>
+
+      <div class="metric-card glass-card">
+        <div class="metric-icon-wrap blue">
+          <span>💬</span>
+        </div>
+        <div class="metric-meta">
+          <span class="metric-val">{contactedLeads}</span>
+          <span class="metric-label">Contacted</span>
+        </div>
+      </div>
+
+      <div class="metric-card glass-card">
+        <div class="metric-icon-wrap gold">
+          <span>👑</span>
+        </div>
+        <div class="metric-meta">
+          <span class="metric-val text-gold">{confirmedLeads}</span>
+          <span class="metric-label">Confirmed Bookings</span>
+        </div>
+      </div>
+
+      <div class="metric-card glass-card">
+        <div class="metric-icon-wrap red">
+          <span>⚠️</span>
+        </div>
+        <div class="metric-meta">
+          <span class="metric-val text-red">{clashingInquiries.length}</span>
+          <span class="metric-label">Date Clashes Detected</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="toolbar-box glass-card">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          id="inquiry-search-input"
+          placeholder="Search by client name, phone, email, ceremony, venue, or location..."
+          class="search-input"
+        />
+      </div>
+
+      <div class="filter-tabs" id="status-filter-tabs">
+        <button class="filter-tab active" data-status="all">
+          All Leads ({totalInquiries})
+        </button>
+        <button class="filter-tab" data-status="new">
+          New ({newLeads})
+        </button>
+        <button class="filter-tab" data-status="contacted">
+          Contacted ({contactedLeads})
+        </button>
+        <button class="filter-tab" data-status="confirmed">
+          Confirmed ({confirmedLeads})
+        </button>
+        <button class="filter-tab warning-tab" data-status="clash">
+          ⚠️ Date Clashes ({clashingInquiries.length})
+        </button>
+        <button class="filter-tab" data-status="archived">
+          Archived
+        </button>
+      </div>
+    </div>
+
+    <!-- Inquiries Table / List Container -->
+    <div class="inquiries-container glass-card">
+      <div class="table-responsive">
+        <table class="inquiries-table" id="inquiries-table">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Client & Contact</th>
+              <th>Ceremony & Date</th>
+              <th>Location & Scale</th>
+              <th>Availability & Clash Check</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {inquiries.map(item => {
+              // Calculate clashes for this inquiry
+              const clashes = (bookedDatesMap[item.eventDate] || []).filter(desc => !desc.includes(item.clientName));
+              const hasClash = clashes.length > 0;
+              const cleanPhone = item.phone.replace(/[^0-9]/g, '');
+              const waNumber = cleanPhone.startsWith('91') ? cleanPhone : (cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone);
+              
+              // Polite pre-filled confirmation text
+              const waMessage = `Hello ${item.clientName}! Greetings from Frames By Hithu Luxury Photography.\n\nThank you for inquiring about our photography commissions for your ${item.ceremonyType} on ${item.eventDate}.\n\nWe have reviewed our production schedule for ${item.eventDate}${item.venue ? ` at ${item.venue}` : ''} in ${item.location} and are delighted to confirm our availability!\n\nWould you be free for a brief 10-minute call today to discuss your vision and tailored album spreads?`;
+              const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(waMessage)}`;
+
+              return (
+                <tr
+                  class:list={['inquiry-row', { 'has-clash-row': hasClash }]}
+                  data-id={item.id}
+                  data-status={item.status}
+                  data-has-clash={hasClash ? 'true' : 'false'}
+                  data-search={`${item.clientName} ${item.phone} ${item.email} ${item.ceremonyType} ${item.venue} ${item.location} ${item.notes || ''}`.toLowerCase()}
+                >
+                  <!-- Status Column -->
+                  <td class="status-col">
+                    <div class="status-select-wrap">
+                      <select
+                        class={`status-dropdown status-pill ${item.status}`}
+                        data-id={item.id}
+                        title="Update lead status"
+                      >
+                        <option value="new" selected={item.status === 'new'}>● New</option>
+                        <option value="contacted" selected={item.status === 'contacted'}>💬 Contacted</option>
+                        <option value="confirmed" selected={item.status === 'confirmed'}>✨ Confirmed</option>
+                        <option value="archived" selected={item.status === 'archived'}>📦 Archived</option>
+                      </select>
+                    </div>
+                    <span class="created-at-sub">{new Date(item.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</span>
+                  </td>
+
+                  <!-- Client Name & Contact -->
+                  <td class="client-col">
+                    <div class="client-name-text">{item.clientName}</div>
+                    <div class="contact-links">
+                      <a href={`tel:${item.phone}`} class="contact-sub-link" title="Call Client">
+                        📱 {item.phone}
+                      </a>
+                      {item.email && (
+                        <a href={`mailto:${item.email}`} class="contact-sub-link" title="Email Client">
+                          ✉️ {item.email}
+                        </a>
+                      )}
+                    </div>
+                  </td>
+
+                  <!-- Ceremony & Date -->
+                  <td class="event-col">
+                    <div class="ceremony-badge">{item.ceremonyType}</div>
+                    <div class="date-highlight">
+                      <span class="cal-icon">📅</span>
+                      <strong>{item.eventDate}</strong>
+                    </div>
+                  </td>
+
+                  <!-- Location & Guests -->
+                  <td class="location-col">
+                    <div class="location-venue">
+                      {item.venue ? <strong>{item.venue}</strong> : <span class="text-dim">Venue TBD</span>}
+                    </div>
+                    <div class="location-city">📍 {item.location}</div>
+                    <div class="guests-pill">👥 {item.estimatedGuests || 'Mid-Scale'}</div>
+                  </td>
+
+                  <!-- Availability & Date Clash Detection -->
+                  <td class="availability-col">
+                    {hasClash ? (
+                      <div class="clash-box">
+                        <div class="clash-badge">
+                          <span class="clash-icon">⚠️</span>
+                          <span>DATE CLASH DETECTED</span>
+                        </div>
+                        <div class="clash-details">
+                          {clashes.map(c => (
+                            <div class="clash-reason">⛔ {c}</div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div class="available-badge">
+                        <span class="avail-dot"></span>
+                        <span>Date Available</span>
+                      </div>
+                    )}
+                  </td>
+
+                  <!-- Quick Actions -->
+                  <td class="actions-col">
+                    <div class="actions-button-row">
+                      <a
+                        href={waLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="btn-whatsapp-quick"
+                        title="Open WhatsApp with pre-filled availability reply"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/>
+                        </svg>
+                        <span>Chat on WhatsApp</span>
+                      </a>
+
+                      <button
+                        type="button"
+                        class="btn-view-notes"
+                        data-id={item.id}
+                        data-name={item.clientName}
+                        data-phone={item.phone}
+                        data-email={item.email}
+                        data-ceremony={item.ceremonyType}
+                        data-date={item.eventDate}
+                        data-venue={item.venue}
+                        data-location={item.location}
+                        data-guests={item.estimatedGuests}
+                        data-notes={item.notes || ''}
+                        data-status={item.status}
+                        title="View Full Details & Notes"
+                      >
+                        👁️
+                      </button>
+
+                      <button
+                        type="button"
+                        class="btn-delete-inquiry"
+                        data-id={item.id}
+                        data-name={item.clientName}
+                        title="Delete Inquiry"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+
+            {inquiries.length === 0 && (
+              <tr>
+                <td colspan="6" class="empty-table-cell">
+                  <div class="empty-inbox-state">
+                    <span class="empty-icon">📭</span>
+                    <h3>No inquiries in inbox</h3>
+                    <p>Submissions from the public bespoke inquiry form will automatically appear here.</p>
+                  </div>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manual Add / Edit Inquiry Modal -->
+  <div id="inquiry-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card glass-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="inquiry-modal-title">Record In-Person / Phone Lead</h3>
+        <button id="close-inquiry-modal" class="close-btn" aria-label="Close modal">✕</button>
+      </div>
+
+      <form id="inquiry-form" class="modal-form">
+        <input type="hidden" id="edit-inquiry-id" name="id" />
+
+        <div class="form-grid">
+          <div class="form-group col-2">
+            <label class="form-label" for="inq-name-input">Client Full Name <span class="required">*</span></label>
+            <input
+              type="text"
+              id="inq-name-input"
+              name="clientName"
+              class="form-input"
+              placeholder="e.g. Radhika & Sumeet"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="inq-phone-input">WhatsApp / Phone <span class="required">*</span></label>
+            <input
+              type="tel"
+              id="inq-phone-input"
+              name="phone"
+              class="form-input"
+              placeholder="+91 98450 XXXXX"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="inq-email-input">Email Address</label>
+            <input
+              type="email"
+              id="inq-email-input"
+              name="email"
+              class="form-input"
+              placeholder="radhika@example.com"
+            />
+          </div>
+
+          <div class="form-group col-2">
+            <label class="form-label" for="inq-ceremony-input">Ceremony / Celebration Type <span class="required">*</span></label>
+            <select id="inq-ceremony-input" name="ceremonyType" class="form-select" required>
+              <option value="Grand Karnataka Wedding & Muhurtham">Grand Karnataka Wedding & Muhurtham</option>
+              <option value="Vedic Gruhapravesham (Housewarming)">Vedic Gruhapravesham (Housewarming)</option>
+              <option value="Cinematic Pre-Wedding Shoot">Cinematic Pre-Wedding Shoot</option>
+              <option value="Traditional Pooja & Upanayana">Traditional Pooja & Upanayana</option>
+              <option value="Family Milestone / Seemantha">Family Milestone / Seemantha</option>
+              <option value="Other Bespoke Celebration">Other Bespoke Celebration</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="inq-date-input">Event Date / Muhurtham <span class="required">*</span></label>
+            <input
+              type="date"
+              id="inq-date-input"
+              name="eventDate"
+              class="form-input"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="inq-guests-input">Estimated Guest Scale</label>
+            <select id="inq-guests-input" name="estimatedGuests" class="form-select">
+              <option value="Intimate (< 100 Guests)">Intimate (< 100 Guests)</option>
+              <option value="Mid-Scale (100 - 400 Guests)" selected>Mid-Scale (100 - 400 Guests)</option>
+              <option value="Grand Celebration (400 - 1,000 Guests)">Grand Celebration (400 - 1,000 Guests)</option>
+              <option value="Royal / Opulent (1,000+ Guests)">Royal / Opulent (1,000+ Guests)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="inq-location-input">City / District in Karnataka</label>
+            <input
+              type="text"
+              id="inq-location-input"
+              name="location"
+              class="form-input"
+              placeholder="e.g. Bengaluru, Mysuru, Udupi"
+              value="Bengaluru"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="inq-venue-input">Venue / Mantapam</label>
+            <input
+              type="text"
+              id="inq-venue-input"
+              name="venue"
+              class="form-input"
+              placeholder="e.g. Palace Grounds or Residence"
+            />
+          </div>
+
+          <div class="form-group col-2">
+            <label class="form-label" for="inq-status-input">Initial Status</label>
+            <select id="inq-status-input" name="status" class="form-select">
+              <option value="new">● New Lead</option>
+              <option value="contacted">💬 Contacted</option>
+              <option value="confirmed">✨ Confirmed</option>
+              <option value="archived">📦 Archived</option>
+            </select>
+          </div>
+
+          <div class="form-group col-2">
+            <label class="form-label" for="inq-notes-input">Notes, Rituals & Special Instructions</label>
+            <textarea
+              id="inq-notes-input"
+              name="notes"
+              class="form-textarea"
+              rows="3"
+              placeholder="Details on muhurtham timings, specific family rites, album preferences..."
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="cancel-inquiry-btn" class="btn-outline">Cancel</button>
+          <button type="submit" id="save-inquiry-btn" class="btn-gold">
+            <span>💾 Save Lead</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- View Inquiry Details & Notes Modal -->
+  <div id="details-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card glass-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="details-title">Inquiry Details & Itinerary Notes</h3>
+        <button id="close-details-modal" class="close-btn" aria-label="Close modal">✕</button>
+      </div>
+
+      <div class="details-body">
+        <div class="details-banner">
+          <div>
+            <h4 id="det-client-name" class="det-client-name">Client Name</h4>
+            <span id="det-ceremony-type" class="ceremony-badge">Ceremony</span>
+          </div>
+          <div class="det-status-wrap">
+            <span id="det-status-badge" class="status-pill">Status</span>
+          </div>
+        </div>
+
+        <div class="details-meta-grid">
+          <div class="meta-item">
+            <span class="meta-label">📅 Event Date / Muhurtham</span>
+            <strong id="det-date" class="meta-value text-gold">-</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">📍 Venue & Location</span>
+            <strong id="det-location" class="meta-value">-</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">📱 Phone / WhatsApp</span>
+            <strong id="det-phone" class="meta-value">-</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">✉️ Email Address</span>
+            <strong id="det-email" class="meta-value">-</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">👥 Estimated Guests</span>
+            <strong id="det-guests" class="meta-value">-</strong>
+          </div>
+        </div>
+
+        <div class="details-notes-box">
+          <label class="meta-label" for="det-notes-edit">Client Itinerary Notes & Special Instructions</label>
+          <textarea id="det-notes-edit" class="form-textarea" rows="4"></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <a id="det-wa-direct-btn" href="#" target="_blank" rel="noopener noreferrer" class="btn-whatsapp-quick">
+            <span>💬 Chat on WhatsApp</span>
+          </a>
+          <button type="button" id="det-update-notes-btn" class="btn-gold">
+            <span>💾 Save Notes</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .inquiries-page {
+      padding: 1.5rem 2rem 4rem;
+      max-width: 1500px;
+      margin: 0 auto;
+    }
+
+    .page-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .section-title {
+      font-family: var(--font-serif);
+      font-size: 1.85rem;
+      color: #FAFAF9;
+      margin-bottom: 0.5rem;
+    }
+
+    .section-desc {
+      color: #9CA3AF;
+      font-size: 0.95rem;
+      max-width: 800px;
+      line-height: 1.6;
+    }
+
+    /* KPI Metrics */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .metric-card {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.25rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(19, 20, 27, 0.7);
+    }
+
+    .metric-icon-wrap {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      flex-shrink: 0;
+    }
+
+    .metric-icon-wrap.gold {
+      background: rgba(212, 175, 55, 0.12);
+      border: 1px solid rgba(212, 175, 55, 0.25);
+    }
+
+    .metric-icon-wrap.emerald {
+      background: rgba(37, 211, 102, 0.12);
+      border: 1px solid rgba(37, 211, 102, 0.25);
+    }
+
+    .metric-icon-wrap.blue {
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+    }
+
+    .metric-icon-wrap.red {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .metric-meta {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .metric-val {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #FAFAF9;
+      line-height: 1.2;
+    }
+
+    .metric-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #9CA3AF;
+      margin-top: 0.2rem;
+    }
+
+    .text-emerald {
+      color: #25D366 !important;
+    }
+
+    .text-gold {
+      color: #E5C358 !important;
+    }
+
+    .text-red {
+      color: #F87171 !important;
+    }
+
+    .text-dim {
+      color: #6B7280;
+    }
+
+    /* Toolbar */
+    .toolbar-box {
+      padding: 1.25rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(19, 20, 27, 0.7);
+      margin-bottom: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .search-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1rem;
+      color: #6B7280;
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.75rem 1rem 0.75rem 2.75rem;
+      background: rgba(7, 8, 10, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #F3F4F6;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .search-input:focus {
+      border-color: rgba(212, 175, 55, 0.6);
+      box-shadow: 0 0 10px rgba(212, 175, 55, 0.15);
+    }
+
+    .filter-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .filter-tab {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #9CA3AF;
+      padding: 0.45rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .filter-tab:hover {
+      border-color: rgba(212, 175, 55, 0.4);
+      color: #F3F4F6;
+    }
+
+    .filter-tab.active {
+      background: rgba(212, 175, 55, 0.15);
+      border-color: rgba(212, 175, 55, 0.6);
+      color: #E5C358;
+      font-weight: 600;
+    }
+
+    .filter-tab.warning-tab.active {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.6);
+      color: #F87171;
+    }
+
+    /* Inquiries Table */
+    .inquiries-container {
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(19, 20, 27, 0.7);
+      overflow: hidden;
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+    }
+
+    .inquiries-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    .inquiries-table th {
+      background: rgba(7, 8, 10, 0.8);
+      padding: 1rem 1.25rem;
+      color: #9CA3AF;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      white-space: nowrap;
+    }
+
+    .inquiries-table td {
+      padding: 1.25rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      vertical-align: middle;
+    }
+
+    .inquiry-row {
+      transition: background 0.2s ease;
+    }
+
+    .inquiry-row:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .inquiry-row.has-clash-row {
+      background: rgba(239, 68, 68, 0.03);
+    }
+
+    .inquiry-row.has-clash-row:hover {
+      background: rgba(239, 68, 68, 0.06);
+    }
+
+    /* Status Column */
+    .status-col {
+      min-width: 130px;
+    }
+
+    .status-select-wrap {
+      display: inline-block;
+    }
+
+    .status-dropdown {
+      padding: 0.35rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+      border: 1px solid transparent;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239CA3AF' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: calc(100% - 6px) center;
+      padding-right: 1.5rem;
+    }
+
+    .status-dropdown.new {
+      background-color: rgba(59, 130, 246, 0.15);
+      color: #60A5FA;
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    .status-dropdown.contacted {
+      background-color: rgba(234, 179, 8, 0.15);
+      color: #FACC15;
+      border-color: rgba(234, 179, 8, 0.3);
+    }
+
+    .status-dropdown.confirmed {
+      background-color: rgba(37, 211, 102, 0.15);
+      color: #4ADE80;
+      border-color: rgba(37, 211, 102, 0.3);
+    }
+
+    .status-dropdown.archived {
+      background-color: rgba(107, 114, 128, 0.15);
+      color: #9CA3AF;
+      border-color: rgba(107, 114, 128, 0.3);
+    }
+
+    .created-at-sub {
+      display: block;
+      font-size: 0.7rem;
+      color: #6B7280;
+      margin-top: 0.35rem;
+    }
+
+    /* Client Col */
+    .client-col {
+      min-width: 180px;
+    }
+
+    .client-name-text {
+      font-weight: 600;
+      color: #FAFAF9;
+      font-size: 0.95rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .contact-links {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .contact-sub-link {
+      font-size: 0.78rem;
+      color: #9CA3AF;
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .contact-sub-link:hover {
+      color: var(--gold-light);
+    }
+
+    /* Event Col */
+    .event-col {
+      min-width: 200px;
+    }
+
+    .ceremony-badge {
+      display: inline-block;
+      padding: 0.25rem 0.6rem;
+      background: rgba(212, 175, 55, 0.1);
+      border: 1px solid rgba(212, 175, 55, 0.25);
+      border-radius: 4px;
+      font-size: 0.72rem;
+      color: var(--gold-light);
+      font-weight: 500;
+      margin-bottom: 0.35rem;
+    }
+
+    .date-highlight {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.88rem;
+      color: #F3F4F6;
+    }
+
+    .cal-icon {
+      font-size: 0.9rem;
+    }
+
+    /* Location Col */
+    .location-col {
+      min-width: 170px;
+    }
+
+    .location-venue {
+      font-size: 0.85rem;
+      color: #E5E7EB;
+      margin-bottom: 0.15rem;
+    }
+
+    .location-city {
+      font-size: 0.78rem;
+      color: #9CA3AF;
+      margin-bottom: 0.35rem;
+    }
+
+    .guests-pill {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 0.15rem 0.45rem;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+      color: #D1D5DB;
+    }
+
+    /* Availability Col */
+    .availability-col {
+      min-width: 220px;
+    }
+
+    .available-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.35rem 0.75rem;
+      background: rgba(37, 211, 102, 0.1);
+      border: 1px solid rgba(37, 211, 102, 0.25);
+      color: #4ADE80;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .avail-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #25D366;
+      box-shadow: 0 0 6px #25D366;
+    }
+
+    .clash-box {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .clash-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.65rem;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #F87171;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    .clash-details {
+      font-size: 0.72rem;
+      color: #FCA5A5;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .clash-reason {
+      background: rgba(239, 68, 68, 0.1);
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      line-height: 1.3;
+    }
+
+    /* Actions Col */
+    .actions-col {
+      min-width: 200px;
+    }
+
+    .actions-button-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-whatsapp-quick {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 0.85rem;
+      background: rgba(37, 211, 102, 0.15);
+      border: 1px solid rgba(37, 211, 102, 0.35);
+      color: #4ADE80;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .btn-whatsapp-quick:hover {
+      background: #25D366;
+      color: #07080A;
+      box-shadow: 0 0 12px rgba(37, 211, 102, 0.3);
+    }
+
+    .btn-view-notes, .btn-delete-inquiry {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #D1D5DB;
+      padding: 0.45rem 0.65rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-view-notes:hover {
+      background: rgba(212, 175, 55, 0.2);
+      border-color: rgba(212, 175, 55, 0.5);
+      color: var(--gold-light);
+    }
+
+    .btn-delete-inquiry:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.5);
+      color: #F87171;
+    }
+
+    .empty-table-cell {
+      text-align: center;
+      padding: 4rem 1rem !important;
+    }
+
+    .empty-inbox-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-inbox-state h3 {
+      font-size: 1.25rem;
+      color: #F3F4F6;
+    }
+
+    .empty-inbox-state p {
+      font-size: 0.88rem;
+      color: #9CA3AF;
+    }
+
+    /* Modal Styles */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(7, 8, 10, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 650px;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: #13141B;
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      border-radius: 12px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-family: var(--font-serif);
+      font-size: 1.35rem;
+      color: #FAFAF9;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: #9CA3AF;
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 0.25rem;
+      transition: color 0.2s ease;
+    }
+
+    .close-btn:hover {
+      color: #FAFAF9;
+    }
+
+    .modal-form {
+      padding: 1.5rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+    }
+
+    .col-2 {
+      grid-column: span 2;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .form-label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #D1D5DB;
+    }
+
+    .form-input, .form-select, .form-textarea {
+      background: rgba(7, 8, 10, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 0.65rem 0.85rem;
+      color: #F3F4F6;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+      font-family: inherit;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: rgba(212, 175, 55, 0.6);
+      box-shadow: 0 0 8px rgba(212, 175, 55, 0.15);
+    }
+
+    .modal-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.85rem;
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Details Modal */
+    .details-body {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .details-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .det-client-name {
+      font-size: 1.3rem;
+      font-family: var(--font-serif);
+      color: #FAFAF9;
+      margin-bottom: 0.35rem;
+    }
+
+    .details-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      background: rgba(7, 8, 10, 0.5);
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .meta-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #9CA3AF;
+    }
+
+    .meta-value {
+      font-size: 0.9rem;
+      color: #E5E7EB;
+    }
+
+    .details-notes-box {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .required {
+      color: #F87171;
+    }
+
+    .btn-gold {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--gold-gradient);
+      color: #0B0C10;
+      padding: 0.65rem 1.25rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-gold:hover {
+      box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #D1D5DB;
+      padding: 0.65rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-outline:hover {
+      border-color: var(--gold-primary);
+      color: var(--gold-light);
+    }
+
+    @media (max-width: 768px) {
+      .inquiries-page {
+        padding: 1rem;
+      }
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+      .col-2 {
+        grid-column: span 1;
+      }
+      .details-meta-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+
+  <script>
+    function initInquiriesAdmin() {
+      const searchInput = document.getElementById('inquiry-search-input') as HTMLInputElement | null;
+      const filterTabs = document.querySelectorAll('#status-filter-tabs .filter-tab');
+      const rows = document.querySelectorAll('.inquiry-row');
+      const statusSelects = document.querySelectorAll('.status-dropdown');
+
+      let currentStatusFilter = 'all';
+
+      function filterTable() {
+        const query = searchInput?.value.toLowerCase().trim() || '';
+
+        rows.forEach(row => {
+          const rowStatus = row.getAttribute('data-status') || '';
+          const hasClash = row.getAttribute('data-has-clash') === 'true';
+          const searchText = row.getAttribute('data-search') || '';
+
+          let matchesStatus = true;
+          if (currentStatusFilter === 'clash') {
+            matchesStatus = hasClash;
+          } else if (currentStatusFilter !== 'all') {
+            matchesStatus = rowStatus === currentStatusFilter;
+          }
+
+          const matchesQuery = !query || searchText.includes(query);
+
+          if (matchesStatus && matchesQuery) {
+            (row as HTMLElement).style.display = '';
+          } else {
+            (row as HTMLElement).style.display = 'none';
+          }
+        });
+      }
+
+      searchInput?.addEventListener('input', filterTable);
+
+      filterTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          filterTabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          currentStatusFilter = tab.getAttribute('data-status') || 'all';
+          filterTable();
+        });
+      });
+
+      // Status change listener
+      statusSelects.forEach(select => {
+        select.addEventListener('change', async (e) => {
+          const target = e.target as HTMLSelectElement;
+          const id = target.getAttribute('data-id');
+          const newStatus = target.value;
+          if (!id) return;
+
+          try {
+            const res = await fetch(`/api/inquiries/${id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: newStatus })
+            });
+
+            if (res.ok) {
+              // Update row attribute and style
+              const row = target.closest('.inquiry-row');
+              if (row) {
+                row.setAttribute('data-status', newStatus);
+              }
+              target.className = `status-dropdown status-pill ${newStatus}`;
+            } else {
+              alert('Failed to update status.');
+            }
+          } catch (err) {
+            console.error('Error updating status:', err);
+            alert('Network error updating status.');
+          }
+        });
+      });
+
+      // Delete inquiry buttons
+      const deleteBtns = document.querySelectorAll('.btn-delete-inquiry');
+      deleteBtns.forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-id');
+          const name = btn.getAttribute('data-name');
+          if (!id) return;
+
+          if (confirm(`Are you sure you want to delete inquiry from "${name}"?`)) {
+            try {
+              const res = await fetch(`/api/inquiries/${id}`, {
+                method: 'DELETE'
+              });
+              if (res.ok) {
+                const row = btn.closest('.inquiry-row');
+                row?.remove();
+              } else {
+                alert('Could not delete inquiry.');
+              }
+            } catch (err) {
+              alert('Error deleting inquiry.');
+            }
+          }
+        });
+      });
+
+      // Add/Edit Manual Inquiry Modal
+      const modal = document.getElementById('inquiry-modal');
+      const addBtn = document.getElementById('add-inquiry-btn');
+      const closeBtn = document.getElementById('close-inquiry-modal');
+      const cancelBtn = document.getElementById('cancel-inquiry-btn');
+      const form = document.getElementById('inquiry-form') as HTMLFormElement | null;
+
+      function openModal() {
+        if (modal) modal.style.display = 'flex';
+        form?.reset();
+      }
+
+      function closeModal() {
+        if (modal) modal.style.display = 'none';
+      }
+
+      addBtn?.addEventListener('click', openModal);
+      closeBtn?.addEventListener('click', closeModal);
+      cancelBtn?.addEventListener('click', closeModal);
+
+      modal?.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+      });
+
+      form?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const payload: Record<string, any> = {};
+        formData.forEach((value, key) => {
+          payload[key] = value;
+        });
+
+        try {
+          const res = await fetch('/api/inquiries', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (res.ok) {
+            window.location.reload();
+          } else {
+            const data = await res.json();
+            alert(data.error || 'Failed to save inquiry.');
+          }
+        } catch (err) {
+          alert('Network error saving inquiry.');
+        }
+      });
+
+      // View Details & Notes Modal
+      const detailsModal = document.getElementById('details-modal');
+      const closeDetailsBtn = document.getElementById('close-details-modal');
+      const viewNotesBtns = document.querySelectorAll('.btn-view-notes');
+      const detClientName = document.getElementById('det-client-name');
+      const detCeremonyType = document.getElementById('det-ceremony-type');
+      const detStatusBadge = document.getElementById('det-status-badge');
+      const detDate = document.getElementById('det-date');
+      const detLocation = document.getElementById('det-location');
+      const detPhone = document.getElementById('det-phone');
+      const detEmail = document.getElementById('det-email');
+      const detGuests = document.getElementById('det-guests');
+      const detNotesEdit = document.getElementById('det-notes-edit') as HTMLTextAreaElement | null;
+      const detWaDirectBtn = document.getElementById('det-wa-direct-btn') as HTMLAnchorElement | null;
+      const detUpdateNotesBtn = document.getElementById('det-update-notes-btn');
+
+      let currentInspectingId = '';
+
+      viewNotesBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-id') || '';
+          currentInspectingId = id;
+          const name = btn.getAttribute('data-name') || '';
+          const phone = btn.getAttribute('data-phone') || '';
+          const email = btn.getAttribute('data-email') || '';
+          const ceremony = btn.getAttribute('data-ceremony') || '';
+          const date = btn.getAttribute('data-date') || '';
+          const venue = btn.getAttribute('data-venue') || '';
+          const location = btn.getAttribute('data-location') || '';
+          const guests = btn.getAttribute('data-guests') || '';
+          const notes = btn.getAttribute('data-notes') || '';
+          const status = btn.getAttribute('data-status') || 'new';
+
+          if (detClientName) detClientName.textContent = name;
+          if (detCeremonyType) detCeremonyType.textContent = ceremony;
+          if (detStatusBadge) {
+            detStatusBadge.textContent = status.toUpperCase();
+            detStatusBadge.className = `status-pill ${status}`;
+          }
+          if (detDate) detDate.textContent = date;
+          if (detLocation) detLocation.textContent = venue ? `${venue}, ${location}` : location;
+          if (detPhone) detPhone.textContent = phone;
+          if (detEmail) detEmail.textContent = email || 'Not provided';
+          if (detGuests) detGuests.textContent = guests || 'Mid-Scale';
+          if (detNotesEdit) detNotesEdit.value = notes;
+
+          if (detWaDirectBtn) {
+            const cleanPhone = phone.replace(/[^0-9]/g, '');
+            const waNumber = cleanPhone.startsWith('91') ? cleanPhone : (cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone);
+            const waMsg = `Hello ${name}! Greetings from Frames By Hithu Luxury Photography. Regarding your inquiry for ${ceremony} on ${date} at ${venue ? venue + ', ' : ''}${location}: we are delighted to confirm our availability!`;
+            detWaDirectBtn.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(waMsg)}`;
+          }
+
+          if (detailsModal) detailsModal.style.display = 'flex';
+        });
+      });
+
+      closeDetailsBtn?.addEventListener('click', () => {
+        if (detailsModal) detailsModal.style.display = 'none';
+      });
+
+      detailsModal?.addEventListener('click', (e) => {
+        if (e.target === detailsModal) detailsModal.style.display = 'none';
+      });
+
+      detUpdateNotesBtn?.addEventListener('click', async () => {
+        if (!currentInspectingId || !detNotesEdit) return;
+        const newNotes = detNotesEdit.value;
+
+        try {
+          const res = await fetch(`/api/inquiries/${currentInspectingId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notes: newNotes })
+          });
+
+          if (res.ok) {
+            // Update data-notes on the button
+            const btn = document.querySelector(`.btn-view-notes[data-id="${currentInspectingId}"]`);
+            if (btn) btn.setAttribute('data-notes', newNotes);
+            alert('Notes updated successfully!');
+            if (detailsModal) detailsModal.style.display = 'none';
+          } else {
+            alert('Failed to update notes.');
+          }
+        } catch (err) {
+          alert('Network error updating notes.');
+        }
+      });
+    }
+
+    initInquiriesAdmin();
+    document.addEventListener('astro:page-load', initInquiriesAdmin);
+  </script>
+</AdminLayout>

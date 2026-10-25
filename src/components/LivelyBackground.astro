@@ -1,0 +1,275 @@
+---
+// Lively velvet obsidian background for Frames By Hithu
+// Deep black base (#05060A) with soft breathing champagne gold & temple amber radial glows,
+// floating festive golden embers/bokeh, and tactile fine-art archival grain.
+---
+
+<div class="lively-canvas-root" aria-hidden="true">
+  <!-- Deep Velvet Obsidian Base -->
+  <div class="velvet-base"></div>
+
+  <!-- Soft Breathing Radial Glow Top (Champagne Gold Temple Light) -->
+  <div class="ambient-glow-top"></div>
+
+  <!-- Soft Breathing Radial Glow Bottom (Muted Warm Amber / Sacred Aarti Warmth) -->
+  <div class="ambient-glow-bottom"></div>
+
+  <!-- Smooth Floating Golden Embers & Festive Bokeh Particles -->
+  <div class="floating-embers-container">
+    <div class="ember-particle ember-1"></div>
+    <div class="ember-particle ember-2"></div>
+    <div class="ember-particle ember-3"></div>
+    <div class="ember-particle ember-4"></div>
+    <div class="ember-particle ember-5"></div>
+    <div class="ember-particle ember-6"></div>
+    <div class="ember-particle ember-7"></div>
+    <div class="ember-particle ember-8"></div>
+    <div class="ember-particle ember-9"></div>
+    <div class="ember-particle ember-10"></div>
+    <div class="ember-particle ember-11"></div>
+    <div class="ember-particle ember-12"></div>
+    <div class="ember-particle ember-13"></div>
+    <div class="ember-particle ember-14"></div>
+  </div>
+
+  <!-- Subtle Fine-Art Archival Paper Grain (2% opacity) -->
+  <div class="fineart-grain-overlay"></div>
+
+  <!-- Interactive Subtle Golden Torchlight (Desktop Only) -->
+  <div id="interactive-torchlight" class="interactive-torchlight"></div>
+</div>
+
+<script>
+  // Smooth passive cursor glow on desktop
+  const torchlight = document.getElementById('interactive-torchlight');
+  if (torchlight && window.matchMedia('(pointer: fine)').matches) {
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight * 0.35;
+    let currentX = mouseX;
+    let currentY = mouseY;
+    let rafActive = false;
+
+    function renderGlow() {
+      currentX += (mouseX - currentX) * 0.08;
+      currentY += (mouseY - currentY) * 0.08;
+
+      if (torchlight) {
+        torchlight.style.setProperty('--cx', `${currentX.toFixed(1)}px`);
+        torchlight.style.setProperty('--cy', `${currentY.toFixed(1)}px`);
+      }
+
+      const diff = Math.abs(mouseX - currentX) + Math.abs(mouseY - currentY);
+      if (diff > 0.5) {
+        requestAnimationFrame(renderGlow);
+      } else {
+        rafActive = false;
+      }
+    }
+
+    window.addEventListener('pointermove', (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      if (!rafActive) {
+        rafActive = true;
+        requestAnimationFrame(renderGlow);
+      }
+    }, { passive: true });
+  }
+</script>
+
+<style>
+  .lively-canvas-root {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+    background-color: #05060A; /* True deep velvet obsidian black */
+  }
+
+  .velvet-base {
+    position: absolute;
+    inset: 0;
+    background: #05060A;
+  }
+
+  /* -------------------------------------------------------------
+     Soft Breathing Radial Glow: Top-Center Champagne Gold
+     ------------------------------------------------------------- */
+  .ambient-glow-top {
+    position: absolute;
+    top: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 85vw;
+    max-width: 1200px;
+    height: 520px;
+    border-radius: 50%;
+    background: radial-gradient(
+      ellipse at center,
+      rgba(212, 175, 55, 0.12) 0%,
+      rgba(243, 229, 171, 0.05) 40%,
+      rgba(212, 175, 55, 0.015) 65%,
+      transparent 80%
+    );
+    filter: blur(50px);
+    animation: breatheGlowTop 14s ease-in-out infinite alternate;
+    will-change: transform, opacity;
+  }
+
+  @keyframes breatheGlowTop {
+    0% {
+      transform: translateX(-50%) scale(0.95);
+      opacity: 0.75;
+    }
+    50% {
+      transform: translateX(-50%) scale(1.08);
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(-50%) scale(1.02);
+      opacity: 0.85;
+    }
+  }
+
+  /* -------------------------------------------------------------
+     Soft Breathing Radial Glow: Bottom Muted Temple Amber
+     ------------------------------------------------------------- */
+  .ambient-glow-bottom {
+    position: absolute;
+    bottom: -150px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90vw;
+    max-width: 1300px;
+    height: 560px;
+    border-radius: 50%;
+    background: radial-gradient(
+      ellipse at center,
+      rgba(194, 120, 24, 0.09) 0%,
+      rgba(212, 175, 55, 0.04) 45%,
+      transparent 75%
+    );
+    filter: blur(60px);
+    animation: breatheGlowBottom 18s ease-in-out infinite alternate;
+    will-change: transform, opacity;
+  }
+
+  @keyframes breatheGlowBottom {
+    0% {
+      transform: translateX(-50%) scale(1);
+      opacity: 0.7;
+    }
+    50% {
+      transform: translateX(-50%) scale(1.12);
+      opacity: 0.95;
+    }
+    100% {
+      transform: translateX(-50%) scale(0.96);
+      opacity: 0.75;
+    }
+  }
+
+  /* -------------------------------------------------------------
+     Floating Golden Embers / Festive Bokeh Particles
+     ------------------------------------------------------------- */
+  .floating-embers-container {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .ember-particle {
+    position: absolute;
+    bottom: -30px;
+    border-radius: 50%;
+    background: #FCE7A1;
+    box-shadow: 
+      0 0 8px 1px rgba(247, 228, 168, 0.85),
+      0 0 16px 3px rgba(212, 175, 55, 0.5),
+      0 0 24px 6px rgba(217, 119, 6, 0.25);
+    will-change: transform, opacity;
+    animation-name: floatEmbers;
+    animation-timing-function: cubic-bezier(0.25, 0.1, 0.25, 1);
+    animation-iteration-count: infinite;
+  }
+
+  /* Embers with natural staggered positions, sizes, speeds, and lateral drifts */
+  .ember-1  { left: 7%;  width: 2.5px; height: 2.5px; animation-duration: 22s; animation-delay: 0s;   --x-drift: 35px; }
+  .ember-2  { left: 16%; width: 2px;   height: 2px;   animation-duration: 27s; animation-delay: 5s;   --x-drift: -30px; }
+  .ember-3  { left: 26%; width: 3.5px; height: 3.5px; animation-duration: 24s; animation-delay: 9s;   --x-drift: 45px; }
+  .ember-4  { left: 38%; width: 2px;   height: 2px;   animation-duration: 29s; animation-delay: 2s;   --x-drift: -25px; }
+  .ember-5  { left: 49%; width: 3px;   height: 3px;   animation-duration: 21s; animation-delay: 7s;   --x-drift: 40px; }
+  .ember-6  { left: 59%; width: 2.5px; height: 2.5px; animation-duration: 26s; animation-delay: 12s;  --x-drift: -40px; }
+  .ember-7  { left: 69%; width: 3px;   height: 3px;   animation-duration: 20s; animation-delay: 1s;   --x-drift: 30px; }
+  .ember-8  { left: 79%; width: 3.5px; height: 3.5px; animation-duration: 28s; animation-delay: 8s;   --x-drift: -45px; }
+  .ember-9  { left: 89%; width: 2px;   height: 2px;   animation-duration: 25s; animation-delay: 14s;  --x-drift: 25px; }
+  .ember-10 { left: 12%; width: 3px;   height: 3px;   animation-duration: 31s; animation-delay: 16s;  --x-drift: -35px; }
+  .ember-11 { left: 44%; width: 2.5px; height: 2.5px; animation-duration: 23s; animation-delay: 11s;  --x-drift: 35px; }
+  .ember-12 { left: 84%; width: 3px;   height: 3px;   animation-duration: 27s; animation-delay: 6s;   --x-drift: -35px; }
+  .ember-13 { left: 33%; width: 2px;   height: 2px;   animation-duration: 30s; animation-delay: 18s;  --x-drift: 20px; }
+  .ember-14 { left: 94%; width: 2.5px; height: 2.5px; animation-duration: 22s; animation-delay: 3s;   --x-drift: -25px; }
+
+  @keyframes floatEmbers {
+    0% {
+      transform: translate3d(0, 0, 0) scale(0.6);
+      opacity: 0;
+    }
+    12% {
+      opacity: 0.85;
+      transform: translate3d(calc(var(--x-drift) * 0.25), -18vh, 0) scale(1);
+    }
+    45% {
+      opacity: 0.6;
+      transform: translate3d(calc(var(--x-drift) * -0.35), -50vh, 0) scale(1.1);
+    }
+    80% {
+      opacity: 0.75;
+      transform: translate3d(var(--x-drift), -85vh, 0) scale(0.9);
+    }
+    100% {
+      transform: translate3d(calc(var(--x-drift) * 1.15), -115vh, 0) scale(0.4);
+      opacity: 0;
+    }
+  }
+
+  /* -------------------------------------------------------------
+     Fine-Art Archival Paper & Film Grain Overlay (Subtle 2.5%)
+     ------------------------------------------------------------- */
+  .fineart-grain-overlay {
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.025'/%3E%3C/svg%3E");
+    opacity: 0.5;
+    mix-blend-mode: screen;
+  }
+
+  /* -------------------------------------------------------------
+     Dynamic Interactive Torchlight (Cursor Spotlight)
+     ------------------------------------------------------------- */
+  .interactive-torchlight {
+    --cx: 50vw;
+    --cy: 30vh;
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      600px circle at var(--cx) var(--cy),
+      rgba(212, 175, 55, 0.06) 0%,
+      rgba(217, 119, 6, 0.02) 45%,
+      transparent 70%
+    );
+    transition: opacity 0.5s ease;
+  }
+
+  /* Accessibility: Respect Reduced Motion */
+  @media (prefers-reduced-motion: reduce) {
+    .ambient-glow-top,
+    .ambient-glow-bottom {
+      animation: none !important;
+    }
+    .ember-particle {
+      animation: none !important;
+      display: none;
+    }
+  }
+</style>

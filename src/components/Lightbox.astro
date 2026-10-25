@@ -1,0 +1,728 @@
+---
+import { getStudioSettingsAsync } from '../lib/db';
+
+const settings = await getStudioSettingsAsync();
+const whatsappClean = (settings.whatsappConcierge || settings.primaryPhone || '917892706982').replace(/[^0-9]/g, '');
+---
+
+<div
+  id="luxury-lightbox-modal"
+  class="luxury-lightbox-modal"
+  role="dialog"
+  aria-modal="true"
+  aria-hidden="true"
+  tabindex="-1"
+  data-whatsapp={whatsappClean}
+>
+  <!-- Dark Luxury Blurred Backdrop -->
+  <div class="lightbox-backdrop" id="lightbox-backdrop"></div>
+
+  <!-- Main Lightbox Viewport Container -->
+  <div class="lightbox-container">
+    <!-- Header Bar -->
+    <header class="lightbox-header">
+      <div class="lightbox-brand-block">
+        <span class="lightbox-logo-monogram">FBH</span>
+        <span class="lightbox-studio-title">FRAMES BY HITHU</span>
+        <span class="lightbox-badge-fineart">FINE-ART ARCHIVE</span>
+      </div>
+
+      <div class="lightbox-top-right">
+        <div class="lightbox-counter-pill" id="lightbox-counter">
+          <span id="lb-current-idx">01</span>
+          <span class="counter-slash">/</span>
+          <span id="lb-total-count">12</span>
+        </div>
+
+        <button
+          class="lightbox-close-btn"
+          id="lightbox-close-btn"
+          aria-label="Close Lightbox (Esc)"
+          title="Close Lightbox (Esc)"
+          type="button"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Stage Area -->
+    <div class="lightbox-stage-area">
+      <!-- Previous Arrow -->
+      <button
+        class="lightbox-nav-btn prev-btn"
+        id="lightbox-prev-btn"
+        aria-label="Previous photograph (Left Arrow)"
+        title="Previous (Left Arrow)"
+        type="button"
+      >
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+
+      <!-- Central Photograph Stage -->
+      <div class="lightbox-stage-viewport" id="lightbox-stage-viewport">
+        <div class="lightbox-media-frame protected-media" id="lightbox-media-frame">
+          <img
+            id="lightbox-main-img"
+            src=""
+            alt="Fine-Art Photograph by Frames By Hithu"
+            class="lightbox-main-img"
+            draggable="false"
+          />
+          <!-- Anti-theft transparent shield overlay -->
+          <div class="protected-overlay" aria-hidden="true"></div>
+          <!-- Fine-art subtle copyright watermark -->
+          <div class="watermark-subtle" aria-hidden="true">FRAMES BY HITHU • BESPOKE FINE-ART</div>
+        </div>
+      </div>
+
+      <!-- Next Arrow -->
+      <button
+        class="lightbox-nav-btn next-btn"
+        id="lightbox-next-btn"
+        aria-label="Next photograph (Right Arrow)"
+        title="Next (Right Arrow)"
+        type="button"
+      >
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Editorial Details & High-Converting WhatsApp Inquiry Action Footer -->
+    <footer class="lightbox-footer">
+      <div class="lightbox-info-block">
+        <div class="lightbox-tags-bar">
+          <span id="lightbox-category-tag" class="gold-pill">Weddings & Muhurtham</span>
+          <span id="lightbox-geotag" class="lightbox-geotag-pill">
+            <span class="geo-icon">📍</span>
+            <span id="lightbox-venue-text">Lalitha Mahal Palace</span>
+            <span class="geo-dot">•</span>
+            <span id="lightbox-city-text">Mysuru, Karnataka</span>
+          </span>
+        </div>
+
+        <h3 id="lightbox-photo-title" class="lightbox-photo-title">Golden Hour Kanjeevaram Elegance</h3>
+        <p id="lightbox-caption-text" class="lightbox-caption-text">
+          Vedic Karnataka Weddings • Traditional Muhurtham • Heritage Courtyards
+        </p>
+      </div>
+
+      <div class="lightbox-cta-block">
+        <a
+          id="lightbox-whatsapp-inquire"
+          href="#"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="lightbox-whatsapp-btn"
+        >
+          <div class="whatsapp-btn-inner">
+            <svg class="whatsapp-svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+            </svg>
+            <div class="whatsapp-btn-text">
+              <span class="btn-main-label">Inquire about this frame on WhatsApp</span>
+              <span class="btn-sub-label">Direct with Lead Photographer Hithu</span>
+            </div>
+          </div>
+          <div class="whatsapp-btn-glow"></div>
+        </a>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<style>
+  .luxury-lightbox-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s ease;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .luxury-lightbox-modal.active {
+    display: flex;
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* Deep Velvet Black Blurred Backdrop */
+  .lightbox-backdrop {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(14, 16, 22, 0.96) 0%, rgba(5, 6, 10, 0.99) 100%);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+  }
+
+  /* Main Container */
+  .lightbox-container {
+    position: relative;
+    z-index: 2;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-sizing: border-box;
+    padding: 1rem 1.5rem;
+    overflow: hidden;
+  }
+
+  @media (max-width: 640px) {
+    .lightbox-container {
+      padding: 0.75rem 0.75rem;
+    }
+  }
+
+  /* Header Bar */
+  .lightbox-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    background: rgba(14, 16, 22, 0.6);
+    border: 1px solid rgba(212, 175, 55, 0.15);
+    border-radius: 9999px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .lightbox-brand-block {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .lightbox-logo-monogram {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--gold-gradient);
+    color: #0B0C10;
+    font-weight: 800;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+  }
+
+  .lightbox-studio-title {
+    font-family: var(--font-serif);
+    font-size: 1.05rem;
+    letter-spacing: 0.14em;
+    color: var(--gold-light);
+    font-weight: 600;
+  }
+
+  .lightbox-badge-fineart {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    border-left: 1px solid rgba(255, 255, 255, 0.15);
+    padding-left: 0.75rem;
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    .lightbox-badge-fineart {
+      display: inline;
+    }
+  }
+
+  .lightbox-top-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .lightbox-counter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 4px 12px;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  #lb-current-idx {
+    color: var(--gold-light);
+  }
+
+  .counter-slash {
+    opacity: 0.4;
+  }
+
+  .lightbox-close-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-primary);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+  }
+
+  .lightbox-close-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #EF4444;
+    color: #EF4444;
+    transform: scale(1.08);
+  }
+
+  /* Stage Area */
+  .lightbox-stage-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    padding: 0.75rem 0;
+    overflow: hidden;
+    touch-action: pan-y;
+  }
+
+  .lightbox-nav-btn {
+    background: rgba(14, 16, 22, 0.75);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    color: var(--gold-light);
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: var(--transition-smooth);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .lightbox-nav-btn:hover {
+    background: var(--gold-gradient);
+    color: #0B0C10;
+    border-color: var(--gold-primary);
+    transform: scale(1.12);
+    box-shadow: 0 0 24px rgba(212, 175, 55, 0.5);
+  }
+
+  @media (max-width: 640px) {
+    .lightbox-nav-btn {
+      width: 40px;
+      height: 40px;
+    }
+    .lightbox-nav-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  /* Central Stage Viewport */
+  .lightbox-stage-viewport {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    padding: 0 1rem;
+    box-sizing: border-box;
+  }
+
+  .lightbox-media-frame {
+    position: relative;
+    max-width: 88vw;
+    max-height: 66vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.95), 0 0 40px rgba(212, 175, 55, 0.08);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    background: #000;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+  }
+
+  .lightbox-main-img {
+    max-width: 100%;
+    max-height: 66vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  @media (max-width: 640px) {
+    .lightbox-media-frame,
+    .lightbox-main-img {
+      max-height: 52vh;
+      max-width: 92vw;
+    }
+  }
+
+  /* Footer Details & Action Bar */
+  .lightbox-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    padding: 1rem 1.5rem;
+    background: rgba(14, 16, 22, 0.75);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    border-radius: 12px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+  }
+
+  .lightbox-info-block {
+    flex: 1;
+    min-width: 260px;
+  }
+
+  .lightbox-tags-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.4rem;
+  }
+
+  .lightbox-geotag-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 3px 10px;
+    border-radius: 9999px;
+  }
+
+  .geo-dot {
+    opacity: 0.4;
+  }
+
+  .lightbox-photo-title {
+    font-family: var(--font-serif);
+    font-size: 1.4rem;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+    line-height: 1.25;
+  }
+
+  .lightbox-caption-text {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  /* High-Converting WhatsApp Inquiry Action Button */
+  .lightbox-cta-block {
+    display: flex;
+    align-items: center;
+  }
+
+  .lightbox-whatsapp-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    box-shadow: 0 8px 24px rgba(37, 211, 102, 0.3);
+  }
+
+  .lightbox-whatsapp-btn:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 12px 30px rgba(37, 211, 102, 0.5), 0 0 20px rgba(37, 211, 102, 0.3);
+  }
+
+  .whatsapp-btn-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+    padding: 0.75rem 1.4rem;
+    color: #FFFFFF;
+  }
+
+  .whatsapp-svg {
+    flex-shrink: 0;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  }
+
+  .whatsapp-btn-text {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+  }
+
+  .btn-main-label {
+    font-size: 0.925rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .btn-sub-label {
+    font-size: 0.7rem;
+    opacity: 0.9;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .whatsapp-btn-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.25) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  @media (max-width: 768px) {
+    .lightbox-footer {
+      flex-direction: column;
+      align-items: stretch;
+      padding: 0.85rem 1rem;
+      gap: 0.75rem;
+    }
+
+    .lightbox-photo-title {
+      font-size: 1.15rem;
+    }
+
+    .lightbox-whatsapp-btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .whatsapp-btn-inner {
+      width: 100%;
+      justify-content: center;
+      padding: 0.65rem 1rem;
+    }
+
+    .btn-main-label {
+      font-size: 0.85rem;
+    }
+  }
+</style>
+
+<script>
+  interface LightboxFrame {
+    id?: string;
+    title: string;
+    category?: string;
+    categoryLabel?: string;
+    venue?: string;
+    location?: string;
+    image: string;
+    caption?: string;
+  }
+
+  let catalog: LightboxFrame[] = [];
+  let currentIndex = 0;
+
+  const modal = document.getElementById('luxury-lightbox-modal');
+  const backdrop = document.getElementById('lightbox-backdrop');
+  const closeBtn = document.getElementById('lightbox-close-btn');
+  const prevBtn = document.getElementById('lightbox-prev-btn');
+  const nextBtn = document.getElementById('lightbox-next-btn');
+  const stageViewport = document.getElementById('lightbox-stage-viewport');
+  const mediaFrame = document.getElementById('lightbox-media-frame');
+  const mainImg = document.getElementById('lightbox-main-img') as HTMLImageElement;
+  const currentIdxEl = document.getElementById('lb-current-idx');
+  const totalCountEl = document.getElementById('lb-total-count');
+  const titleEl = document.getElementById('lightbox-photo-title');
+  const catTagEl = document.getElementById('lightbox-category-tag');
+  const venueTextEl = document.getElementById('lightbox-venue-text');
+  const cityTextEl = document.getElementById('lightbox-city-text');
+  const captionEl = document.getElementById('lightbox-caption-text');
+  const waInquireLink = document.getElementById('lightbox-whatsapp-inquire') as HTMLAnchorElement;
+
+  const studioWhatsapp = modal?.getAttribute('data-whatsapp') || '917892706982';
+
+  function renderCurrentFrame() {
+    if (!catalog || catalog.length === 0 || !catalog[currentIndex]) return;
+    const item = catalog[currentIndex];
+
+    // Image
+    if (mainImg) {
+      mainImg.src = item.image;
+      mainImg.alt = `${item.title} by Frames By Hithu`;
+    }
+
+    // Counters
+    if (currentIdxEl) {
+      currentIdxEl.textContent = String(currentIndex + 1).padStart(2, '0');
+    }
+    if (totalCountEl) {
+      totalCountEl.textContent = String(catalog.length).padStart(2, '0');
+    }
+
+    // Metadata
+    if (titleEl) titleEl.textContent = item.title || 'Master Photograph';
+    if (catTagEl) catTagEl.textContent = item.categoryLabel || item.category || 'Fine-Art';
+    if (venueTextEl) venueTextEl.textContent = item.venue || 'Heritage Venue';
+    if (cityTextEl) cityTextEl.textContent = item.location || 'Karnataka, India';
+    if (captionEl) {
+      captionEl.textContent = item.caption || `${item.categoryLabel || 'Fine-Art Moment'} preserved with natural light and archival color fidelity.`;
+    }
+
+    // WhatsApp Inquiry Prefill
+    if (waInquireLink) {
+      const frameTitle = item.title || 'Master Photograph';
+      const ceremony = item.categoryLabel || item.category || 'Ceremony';
+      const venue = item.venue || 'Heritage Venue';
+      const loc = item.location || 'Karnataka';
+
+      const inquiryText = `Hello Hithu, I was admiring this frame from your portfolio: "${frameTitle}" (${ceremony}) taken at ${venue}, ${loc}. Could you share your availability and bespoke commission details for our upcoming ceremony?`;
+
+      waInquireLink.href = `https://wa.me/${studioWhatsapp}?text=${encodeURIComponent(inquiryText)}`;
+    }
+  }
+
+  function openLightboxModal(index: number, newCatalog?: LightboxFrame[]) {
+    if (newCatalog && Array.isArray(newCatalog) && newCatalog.length > 0) {
+      catalog = newCatalog;
+    }
+    if (!catalog || catalog.length === 0) return;
+
+    currentIndex = Math.max(0, Math.min(index, catalog.length - 1));
+    renderCurrentFrame();
+
+    if (modal) {
+      modal.classList.add('active');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      modal.focus();
+    }
+  }
+
+  function closeLightboxModal() {
+    if (!modal) return;
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  function nextFrame() {
+    if (catalog.length === 0) return;
+    currentIndex = (currentIndex + 1) % catalog.length;
+    animateTransition('next');
+  }
+
+  function prevFrame() {
+    if (catalog.length === 0) return;
+    currentIndex = (currentIndex - 1 + catalog.length) % catalog.length;
+    animateTransition('prev');
+  }
+
+  function animateTransition(direction: 'next' | 'prev') {
+    if (!mediaFrame) {
+      renderCurrentFrame();
+      return;
+    }
+
+    mediaFrame.style.opacity = '0.3';
+    mediaFrame.style.transform = direction === 'next' ? 'scale(0.97) translateX(-15px)' : 'scale(0.97) translateX(15px)';
+
+    setTimeout(() => {
+      renderCurrentFrame();
+      mediaFrame.style.opacity = '1';
+      mediaFrame.style.transform = 'scale(1) translateX(0)';
+    }, 150);
+  }
+
+  // Click bindings
+  closeBtn?.addEventListener('click', closeLightboxModal);
+  backdrop?.addEventListener('click', closeLightboxModal);
+  nextBtn?.addEventListener('click', nextFrame);
+  prevBtn?.addEventListener('click', prevFrame);
+
+  // Keyboard navigation
+  window.addEventListener('keydown', (e) => {
+    if (!modal?.classList.contains('active')) return;
+    if (e.key === 'Escape') closeLightboxModal();
+    if (e.key === 'ArrowRight') nextFrame();
+    if (e.key === 'ArrowLeft') prevFrame();
+  });
+
+  // Touch Swipe gestures (supports both touch and pointer drag)
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchEndX = 0;
+  let touchEndY = 0;
+
+  stageViewport?.addEventListener('touchstart', (e: TouchEvent) => {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+
+  stageViewport?.addEventListener('touchend', (e: TouchEvent) => {
+    touchEndX = e.changedTouches[0].screenX;
+    touchEndY = e.changedTouches[0].screenY;
+    handleTouchSwipe();
+  }, { passive: true });
+
+  function handleTouchSwipe() {
+    const diffX = touchEndX - touchStartX;
+    const diffY = touchEndY - touchStartY;
+
+    // Check if horizontal swipe is dominant and exceeds threshold
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 45) {
+      if (diffX < 0) {
+        nextFrame(); // swiped left -> next
+      } else {
+        prevFrame(); // swiped right -> prev
+      }
+    }
+  }
+
+  // Global registration API for PortfolioGrid and any page
+  (window as any).registerLightboxCatalog = function(items: LightboxFrame[]) {
+    catalog = items;
+  };
+
+  (window as any).openLightboxAt = function(index: number) {
+    openLightboxModal(index);
+  };
+
+  (window as any).openLuxuryLightbox = function(index: number, items?: LightboxFrame[]) {
+    openLightboxModal(index, items);
+  };
+</script>

@@ -1,0 +1,508 @@
+---
+import { getStudioSettingsAsync } from '../lib/db';
+
+const currentYear = new Date().getFullYear();
+const settings = await getStudioSettingsAsync();
+
+const karnatakaCities = [
+  { name: 'Bengaluru', href: '/locations/bangalore' },
+  { name: 'Mysuru', href: '/locations/mysore' },
+  { name: 'Mangaluru', href: '/locations/mangalore' },
+  { name: 'Udupi', href: '/locations/udupi' },
+  { name: 'Hubballi', href: '/locations/hubballi' },
+  { name: 'Coorg (Madikeri)', href: '/locations' },
+  { name: 'Chikmagalur', href: '/locations' },
+  { name: 'Hassan', href: '/locations' }
+];
+
+const serviceLinks = [
+  { name: 'Weddings & Muhurtham', href: '/services/wedding-photography' },
+  { name: 'Pre-Wedding & Couple Essays', href: '/services/pre-wedding-shoots' },
+  { name: 'Gruhapravesham (Housewarming)', href: '/services/housewarming-gruhapravesham' },
+  { name: 'Traditional Poojas & Upanayana', href: '/services/poojas-traditional-rituals' }
+];
+
+const hasSocials = Boolean(
+  settings.instagramUrl?.trim() ||
+  settings.facebookUrl?.trim() ||
+  settings.youtubeUrl?.trim() ||
+  settings.pinterestUrl?.trim()
+);
+---
+
+<footer class="luxury-footer">
+  <div class="container">
+    <div class="footer-top">
+      <!-- Col 1: Brand & Philosophy -->
+      <div class="footer-col brand-col">
+        <a href="/" class="footer-brand">
+          <span class="brand-title">FRAMES BY HITHU</span>
+          <span class="brand-subtitle">FINE-ART PHOTOGRAPHY • KARNATAKA</span>
+        </a>
+        <p class="footer-description">
+          A fine-art visual sanctuary dedicated to South Indian heritage, Vedic wedding rituals, sacred Gruhapravesham ceremonies, and timeless couple narratives across the state of Karnataka.
+        </p>
+        <div class="footer-cta-group">
+          <a href="/contact#inquiry-form" class="btn-gold footer-btn">
+            Request Custom Quote
+          </a>
+          <a href={`https://wa.me/${(settings.whatsappConcierge || '917892706982').replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Hello Frames By Hithu, I would like to inquire about a photography commission.')}`} target="_blank" rel="noopener noreferrer" class="btn-whatsapp footer-btn">
+            WhatsApp Studio
+          </a>
+        </div>
+
+        <!-- Social Media Profiles: Strictly shown ONLY if link is inserted in Admin -->
+        {hasSocials && (
+          <div class="footer-social-strip">
+            <span class="social-label">Follow Studio:</span>
+            <div class="social-icons-row">
+              {settings.instagramUrl?.trim() && (
+                <a href={settings.instagramUrl} target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="Instagram" title={`Instagram (${settings.instagramHandle || '@framesbyhithu'})`}>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                    <circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"></circle>
+                  </svg>
+                </a>
+              )}
+              {settings.facebookUrl?.trim() && (
+                <a href={settings.facebookUrl} target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="Facebook" title="Facebook">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                </a>
+              )}
+              {settings.youtubeUrl?.trim() && (
+                <a href={settings.youtubeUrl} target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="YouTube" title="YouTube">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                </a>
+              )}
+              {settings.pinterestUrl?.trim() && (
+                <a href={settings.pinterestUrl} target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="Pinterest" title="Pinterest">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146 1.124.347 2.317.535 3.554.535 6.607 0 11.985-5.365 11.985-11.987C23.97 5.39 18.592.026 11.985.026L12.017 0z"/>
+                  </svg>
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <!-- Col 2: Bespoke Services -->
+      <div class="footer-col">
+        <h3 class="footer-heading">Bespoke Services</h3>
+        <ul class="footer-links">
+          {serviceLinks.map((s) => (
+            <li>
+              <a href={s.href} class="footer-link">{s.name}</a>
+            </li>
+          ))}
+          {settings.clientPortalVisible !== false && (
+            <li>
+              <a href="/client-portal" class="footer-link highlight-link">Client Proofing Portal</a>
+            </li>
+          )}
+          <li>
+            <a href="/feedback" class="footer-link highlight-link">Client Reviews & Feedback</a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Col 3: Statewide Coverage -->
+      <div class="footer-col">
+        <h3 class="footer-heading">Karnataka Coverage</h3>
+        <p class="coverage-sub">Statewide travel with zero logistics hassle:</p>
+        <div class="city-chips">
+          {karnatakaCities.map((city) => (
+            <a href={city.href} class="city-chip">{city.name}</a>
+          ))}
+        </div>
+        <div class="locations-hub-link">
+          <a href="/locations" class="view-all-link">Explore Statewide Local SEO Hub →</a>
+        </div>
+      </div>
+
+      <!-- Col 4: Studio Hub & Direct Contact -->
+      <div class="footer-col">
+        <h3 class="footer-heading">Studio & Concierge</h3>
+        <ul class="contact-list">
+          <li class="contact-item">
+            <span class="contact-icon">📍</span>
+            <div class="contact-address-block">
+              <span>{settings.streetAddress}, {settings.city}, {settings.state} {settings.postalCode}</span>
+              {settings.googleMapsUrl?.trim() && (
+                <div class="footer-map-action">
+                  <a href={settings.googleMapsUrl} target="_blank" rel="noopener noreferrer" class="footer-map-link">
+                    View on Google Maps ↗
+                  </a>
+                </div>
+              )}
+            </div>
+          </li>
+          <li class="contact-item">
+            <span class="contact-icon">📞</span>
+            <a href={`tel:${(settings.primaryPhone || '+91-7892706982').replace(/[^0-9+]/g, '')}`} class="contact-link">{settings.primaryPhone || '+91-7892706982'}</a>
+          </li>
+          <li class="contact-item">
+            <span class="contact-icon">✉️</span>
+            <a href={`mailto:${settings.conciergeEmail || 'inquiries@framesbyhithu.com'}`} class="contact-link">{settings.conciergeEmail || 'inquiries@framesbyhithu.com'}</a>
+          </li>
+          <li class="contact-item">
+            <span class="contact-icon">⏰</span>
+            <span>Mon – Sun: 08:00 AM – 09:00 PM IST (Consultations by Prior Appointment)</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Protected Intellectual Property Notice -->
+    <div class="protection-notice">
+      <div class="notice-badge">FINE-ART COPYRIGHT PROTECTED</div>
+      <p>
+        All imagery, compositions, and color grading displayed on this domain are the exclusive intellectual property of <strong>Frames By Hithu</strong>. Unauthorized reproduction, downloading, scraping, or commercial utilization is strictly prohibited and subject to legal prosecution under Indian & International Copyright Laws.
+      </p>
+    </div>
+
+    <div class="footer-bottom">
+      <p class="copyright">
+        © {currentYear} Frames By Hithu. All rights reserved. Handcrafted for Karnataka Fine-Art Connoisseurs.
+      </p>
+      <div class="legal-links">
+        <a href="/portfolio">Portfolio</a>
+        <span class="dot">•</span>
+        <a href="/stories">Stories</a>
+        {settings.clientPortalVisible !== false && (
+          <span class="dot">•</span>
+          <a href="/client-portal">Client Portal</a>
+        )}
+        <span class="dot">•</span>
+        <a href="/contact#inquiry-form">Custom Inquiry</a>
+        <span class="dot">•</span>
+        <a href="/feedback">Leave a Review</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .luxury-footer {
+    background: #07080A;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+    margin-top: auto;
+    position: relative;
+  }
+
+  .footer-top {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+    margin-bottom: 4rem;
+  }
+
+  @media (min-width: 768px) {
+    .footer-top {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .footer-top {
+      grid-template-columns: 1.4fr 1fr 1.1fr 1.1fr;
+      gap: 2.5rem;
+    }
+  }
+
+  .brand-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.25rem;
+  }
+
+  .brand-title {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    color: var(--text-primary);
+  }
+
+  .brand-subtitle {
+    font-family: var(--font-sans);
+    font-size: 0.65rem;
+    letter-spacing: 0.22em;
+    color: var(--gold-primary);
+    margin-top: 3px;
+  }
+
+  .footer-description {
+    color: var(--text-muted);
+    font-size: 0.925rem;
+    line-height: 1.65;
+    margin-bottom: 1.75rem;
+  }
+
+  .footer-cta-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .footer-btn {
+    padding: 0.65rem 1.25rem;
+    font-size: 0.8rem;
+  }
+
+  .footer-social-strip {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .social-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+  }
+
+  .social-icons-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .footer-social-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(212, 175, 55, 0.28);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gold-primary);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    text-decoration: none;
+  }
+
+  .footer-social-btn:hover {
+    background: rgba(212, 175, 55, 0.14);
+    border-color: var(--gold-primary);
+    color: #FFFFFF;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.25);
+  }
+
+  .footer-map-action {
+    margin-top: 0.35rem;
+  }
+
+  .footer-map-link {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--gold-primary);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: color 0.2s ease;
+  }
+
+  .footer-map-link:hover {
+    color: var(--gold-light);
+    text-decoration: underline;
+  }
+
+  .footer-heading {
+    font-family: var(--font-serif);
+    font-size: 1.25rem;
+    letter-spacing: 0.05em;
+    color: var(--text-primary);
+    margin-bottom: 1.25rem;
+    position: relative;
+    display: inline-block;
+  }
+
+  .footer-heading::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 0;
+    width: 28px;
+    height: 1.5px;
+    background: var(--gold-primary);
+  }
+
+  .footer-links {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .footer-link {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    transition: var(--transition-smooth);
+  }
+
+  .footer-link:hover {
+    color: var(--gold-light);
+    transform: translateX(4px);
+    display: inline-block;
+  }
+
+  .highlight-link {
+    color: var(--gold-light);
+    font-weight: 600;
+  }
+
+  .coverage-sub {
+    font-size: 0.825rem;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+  }
+
+  .city-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-bottom: 1rem;
+  }
+
+  .city-chip {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    color: var(--text-muted);
+    transition: var(--transition-smooth);
+  }
+
+  .city-chip:hover {
+    background: rgba(212, 175, 55, 0.12);
+    border-color: var(--gold-border);
+    color: var(--gold-light);
+  }
+
+  .locations-hub-link {
+    margin-top: 0.75rem;
+  }
+
+  .view-all-link {
+    font-size: 0.825rem;
+    color: var(--gold-primary);
+    font-weight: 600;
+  }
+
+  .view-all-link:hover {
+    text-decoration: underline;
+  }
+
+  .contact-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .contact-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .contact-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .contact-link:hover {
+    color: var(--gold-light);
+  }
+
+  /* Protection notice */
+  .protection-notice {
+    background: rgba(20, 22, 29, 0.6);
+    border: 1px solid rgba(212, 175, 55, 0.15);
+    border-radius: 6px;
+    padding: 1.25rem 1.75rem;
+    margin-bottom: 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .notice-badge {
+    display: inline-block;
+    align-self: flex-start;
+    font-size: 0.675rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--gold-light);
+    background: rgba(212, 175, 55, 0.12);
+    padding: 2px 8px;
+    border-radius: 3px;
+    border: 1px solid var(--gold-border);
+  }
+
+  .protection-notice p {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .footer-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  @media (min-width: 768px) {
+    .footer-bottom {
+      flex-direction: row;
+    }
+  }
+
+  .copyright {
+    font-size: 0.825rem;
+    color: var(--text-dim);
+  }
+
+  .legal-links {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.825rem;
+    color: var(--text-dim);
+  }
+
+  .legal-links a:hover {
+    color: var(--gold-light);
+  }
+
+  .dot {
+    color: var(--text-dim);
+    opacity: 0.4;
+  }
+</style>

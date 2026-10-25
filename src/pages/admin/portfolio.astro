@@ -1,0 +1,1663 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { isAuthenticated } from '../../lib/auth';
+import { getPortfolioItemsAsync, getCategoriesAsync } from '../../lib/db';
+
+export const prerender = false;
+
+const authed = await isAuthenticated(Astro.request);
+if (!authed) {
+  return Astro.redirect('/admin/login');
+}
+
+const portfolio = await getPortfolioItemsAsync();
+const categories = await getCategoriesAsync();
+---
+
+<AdminLayout title="Photo & Placement Manager" activeNav="portfolio">
+  <div class="portfolio-page">
+    <div class="page-header-row">
+      <div>
+        <h2 class="section-title">Master Photograph Archive</h2>
+        <p class="section-desc">
+          Complete CRUD control and precise placement targeting: designate each photo for the Homepage Hero Slider, tactile Instant Card Stack, Portfolio Grid, Client Stories, or Before & After Retouching.
+        </p>
+      </div>
+
+      <button id="add-photo-btn" class="btn-gold">
+        <span>➕ Add Master Photograph</span>
+      </button>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="toolbar-box glass-card">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Search by title, venue, location, or headline..."
+          class="search-input"
+        />
+      </div>
+
+      <!-- Placement Filter Tabs -->
+      <div class="filter-section">
+        <span class="filter-label">PLACEMENT TARGET:</span>
+        <div class="filter-tabs" id="placement-filter-tabs">
+          <button class="filter-tab active" data-placement="all">
+            All Placements ({portfolio.length})
+          </button>
+          <button class="filter-tab" data-placement="heroSlider">
+            🎬 Hero Slider ({portfolio.filter(p => p.placements?.heroSlider).length})
+          </button>
+          <button class="filter-tab" data-placement="instantDeck">
+            ✨ Instant Decks ({portfolio.filter(p => p.placements?.instantDeck).length})
+          </button>
+          <button class="filter-tab" data-placement="portfolioGrid">
+            🖼️ Portfolio Grid ({portfolio.filter(p => p.placements?.portfolioGrid).length})
+          </button>
+          <button class="filter-tab" data-placement="clientStories">
+            📖 Stories ({portfolio.filter(p => p.placements?.clientStories).length})
+          </button>
+          <button class="filter-tab" data-placement="beforeAfterSlider">
+            ⚡ Before / After ({portfolio.filter(p => p.placements?.beforeAfterSlider).length})
+          </button>
+        </div>
+      </div>
+
+      <!-- Category Filter Tabs -->
+      <div class="filter-section">
+        <span class="filter-label">CEREMONY CATEGORY:</span>
+        <div class="filter-tabs" id="category-filter-tabs">
+          <button class="filter-tab cat-tab active" data-category="all">
+            All Categories ({portfolio.length})
+          </button>
+          {categories.map(cat => (
+            <button class="filter-tab cat-tab" data-category={cat.id}>
+              <span>{cat.emoji}</span>
+              <span>{cat.label} ({portfolio.filter(p => p.category === cat.id).length})</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <!-- Photos Grid -->
+    <div class="photos-grid" id="photos-grid">
+      {portfolio.map(photo => (
+        <div
+          class="photo-card glass-card"
+          data-id={photo.id}
+          data-category={photo.category}
+          data-hero={photo.placements?.heroSlider ? 'true' : 'false'}
+          data-deck={photo.placements?.instantDeck ? 'true' : 'false'}
+          data-grid={photo.placements?.portfolioGrid ? 'true' : 'false'}
+          data-stories={photo.placements?.clientStories ? 'true' : 'false'}
+          data-retouch={photo.placements?.beforeAfterSlider ? 'true' : 'false'}
+          data-title={photo.title.toLowerCase()}
+          data-venue={(photo.venue || '').toLowerCase()}
+          data-loc={(photo.location || '').toLowerCase()}
+          data-headline={(photo.headline || '').toLowerCase()}
+          data-json={JSON.stringify(photo)}
+        >
+          <div class="photo-media-box">
+            <img src={photo.image} alt={photo.altText} class="photo-img" loading="lazy" />
+            <div class="photo-overlay-badges">
+              <span class="cat-badge">{photo.categoryLabel || photo.category}</span>
+              <span class="aspect-badge">{photo.aspectRatio || photo.aspect || 'portrait'}</span>
+            </div>
+
+            <!-- Active placement indicators -->
+            <div class="placement-chips-overlay">
+              {photo.placements?.heroSlider && <span class="chip chip-hero" title="Active in Hero Slider">Hero</span>}
+              {photo.placements?.instantDeck && <span class="chip chip-deck" title="Active in Instant Decks">Deck</span>}
+              {photo.placements?.portfolioGrid && <span class="chip chip-grid" title="Active in Portfolio Grid">Grid</span>}
+              {photo.placements?.clientStories && <span class="chip chip-stories" title="Active in Stories">Story</span>}
+              {photo.placements?.beforeAfterSlider && <span class="chip chip-retouch" title="Active in Retouch Slider">Retouch</span>}
+            </div>
+          </div>
+
+          <div class="photo-meta">
+            <h4 class="photo-title">{photo.title}</h4>
+            {photo.headline && photo.headline !== photo.title && (
+              <p class="photo-headline">"{photo.headline}"</p>
+            )}
+            <span class="photo-venue">📍 {photo.venue}</span>
+            <span class="photo-loc">{photo.location}</span>
+
+            {photo.deckBadge && (
+              <div class="deck-badge-pill">Badge: {photo.deckBadge}</div>
+            )}
+
+            <!-- Placement summary row -->
+            <div class="placement-summary-bar">
+              <span class="placement-summary-label">Placements:</span>
+              <div class="summary-dots">
+                <span class:list={['dot', { active: photo.placements?.heroSlider }]} title="Hero Slider">🎬</span>
+                <span class:list={['dot', { active: photo.placements?.instantDeck }]} title="Instant Deck">✨</span>
+                <span class:list={['dot', { active: photo.placements?.portfolioGrid }]} title="Portfolio Grid">🖼️</span>
+                <span class:list={['dot', { active: photo.placements?.clientStories }]} title="Stories">📖</span>
+                <span class:list={['dot', { active: photo.placements?.beforeAfterSlider }]} title="Before/After">⚡</span>
+              </div>
+            </div>
+
+            <div class="photo-actions">
+              <button
+                class="edit-photo-btn action-btn edit-btn"
+                data-id={photo.id}
+                title="Edit Photo Details & Placements"
+              >
+                ✏️ Edit
+              </button>
+
+              <button
+                class:list={['quick-deck-btn action-btn', { active: photo.placements?.instantDeck }]}
+                data-id={photo.id}
+                data-active={photo.placements?.instantDeck ? 'true' : 'false'}
+                title="Quick Toggle Instant Deck"
+              >
+                {photo.placements?.instantDeck ? '★ In Deck' : '☆ Deck'}
+              </button>
+
+              <button
+                class:list={['quick-retouch-btn action-btn', { active: photo.placements?.beforeAfterSlider }]}
+                data-id={photo.id}
+                data-active={photo.placements?.beforeAfterSlider ? 'true' : 'false'}
+                title="Quick Toggle Before/After Retouch Slider"
+              >
+                {photo.placements?.beforeAfterSlider ? '⚡ In B/A' : '⚡ B/A'}
+              </button>
+
+              <button
+                class="delete-photo-btn action-btn delete-btn"
+                data-id={photo.id}
+                data-title={photo.title}
+                title="Delete Photo"
+              >
+                🗑️
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <!-- Empty State -->
+    <div id="no-photos-found" class="empty-state text-center" style="display: none;">
+      <p class="empty-text">No photographs matched your selected placement, category, or search query.</p>
+    </div>
+  </div>
+
+  <!-- Add / Edit Photo Modal -->
+  <div id="photo-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card glass-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-heading">Add Master Photograph</h3>
+        <button id="close-modal-btn" class="close-btn" aria-label="Close modal">✕</button>
+      </div>
+
+      <form id="photo-form" class="modal-form" novalidate>
+        <input type="hidden" id="edit-id" name="id" value="" />
+
+        <div class="form-grid">
+          <!-- Image Source Dropzone & URL -->
+          <div class="form-group col-2">
+            <div class="image-source-header">
+              <label class="form-label">Photograph Source *</label>
+              <div class="source-toggle-tabs">
+                <button type="button" class="source-tab active" id="tab-upload-btn">📁 Upload File</button>
+                <button type="button" class="source-tab" id="tab-url-btn">🔗 Paste Image URL</button>
+              </div>
+            </div>
+
+            <!-- Upload Dropzone Area -->
+            <div id="upload-dropzone" class="upload-dropzone">
+              <input type="file" id="portfolio-file-input" accept="image/*" class="file-hidden-input" />
+              <div class="dropzone-content" id="dropzone-default-content">
+                <span class="dropzone-icon">📸</span>
+                <span class="dropzone-text">Click to browse or drag & drop high-res image</span>
+                <span class="dropzone-sub">Accepts JPG, PNG, WEBP, AVIF</span>
+              </div>
+              <div id="upload-spinner" class="upload-spinner" style="display: none;">
+                <span class="spinner-icon">⏳</span>
+                <span>Uploading high-resolution photograph...</span>
+              </div>
+            </div>
+
+            <!-- URL Input Fallback -->
+            <div id="url-input-container" style="display: none; margin-top: 0.75rem;">
+              <input
+                type="text"
+                id="photo-image-url"
+                name="image"
+                class="form-input"
+                placeholder="https://images.unsplash.com/... or /uploads/... or image URL"
+              />
+            </div>
+
+            <!-- Visual Preview Container -->
+            <div id="image-preview-box" class="preview-box" style="display: none; margin-top: 0.75rem;">
+              <img id="preview-img" src="" alt="Preview" class="preview-img" />
+              <button type="button" id="remove-preview-btn" class="remove-preview-btn" title="Remove preview">✕ Change Image</button>
+            </div>
+          </div>
+
+          <div class="form-group col-2">
+            <label class="form-label" for="photo-title">Photograph Title *</label>
+            <input
+              type="text"
+              id="photo-title"
+              name="title"
+              class="form-input"
+              placeholder="e.g. Dawn Muhurtham Akshathe Blessing"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="photo-category">Ceremony Category *</label>
+            <select id="photo-category" name="category" class="form-select" required>
+              {categories.map(cat => (
+                <option value={cat.id}>{cat.emoji} {cat.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="photo-aspect">Orientation / Aspect Ratio</label>
+            <select id="photo-aspect" name="aspectRatio" class="form-select">
+              <option value="portrait">Portrait (3:4)</option>
+              <option value="landscape">Landscape (16:9)</option>
+              <option value="square">Square (1:1)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="photo-venue">Venue Name *</label>
+            <input
+              type="text"
+              id="photo-venue"
+              name="venue"
+              class="form-input"
+              placeholder="e.g. Lalitha Mahal Palace, Sheesh Mahal"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="photo-location">Karnataka Location *</label>
+            <input
+              type="text"
+              id="photo-location"
+              name="location"
+              class="form-input"
+              placeholder="e.g. Mysuru, Karnataka"
+              required
+            />
+          </div>
+
+          <div class="form-group col-2">
+            <label class="form-label" for="photo-headline">Cinematic Headline (Hero Slider & Stories)</label>
+            <input
+              type="text"
+              id="photo-headline"
+              name="headline"
+              class="form-input"
+              placeholder="e.g. Preserving Sacred Unions in Timeless Fine-Art Splendor"
+            />
+          </div>
+
+          <div class="form-group col-2">
+            <label class="form-label" for="photo-subline">Subline / Ritual Detail</label>
+            <input
+              type="text"
+              id="photo-subline"
+              name="subline"
+              class="form-input"
+              placeholder="e.g. Vedic Karnataka Weddings • Traditional Muhurtham • Heritage Courtyards"
+            />
+          </div>
+
+          <div class="form-group col-2">
+            <label class="form-label" for="photo-before-image">Optional Before / Raw Image (For Retouching Slider)</label>
+            <input
+              type="text"
+              id="photo-before-image"
+              name="beforeImage"
+              class="form-input"
+              placeholder="https://... or /uploads/... (unretouched raw image URL)"
+            />
+          </div>
+
+          <div class="form-group col-2">
+            <label class="form-label" for="photo-alt">SEO Image Alt Text</label>
+            <input
+              type="text"
+              id="photo-alt"
+              name="altText"
+              class="form-input"
+              placeholder="Descriptive alt text for Google Image SEO"
+            />
+          </div>
+
+          <!-- WEBSITE PLACEMENT TARGET CONTROLS -->
+          <div class="form-group col-2 placements-container">
+            <label class="form-label section-subheading">Specific Website Placement Targets</label>
+            <p class="placement-instruction">Select all locations across the website where this master frame should appear:</p>
+
+            <div class="placements-grid">
+              <label class="placement-option">
+                <input type="checkbox" id="place-hero" name="heroSlider" value="true" />
+                <div class="placement-option-text">
+                  <strong>🎬 Homepage Cinematic Hero Slider</strong>
+                  <span>Full-bleed cinematic banner with headline overlay on the homepage</span>
+                </div>
+              </label>
+
+              <label class="placement-option">
+                <input type="checkbox" id="place-deck" name="instantDeck" value="true" />
+                <div class="placement-option-text">
+                  <strong>✨ Meta Instant Card Stack</strong>
+                  <span>Tactile 3D swipeable photo deck on Homepage & Portfolio archive</span>
+                </div>
+              </label>
+
+              <label class="placement-option">
+                <input type="checkbox" id="place-grid" name="portfolioGrid" value="true" checked />
+                <div class="placement-option-text">
+                  <strong>🖼️ Expanded Portfolio Grid</strong>
+                  <span>Main gallery grid with category filters and full-screen lightbox</span>
+                </div>
+              </label>
+
+              <label class="placement-option">
+                <input type="checkbox" id="place-stories" name="clientStories" value="true" />
+                <div class="placement-option-text">
+                  <strong>📖 Client Stories Showcase</strong>
+                  <span>Featured in narrative event recaps and ceremonial essays</span>
+                </div>
+              </label>
+
+              <label class="placement-option">
+                <input type="checkbox" id="place-retouch" name="beforeAfterSlider" value="true" />
+                <div class="placement-option-text">
+                  <strong>⚡ Before & After Retouching Slider</strong>
+                  <span>Interactive split-screen comparison showing raw capture vs fine-art grade</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group col-2" id="badge-group">
+            <label class="form-label" for="photo-badge">Instant Deck Badge Tag (Optional)</label>
+            <input
+              type="text"
+              id="photo-badge"
+              name="deckBadge"
+              class="form-input"
+              placeholder="e.g. Muhurtham Finery, Sacred Union, Gau Pooja"
+            />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="cancel-modal-btn" class="btn-cancel">Cancel</button>
+          <button type="submit" id="save-photo-btn" class="btn-gold">Save Photograph</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  .portfolio-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+  }
+
+  .page-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .section-title {
+    font-family: var(--font-serif);
+    font-size: 1.8rem;
+    color: #FFFFFF;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .section-desc {
+    color: #9CA3AF;
+    font-size: 0.9rem;
+    max-width: 820px;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  /* Toolbar */
+  .toolbar-box {
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+  }
+
+  .search-wrap {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 0 1rem;
+  }
+
+  .search-icon {
+    font-size: 1rem;
+    opacity: 0.6;
+    margin-right: 0.5rem;
+  }
+
+  .search-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #FFFFFF;
+    padding: 0.75rem 0;
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    outline: none;
+  }
+
+  .filter-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .filter-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--gold-light, #D4AF37);
+    text-transform: uppercase;
+  }
+
+  .filter-tabs {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+  }
+
+  .filter-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    color: #9CA3AF;
+    padding: 0.45rem 0.9rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+  }
+
+  .filter-tab:hover {
+    color: #FFFFFF;
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .filter-tab.active {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: var(--border-gold);
+    color: var(--text-gold);
+    font-weight: 600;
+  }
+
+  /* Photos Grid */
+  .photos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .photo-card {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(14, 16, 22, 0.85);
+  }
+
+  .photo-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--gold-primary);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  }
+
+  .photo-media-box {
+    position: relative;
+    width: 100%;
+    height: 220px;
+    background: #000;
+    overflow: hidden;
+  }
+
+  .photo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+
+  .photo-card:hover .photo-img {
+    transform: scale(1.03);
+  }
+
+  .photo-overlay-badges {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 2;
+  }
+
+  .cat-badge {
+    background: rgba(11, 12, 16, 0.88);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border-gold);
+    color: var(--text-gold);
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 9999px;
+  }
+
+  .aspect-badge {
+    background: rgba(0, 0, 0, 0.7);
+    color: #9CA3AF;
+    font-size: 0.65rem;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 9999px;
+    text-transform: capitalize;
+    align-self: flex-start;
+  }
+
+  .placement-chips-overlay {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    z-index: 2;
+  }
+
+  .chip {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    backdrop-filter: blur(4px);
+  }
+
+  .chip-hero { background: rgba(220, 38, 38, 0.85); color: #FFF; }
+  .chip-deck { background: rgba(212, 175, 55, 0.9); color: #000; }
+  .chip-grid { background: rgba(37, 99, 235, 0.85); color: #FFF; }
+  .chip-stories { background: rgba(16, 185, 129, 0.85); color: #FFF; }
+  .chip-retouch { background: rgba(139, 92, 246, 0.85); color: #FFF; }
+
+  .photo-meta {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    flex: 1;
+  }
+
+  .photo-title {
+    font-family: var(--font-serif);
+    font-size: 1.12rem;
+    color: #FFFFFF;
+    margin: 0;
+    line-height: 1.3;
+  }
+
+  .photo-headline {
+    font-size: 0.8rem;
+    color: var(--gold-light, #E6C875);
+    font-style: italic;
+    margin: 0;
+    line-height: 1.35;
+  }
+
+  .photo-venue {
+    font-size: 0.8rem;
+    color: #D1D5DB;
+  }
+
+  .photo-loc {
+    font-size: 0.75rem;
+    color: #9CA3AF;
+  }
+
+  .deck-badge-pill {
+    align-self: flex-start;
+    font-size: 0.7rem;
+    color: var(--text-gold);
+    background: rgba(212, 175, 55, 0.08);
+    border: 1px dashed var(--border-gold);
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-top: 4px;
+  }
+
+  .placement-summary-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.4rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .placement-summary-label {
+    font-size: 0.7rem;
+    color: #9CA3AF;
+  }
+
+  .summary-dots {
+    display: flex;
+    gap: 0.35rem;
+    font-size: 0.82rem;
+  }
+
+  .summary-dots .dot {
+    opacity: 0.25;
+    filter: grayscale(1);
+    transition: opacity 0.2s ease, filter 0.2s ease;
+  }
+
+  .summary-dots .dot.active {
+    opacity: 1;
+    filter: none;
+  }
+
+  .photo-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .action-btn {
+    border: none;
+    border-radius: 6px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .edit-btn {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.07);
+    color: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .edit-btn:hover {
+    background: rgba(212, 175, 55, 0.2);
+    border-color: var(--gold-primary);
+    color: var(--gold-light);
+  }
+
+  .quick-deck-btn {
+    background: rgba(255, 255, 255, 0.04);
+    color: #9CA3AF;
+    border: 1px solid var(--border-subtle);
+    white-space: nowrap;
+  }
+
+  .quick-deck-btn.active {
+    background: rgba(212, 175, 55, 0.18);
+    color: var(--gold-light);
+    border-color: var(--gold-primary);
+  }
+
+  .quick-deck-btn:hover {
+    border-color: var(--gold-primary);
+    color: #FFFFFF;
+  }
+
+  .quick-retouch-btn {
+    background: rgba(139, 92, 246, 0.08);
+    color: #C4B5FD;
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    white-space: nowrap;
+  }
+
+  .quick-retouch-btn.active {
+    background: rgba(139, 92, 246, 0.3);
+    color: #FFFFFF;
+    border-color: rgba(139, 92, 246, 0.8);
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+  }
+
+  .quick-retouch-btn:hover {
+    border-color: rgba(139, 92, 246, 0.8);
+    color: #FFFFFF;
+  }
+
+  .delete-btn {
+    background: rgba(239, 68, 68, 0.08);
+    color: #EF4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    padding: 0.45rem 0.65rem;
+  }
+
+  .delete-btn:hover {
+    background: rgba(239, 68, 68, 0.25);
+    color: #FFFFFF;
+  }
+
+  /* Empty state */
+  .empty-state {
+    padding: 4rem 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px dashed var(--border-subtle);
+    border-radius: 12px;
+  }
+
+  .empty-text {
+    color: #9CA3AF;
+    font-size: 0.95rem;
+  }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 1.5rem;
+  }
+
+  .modal-card {
+    background: #0E1017;
+    border: 1px solid var(--border-gold);
+    border-radius: 14px;
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 2rem;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 1.5rem;
+  }
+
+  .modal-title {
+    font-family: var(--font-serif);
+    font-size: 1.45rem;
+    color: #FFFFFF;
+    margin: 0;
+  }
+
+  .close-btn {
+    background: transparent;
+    border: none;
+    color: #9CA3AF;
+    font-size: 1.35rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.25rem;
+  }
+
+  .close-btn:hover {
+    color: #FFFFFF;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.15rem;
+  }
+
+  .col-2 {
+    grid-column: span 2;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .form-label {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #E5E7EB;
+  }
+
+  .form-input, .form-select {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+    color: #FFFFFF;
+    font-family: var(--font-sans);
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+
+  .form-input:focus, .form-select:focus {
+    border-color: var(--gold-primary);
+  }
+
+  .image-source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+  }
+
+  .source-toggle-tabs {
+    display: flex;
+    gap: 0.35rem;
+  }
+
+  .source-tab {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    color: #9CA3AF;
+    padding: 0.25rem 0.65rem;
+    font-size: 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .source-tab.active {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: var(--gold-primary);
+    color: var(--gold-light);
+    font-weight: 600;
+  }
+
+  .upload-dropzone {
+    border: 2px dashed rgba(212, 175, 55, 0.3);
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    background: rgba(212, 175, 55, 0.02);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+  }
+
+  .upload-dropzone:hover, .upload-dropzone.dragover {
+    border-color: var(--gold-primary);
+    background: rgba(212, 175, 55, 0.06);
+  }
+
+  .file-hidden-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .dropzone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    pointer-events: none;
+  }
+
+  .dropzone-icon {
+    font-size: 1.75rem;
+  }
+
+  .dropzone-text {
+    font-size: 0.85rem;
+    color: #E5E7EB;
+    font-weight: 500;
+  }
+
+  .dropzone-sub {
+    font-size: 0.72rem;
+    color: #9CA3AF;
+  }
+
+  .upload-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: var(--gold-light);
+    font-size: 0.85rem;
+  }
+
+  .preview-box {
+    width: 100%;
+    max-height: 220px;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border-gold);
+  }
+
+  .preview-img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+  }
+
+  .remove-preview-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #FFFFFF;
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .remove-preview-btn:hover {
+    background: #EF4444;
+  }
+
+  /* Placement Controls inside Modal */
+  .placements-container {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    border-radius: 8px;
+    padding: 1.15rem;
+  }
+
+  .section-subheading {
+    color: var(--gold-light);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .placement-instruction {
+    font-size: 0.78rem;
+    color: #9CA3AF;
+    margin: 0.2rem 0 0.85rem 0;
+  }
+
+  .placements-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .placement-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.65rem 0.85rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .placement-option:hover {
+    background: rgba(212, 175, 55, 0.05);
+    border-color: rgba(212, 175, 55, 0.25);
+  }
+
+  .placement-option input[type="checkbox"] {
+    margin-top: 0.2rem;
+    width: 17px;
+    height: 17px;
+    accent-color: var(--gold-primary);
+    cursor: pointer;
+  }
+
+  .placement-option-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .placement-option-text strong {
+    font-size: 0.84rem;
+    color: #FFFFFF;
+  }
+
+  .placement-option-text span {
+    font-size: 0.74rem;
+    color: #9CA3AF;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .btn-cancel {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: #9CA3AF;
+    padding: 0.65rem 1.25rem;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .btn-cancel:hover {
+    color: #FFFFFF;
+  }
+
+  @media (max-width: 640px) {
+    .page-header-row {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+    .col-2 {
+      grid-column: span 1;
+    }
+  }
+</style>
+
+<script>
+  // Filter and search
+  const searchInput = document.getElementById('search-input') as HTMLInputElement;
+  const placementTabs = document.querySelectorAll('#placement-filter-tabs .filter-tab');
+  const categoryTabs = document.querySelectorAll('#category-filter-tabs .filter-tab');
+  const photoCards = document.querySelectorAll('.photo-card');
+  const emptyState = document.getElementById('no-photos-found');
+
+  let activePlacement = 'all';
+  let activeCategory = 'all';
+  let searchQuery = '';
+
+  function applyFilters() {
+    let visibleCount = 0;
+
+    photoCards.forEach((card: any) => {
+      const cardCategory = card.getAttribute('data-category') || '';
+      const cardHero = card.getAttribute('data-hero') === 'true';
+      const cardDeck = card.getAttribute('data-deck') === 'true';
+      const cardGrid = card.getAttribute('data-grid') === 'true';
+      const cardStories = card.getAttribute('data-stories') === 'true';
+      const cardRetouch = card.getAttribute('data-retouch') === 'true';
+
+      const cardTitle = card.getAttribute('data-title') || '';
+      const cardVenue = card.getAttribute('data-venue') || '';
+      const cardLoc = card.getAttribute('data-loc') || '';
+      const cardHeadline = card.getAttribute('data-headline') || '';
+
+      // Placement filter check
+      let matchesPlacement = true;
+      if (activePlacement === 'heroSlider') matchesPlacement = cardHero;
+      else if (activePlacement === 'instantDeck') matchesPlacement = cardDeck;
+      else if (activePlacement === 'portfolioGrid') matchesPlacement = cardGrid;
+      else if (activePlacement === 'clientStories') matchesPlacement = cardStories;
+      else if (activePlacement === 'beforeAfterSlider') matchesPlacement = cardRetouch;
+
+      // Category filter check
+      let matchesCategory = true;
+      if (activeCategory !== 'all') {
+        matchesCategory = cardCategory === activeCategory;
+      }
+
+      // Search query check
+      const matchesSearch = !searchQuery ||
+        cardTitle.includes(searchQuery) ||
+        cardVenue.includes(searchQuery) ||
+        cardLoc.includes(searchQuery) ||
+        cardHeadline.includes(searchQuery);
+
+      if (matchesPlacement && matchesCategory && matchesSearch) {
+        card.style.display = 'flex';
+        visibleCount++;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    if (emptyState) {
+      emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+  }
+
+  searchInput?.addEventListener('input', (e) => {
+    searchQuery = (e.target as HTMLInputElement).value.toLowerCase().trim();
+    applyFilters();
+  });
+
+  placementTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      placementTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      activePlacement = tab.getAttribute('data-placement') || 'all';
+      applyFilters();
+    });
+  });
+
+  categoryTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      categoryTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      activeCategory = tab.getAttribute('data-category') || 'all';
+      applyFilters();
+    });
+  });
+
+  // Modal elements
+  const photoModal = document.getElementById('photo-modal');
+  const modalHeading = document.getElementById('modal-heading');
+  const openModalBtn = document.getElementById('add-photo-btn');
+  const closeModalBtn = document.getElementById('close-modal-btn');
+  const cancelModalBtn = document.getElementById('cancel-modal-btn');
+  const photoForm = document.getElementById('photo-form') as HTMLFormElement;
+  const editIdInput = document.getElementById('edit-id') as HTMLInputElement;
+
+  // Form field inputs
+  const photoImageUrl = document.getElementById('photo-image-url') as HTMLInputElement;
+  const photoTitle = document.getElementById('photo-title') as HTMLInputElement;
+  const photoCategory = document.getElementById('photo-category') as HTMLSelectElement;
+  const photoAspect = document.getElementById('photo-aspect') as HTMLSelectElement;
+  const photoVenue = document.getElementById('photo-venue') as HTMLInputElement;
+  const photoLocation = document.getElementById('photo-location') as HTMLInputElement;
+  const photoHeadline = document.getElementById('photo-headline') as HTMLInputElement;
+  const photoSubline = document.getElementById('photo-subline') as HTMLInputElement;
+  const photoBeforeImage = document.getElementById('photo-before-image') as HTMLInputElement;
+  const photoAlt = document.getElementById('photo-alt') as HTMLInputElement;
+  const photoBadge = document.getElementById('photo-badge') as HTMLInputElement;
+
+  // Checkboxes
+  const placeHero = document.getElementById('place-hero') as HTMLInputElement;
+  const placeDeck = document.getElementById('place-deck') as HTMLInputElement;
+  const placeGrid = document.getElementById('place-grid') as HTMLInputElement;
+  const placeStories = document.getElementById('place-stories') as HTMLInputElement;
+  const placeRetouch = document.getElementById('place-retouch') as HTMLInputElement;
+
+  // Upload dropzone & preview elements
+  const previewBox = document.getElementById('image-preview-box');
+  const previewImg = document.getElementById('preview-img') as HTMLImageElement;
+  const fileInput = document.getElementById('portfolio-file-input') as HTMLInputElement;
+  const dropzone = document.getElementById('upload-dropzone');
+  const dropzoneContent = document.getElementById('dropzone-default-content');
+  const uploadSpinner = document.getElementById('upload-spinner');
+  const removePreviewBtn = document.getElementById('remove-preview-btn');
+  const tabUploadBtn = document.getElementById('tab-upload-btn');
+  const tabUrlBtn = document.getElementById('tab-url-btn');
+  const urlContainer = document.getElementById('url-input-container');
+
+  // Source toggle
+  // Source toggle
+  tabUploadBtn?.addEventListener('click', () => {
+    tabUploadBtn.classList.add('active');
+    tabUrlBtn?.classList.remove('active');
+    if (urlContainer) urlContainer.style.display = 'none';
+    if (dropzone) {
+      dropzone.style.display = 'block';
+      if (dropzoneContent) dropzoneContent.style.display = 'flex';
+    }
+  });
+
+  tabUrlBtn?.addEventListener('click', () => {
+    tabUrlBtn.classList.add('active');
+    tabUploadBtn?.classList.remove('active');
+    if (dropzone) dropzone.style.display = 'none';
+    if (urlContainer) urlContainer.style.display = 'block';
+    photoImageUrl?.focus();
+  });
+
+  // Handle file upload
+  async function handleFileUpload(file: File) {
+    if (!file) return;
+
+    // Immediate client-side preview via FileReader
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (previewImg) previewImg.src = dataUrl;
+      if (previewBox) previewBox.style.display = 'block';
+      if (dropzone) dropzone.style.display = 'none';
+      if (photoImageUrl) photoImageUrl.value = dataUrl;
+    };
+    reader.readAsDataURL(file);
+
+    if (dropzoneContent) dropzoneContent.style.display = 'none';
+    if (uploadSpinner) uploadSpinner.style.display = 'flex';
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.url) {
+        if (photoImageUrl) photoImageUrl.value = data.url;
+        if (previewImg) previewImg.src = data.url;
+        if (previewBox) previewBox.style.display = 'block';
+        if (dropzone) dropzone.style.display = 'none';
+        (window as any).showToast('Photo uploaded successfully!', 'success');
+      } else {
+        // Fallback to client data URL if server had error
+        if (photoImageUrl?.value?.startsWith('data:')) {
+          (window as any).showToast('Photograph loaded as embedded asset!', 'success');
+        } else {
+          (window as any).showToast(data.error || 'Upload failed', 'error');
+          if (dropzoneContent) dropzoneContent.style.display = 'flex';
+          if (dropzone) dropzone.style.display = 'block';
+        }
+      }
+    } catch {
+      if (photoImageUrl?.value?.startsWith('data:')) {
+        (window as any).showToast('Photograph loaded locally and ready to save!', 'success');
+      } else {
+        (window as any).showToast('Upload failed due to network error', 'error');
+        if (dropzoneContent) dropzoneContent.style.display = 'flex';
+        if (dropzone) dropzone.style.display = 'block';
+      }
+    } finally {
+      if (uploadSpinner) uploadSpinner.style.display = 'none';
+    }
+  }
+
+  // Click on dropzone opens file dialog
+  dropzone?.addEventListener('click', (e) => {
+    if (e.target !== fileInput) {
+      fileInput?.click();
+    }
+  });
+
+  fileInput?.addEventListener('change', (e: any) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileUpload(file);
+  });
+
+  // Drag and drop
+  dropzone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('dragover');
+  });
+  dropzone?.addEventListener('dragleave', () => {
+    dropzone.classList.remove('dragover');
+  });
+  dropzone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+    const file = e.dataTransfer?.files?.[0];
+    if (file) handleFileUpload(file);
+  });
+
+  // Change / Remove image button
+  removePreviewBtn?.addEventListener('click', () => {
+    if (photoImageUrl) photoImageUrl.value = '';
+    if (previewBox) previewBox.style.display = 'none';
+    if (previewImg) previewImg.src = '';
+    if (fileInput) fileInput.value = '';
+
+    // Switch cleanly to upload file tab
+    tabUploadBtn?.classList.add('active');
+    tabUrlBtn?.classList.remove('active');
+    if (dropzone) dropzone.style.display = 'block';
+    if (dropzoneContent) dropzoneContent.style.display = 'flex';
+    if (urlContainer) urlContainer.style.display = 'none';
+  });
+
+  photoImageUrl?.addEventListener('input', () => {
+    const val = photoImageUrl.value.trim();
+    if (val && previewBox && previewImg) {
+      previewImg.src = val;
+      previewBox.style.display = 'block';
+    } else if (previewBox) {
+      previewBox.style.display = 'none';
+    }
+  });
+
+  // Open modal in Add mode
+  openModalBtn?.addEventListener('click', () => {
+    if (modalHeading) modalHeading.textContent = 'Add Master Photograph';
+    const saveBtn = document.getElementById('save-photo-btn');
+    if (saveBtn) saveBtn.textContent = 'Add to Archive';
+    if (editIdInput) editIdInput.value = '';
+    if (photoForm) photoForm.reset();
+
+    // Default placements
+    if (placeGrid) placeGrid.checked = true;
+    if (placeDeck) placeDeck.checked = false;
+    if (placeHero) placeHero.checked = false;
+    if (placeStories) placeStories.checked = false;
+    if (placeRetouch) placeRetouch.checked = false;
+
+    if (previewBox) previewBox.style.display = 'none';
+    if (previewImg) previewImg.src = '';
+    if (dropzone) dropzone.style.display = 'block';
+    if (dropzoneContent) dropzoneContent.style.display = 'flex';
+    if (urlContainer) urlContainer.style.display = 'none';
+    tabUploadBtn?.classList.add('active');
+    tabUrlBtn?.classList.remove('active');
+
+    if (photoModal) photoModal.style.display = 'flex';
+  });
+
+  // Open modal in Edit mode
+  function openEditModal(photoData: any) {
+    if (modalHeading) modalHeading.textContent = `Edit Photograph: ${photoData.title}`;
+    const saveBtn = document.getElementById('save-photo-btn');
+    if (saveBtn) saveBtn.textContent = 'Save Changes';
+
+    if (editIdInput) editIdInput.value = photoData.id;
+    if (photoImageUrl) photoImageUrl.value = photoData.image || '';
+    if (photoTitle) photoTitle.value = photoData.title || '';
+    if (photoCategory) photoCategory.value = photoData.category || 'weddings';
+    if (photoAspect) photoAspect.value = photoData.aspectRatio || photoData.aspect || 'portrait';
+    if (photoVenue) photoVenue.value = photoData.venue || '';
+    if (photoLocation) photoLocation.value = photoData.location || '';
+    if (photoHeadline) photoHeadline.value = photoData.headline || '';
+    if (photoSubline) photoSubline.value = photoData.subline || '';
+    if (photoBeforeImage) photoBeforeImage.value = photoData.beforeImage || '';
+    if (photoAlt) photoAlt.value = photoData.altText || '';
+    if (photoBadge) photoBadge.value = photoData.deckBadge || '';
+
+    // Checkboxes
+    const placements = photoData.placements || {};
+    if (placeHero) placeHero.checked = Boolean(placements.heroSlider);
+    if (placeDeck) placeDeck.checked = Boolean(placements.instantDeck ?? photoData.featuredInInstantDeck);
+    if (placeGrid) placeGrid.checked = Boolean(placements.portfolioGrid ?? true);
+    if (placeStories) placeStories.checked = Boolean(placements.clientStories);
+    if (placeRetouch) placeRetouch.checked = Boolean(placements.beforeAfterSlider);
+
+    // Preview
+    if (photoData.image && previewBox && previewImg) {
+      previewImg.src = photoData.image;
+      previewBox.style.display = 'block';
+      if (dropzone) dropzone.style.display = 'none';
+      if (urlContainer) urlContainer.style.display = 'none';
+      tabUploadBtn?.classList.remove('active');
+      tabUrlBtn?.classList.remove('active');
+    } else {
+      if (previewBox) previewBox.style.display = 'none';
+      if (dropzone) dropzone.style.display = 'block';
+      if (dropzoneContent) dropzoneContent.style.display = 'flex';
+      if (urlContainer) urlContainer.style.display = 'none';
+      tabUploadBtn?.classList.add('active');
+      tabUrlBtn?.classList.remove('active');
+    }
+
+    if (photoModal) photoModal.style.display = 'flex';
+  }
+
+  // Hook up Edit buttons
+  const editButtons = document.querySelectorAll('.edit-photo-btn');
+  editButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const card = btn.closest('.photo-card');
+      const rawJson = card?.getAttribute('data-json');
+      if (rawJson) {
+        try {
+          const photoData = JSON.parse(rawJson);
+          openEditModal(photoData);
+        } catch (err) {
+          console.error('Failed to parse photo json:', err);
+        }
+      }
+    });
+  });
+
+  function closeModal() {
+    if (photoModal) photoModal.style.display = 'none';
+    if (photoForm) photoForm.reset();
+    if (previewBox) previewBox.style.display = 'none';
+  }
+
+  closeModalBtn?.addEventListener('click', closeModal);
+  cancelModalBtn?.addEventListener('click', closeModal);
+
+  // Submit Add or Update Photo
+  async function executePhotoSave(e?: Event) {
+    if (e) e.preventDefault();
+    const saveBtn = document.getElementById('save-photo-btn') as HTMLButtonElement;
+    const editId = editIdInput?.value.trim();
+    const isEdit = Boolean(editId);
+
+    const imageVal = photoImageUrl?.value.trim() || previewImg?.getAttribute('src')?.trim() || '';
+    const titleVal = photoTitle?.value.trim() || '';
+
+    if (!imageVal) {
+      (window as any).showToast('Please upload an image or provide an Image URL', 'error');
+      return;
+    }
+
+    if (!titleVal) {
+      (window as any).showToast('Please enter a Photograph Title', 'error');
+      photoTitle?.focus();
+      return;
+    }
+
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+    }
+
+    const catSelect = photoCategory;
+    const catText = catSelect?.options[catSelect.selectedIndex]?.text || '';
+
+    const payload = {
+      image: imageVal,
+      title: titleVal,
+      category: photoCategory?.value || 'weddings',
+      categoryLabel: catText.replace(/^[^\s]+\s*/, '') || 'Weddings & Muhurtham',
+      aspectRatio: photoAspect?.value || 'portrait',
+      aspect: photoAspect?.value || 'portrait',
+      venue: photoVenue?.value.trim() || 'Heritage Venue',
+      location: photoLocation?.value.trim() || 'Karnataka, India',
+      headline: photoHeadline?.value.trim() || titleVal,
+      subline: photoSubline?.value.trim() || '',
+      beforeImage: photoBeforeImage?.value.trim() || undefined,
+      altText: photoAlt?.value.trim() || `${titleVal} by Frames By Hithu`,
+      deckBadge: photoBadge?.value.trim() || undefined,
+      placements: {
+        heroSlider: placeHero?.checked || false,
+        instantDeck: placeDeck?.checked || false,
+        portfolioGrid: placeGrid?.checked || false,
+        clientStories: placeStories?.checked || false,
+        beforeAfterSlider: placeRetouch?.checked || false
+      },
+      featuredInInstantDeck: placeDeck?.checked || false
+    };
+
+    try {
+      const url = isEdit ? `/api/portfolio/${editId}` : '/api/portfolio';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        (window as any).showToast(
+          isEdit ? 'Photograph updated successfully!' : 'Photograph added to archive!',
+          'success'
+        );
+
+        if (isEdit && data.item) {
+          const card = document.querySelector(`.photo-card[data-id="${editId}"]`);
+          if (card) {
+            const imgEl = card.querySelector('.photo-img') as HTMLImageElement;
+            if (imgEl && data.item.image) imgEl.src = data.item.image;
+            const titleEl = card.querySelector('.photo-title');
+            if (titleEl && data.item.title) titleEl.textContent = data.item.title;
+            const venueEl = card.querySelector('.photo-venue');
+            if (venueEl && data.item.venue) venueEl.textContent = `📍 ${data.item.venue}`;
+            const locEl = card.querySelector('.photo-loc');
+            if (locEl && data.item.location) locEl.textContent = data.item.location;
+            card.setAttribute('data-json', JSON.stringify(data.item));
+          }
+        }
+
+        closeModal();
+        setTimeout(() => window.location.reload(), 300);
+      } else {
+        (window as any).showToast(data.error || 'Operation failed', 'error');
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = isEdit ? 'Save Changes' : 'Add to Archive';
+        }
+      }
+    } catch (err: any) {
+      console.error('Save error:', err);
+      (window as any).showToast('Network error saving photograph', 'error');
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = isEdit ? 'Save Changes' : 'Add to Archive';
+      }
+    }
+  }
+
+  photoForm?.addEventListener('submit', executePhotoSave);
+  const savePhotoBtnEl = document.getElementById('save-photo-btn');
+  savePhotoBtnEl?.addEventListener('click', executePhotoSave);
+
+  // Quick Toggle Instant Deck
+  const quickDeckButtons = document.querySelectorAll('.quick-deck-btn');
+  quickDeckButtons.forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = btn.getAttribute('data-id');
+      const isActive = btn.getAttribute('data-active') === 'true';
+
+      try {
+        const res = await fetch(`/api/portfolio/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            placements: { instantDeck: !isActive },
+            featuredInInstantDeck: !isActive
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          (window as any).showToast(
+            !isActive ? 'Added to homepage Instant Card Stack!' : 'Removed from Instant Card Stack',
+            'success'
+          );
+          setTimeout(() => window.location.reload(), 300);
+        }
+      } catch {
+        (window as any).showToast('Failed to update instant deck status', 'error');
+      }
+    });
+  });
+
+  // Quick Toggle Before/After Retouch Slider
+  const quickRetouchButtons = document.querySelectorAll('.quick-retouch-btn');
+  quickRetouchButtons.forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = btn.getAttribute('data-id');
+      const isActive = btn.getAttribute('data-active') === 'true';
+
+      try {
+        const res = await fetch(`/api/portfolio/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            placements: { beforeAfterSlider: !isActive }
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          (window as any).showToast(
+            !isActive ? 'Featured in Before/After Retouch Slider!' : 'Removed from Retouch Slider',
+            'success'
+          );
+          setTimeout(() => window.location.reload(), 300);
+        } else {
+          (window as any).showToast(data.error || 'Failed to update retouch slider', 'error');
+        }
+      } catch {
+        (window as any).showToast('Network error updating retouch status', 'error');
+      }
+    });
+  });
+
+  // Delete Photo
+  const deleteButtons = document.querySelectorAll('.delete-photo-btn');
+  deleteButtons.forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = btn.getAttribute('data-id');
+      const title = btn.getAttribute('data-title');
+      if (!confirm(`Are you sure you want to permanently delete "${title}" from the master archive?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/portfolio/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          (window as any).showToast('Photo removed from archive', 'success');
+          const card = (btn as HTMLElement).closest('.photo-card');
+          card?.remove();
+        } else {
+          (window as any).showToast(data.error || 'Failed to delete photo', 'error');
+        }
+      } catch {
+        (window as any).showToast('Network error deleting photo', 'error');
+      }
+    });
+  });
+</script>

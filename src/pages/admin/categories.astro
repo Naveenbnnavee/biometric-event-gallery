@@ -1,0 +1,591 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { isAuthenticated } from '../../lib/auth';
+import { getCategoriesAsync, getPortfolioItemsAsync } from '../../lib/db';
+
+export const prerender = false;
+
+const authed = await isAuthenticated(Astro.request);
+if (!authed) {
+  return Astro.redirect('/admin/login');
+}
+
+const categories = await getCategoriesAsync();
+const portfolio = await getPortfolioItemsAsync();
+
+function getCount(catId: string) {
+  return portfolio.filter(p => p.category === catId).length;
+}
+---
+
+<AdminLayout title="Ceremony Categories" activeNav="categories">
+  <div class="categories-page">
+    <div class="page-header-row">
+      <div>
+        <h2 class="section-title">Ceremony Decks & Portfolio Categories</h2>
+        <p class="section-desc">
+          Manage Karnataka celebration taxonomies, dual English/Kannada typography labels, and deck arrangements for both the Instant Card Stack and the public portfolio.
+        </p>
+      </div>
+
+      <button id="add-cat-btn" class="btn-gold">
+        <span>➕ Add Celebration Category</span>
+      </button>
+    </div>
+
+    <!-- Categories List Grid -->
+    <div class="categories-list">
+      {categories.map((cat, idx) => (
+        <div class="category-card glass-card" data-id={cat.id}>
+          <div class="cat-left">
+            <span class="cat-order-pill">#{idx + 1}</span>
+            <div class="cat-emoji-circle">{cat.emoji}</div>
+            <div class="cat-info">
+              <div class="cat-title-row">
+                <h3 class="cat-label">{cat.label}</h3>
+                <span class="kannada-label-pill">{cat.kannadaLabel}</span>
+                <span class="cat-id-badge">ID: {cat.id}</span>
+              </div>
+              <p class="cat-desc">{cat.description}</p>
+            </div>
+          </div>
+
+          <div class="cat-right">
+            <div class="cat-stats-box">
+              <span class="stat-count">{getCount(cat.id)}</span>
+              <span class="stat-unit">Frames Linked</span>
+            </div>
+
+            <div class="cat-action-group">
+              <button
+                class="edit-cat-btn"
+                data-id={cat.id}
+                data-label={cat.label}
+                data-kannada={cat.kannadaLabel}
+                data-emoji={cat.emoji}
+                data-desc={cat.description}
+                title="Edit Category Details"
+              >
+                ✏️ Edit
+              </button>
+
+              <button
+                class="delete-cat-btn"
+                data-id={cat.id}
+                data-label={cat.label}
+                data-count={getCount(cat.id)}
+                title="Delete Category"
+              >
+                🗑️ Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <!-- Add / Edit Modal -->
+  <div id="cat-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card glass-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="cat-modal-title">Add Ceremony Category</h3>
+        <button id="close-cat-modal" class="close-btn" aria-label="Close modal">✕</button>
+      </div>
+
+      <form id="cat-form" class="modal-form">
+        <input type="hidden" id="edit-cat-id" name="id" />
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="cat-label-input">Category English Name</label>
+            <input
+              type="text"
+              id="cat-label-input"
+              name="label"
+              class="form-input"
+              placeholder="e.g. Sangeet & Mehendi"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cat-kannada-input">Kannada Label (ಕನ್ನಡ)</label>
+            <input
+              type="text"
+              id="cat-kannada-input"
+              name="kannadaLabel"
+              class="form-input"
+              placeholder="e.g. ಸಂಗೀತ"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cat-emoji-input">Symbol Emoji</label>
+            <input
+              type="text"
+              id="cat-emoji-input"
+              name="emoji"
+              class="form-input"
+              placeholder="e.g. 🎶 or 🪔"
+              maxlength="4"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cat-slug-input">URL Slug / ID</label>
+            <input
+              type="text"
+              id="cat-slug-input"
+              name="slug"
+              class="form-input"
+              placeholder="e.g. sangeet-mehendi"
+            />
+          </div>
+
+          <div class="form-group col-2">
+            <label class="form-label" for="cat-desc-input">Editorial Description</label>
+            <textarea
+              id="cat-desc-input"
+              name="description"
+              class="form-textarea"
+              rows="3"
+              placeholder="Ceremonial description for subtitle and Meta card hints"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="cancel-cat-btn" class="btn-cancel">Cancel</button>
+          <button type="submit" id="save-cat-btn" class="btn-gold">Save Category</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  .categories-page {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .page-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .section-title {
+    font-family: var(--font-serif);
+    font-size: 1.8rem;
+    color: #FFFFFF;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .section-desc {
+    color: #9CA3AF;
+    font-size: 0.9rem;
+    max-width: 780px;
+    margin: 0;
+  }
+
+  .categories-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .category-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border: 1px solid var(--border-subtle);
+    transition: all 0.2s ease;
+  }
+
+  .category-card:hover {
+    border-color: var(--border-gold);
+    transform: translateY(-2px);
+  }
+
+  .cat-left {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .cat-order-pill {
+    font-size: 0.8rem;
+    color: #9CA3AF;
+    font-weight: 600;
+  }
+
+  .cat-emoji-circle {
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+  }
+
+  .cat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .cat-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .cat-label {
+    font-family: var(--font-serif);
+    font-size: 1.35rem;
+    color: #FFFFFF;
+    margin: 0;
+  }
+
+  .kannada-label-pill {
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid var(--border-gold);
+    color: var(--text-gold);
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 9999px;
+  }
+
+  .cat-id-badge {
+    color: #6B7280;
+    font-size: 0.7rem;
+    font-family: monospace;
+  }
+
+  .cat-desc {
+    color: #9CA3AF;
+    font-size: 0.825rem;
+    margin: 0;
+    max-width: 600px;
+  }
+
+  .cat-right {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .cat-stats-box {
+    text-align: right;
+  }
+
+  .stat-count {
+    font-family: var(--font-serif);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text-gold);
+    display: block;
+    line-height: 1;
+  }
+
+  .stat-unit {
+    font-size: 0.7rem;
+    color: #9CA3AF;
+  }
+
+  .cat-action-group {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .edit-cat-btn {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    color: #D1D5DB;
+    padding: 0.45rem 0.85rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .edit-cat-btn:hover {
+    background: rgba(212, 175, 55, 0.15);
+    color: var(--text-gold);
+    border-color: var(--border-gold);
+  }
+
+  .delete-cat-btn {
+    background: rgba(239, 68, 68, 0.06);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #F87171;
+    padding: 0.45rem 0.85rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .delete-cat-btn:hover {
+    background: rgba(239, 68, 68, 0.16);
+  }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    padding: 1.5rem;
+  }
+
+  .modal-card {
+    width: 100%;
+    max-width: 580px;
+    background: #13141D;
+    border: 1px solid var(--border-gold);
+    padding: 2rem;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .modal-title {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    color: #FFFFFF;
+    margin: 0;
+  }
+
+  .close-btn {
+    background: transparent;
+    border: none;
+    color: #9CA3AF;
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+
+  .col-2 {
+    grid-column: span 2;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .form-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #D1D5DB;
+  }
+
+  .form-input, .form-textarea {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: #FFFFFF;
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    outline: none;
+  }
+
+  .form-textarea {
+    resize: vertical;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.75rem;
+  }
+
+  .btn-cancel {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: #9CA3AF;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  @media (max-width: 800px) {
+    .category-card {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1.25rem;
+    }
+    .cat-right {
+      width: 100%;
+      justify-content: space-between;
+    }
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+    .col-2 {
+      grid-column: span 1;
+    }
+  }
+</style>
+
+<script>
+  const catModal = document.getElementById('cat-modal');
+  const addCatBtn = document.getElementById('add-cat-btn');
+  const closeCatModal = document.getElementById('close-cat-modal');
+  const cancelCatBtn = document.getElementById('cancel-cat-btn');
+  const catForm = document.getElementById('cat-form') as HTMLFormElement;
+  const modalTitle = document.getElementById('cat-modal-title');
+  const editIdInput = document.getElementById('edit-cat-id') as HTMLInputElement;
+  const labelInput = document.getElementById('cat-label-input') as HTMLInputElement;
+  const kannadaInput = document.getElementById('cat-kannada-input') as HTMLInputElement;
+  const emojiInput = document.getElementById('cat-emoji-input') as HTMLInputElement;
+  const slugInput = document.getElementById('cat-slug-input') as HTMLInputElement;
+  const descInput = document.getElementById('cat-desc-input') as HTMLTextAreaElement;
+
+  function openAddModal() {
+    if (modalTitle) modalTitle.textContent = 'Add Ceremony Category';
+    if (catForm) catForm.reset();
+    if (editIdInput) editIdInput.value = '';
+    if (slugInput) slugInput.disabled = false;
+    if (catModal) catModal.style.display = 'flex';
+  }
+
+  function closeModal() {
+    if (catModal) catModal.style.display = 'none';
+  }
+
+  addCatBtn?.addEventListener('click', openAddModal);
+  closeCatModal?.addEventListener('click', closeModal);
+  cancelCatBtn?.addEventListener('click', closeModal);
+
+  // Edit category
+  const editButtons = document.querySelectorAll('.edit-cat-btn');
+  editButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id') || '';
+      const label = btn.getAttribute('data-label') || '';
+      const kannada = btn.getAttribute('data-kannada') || '';
+      const emoji = btn.getAttribute('data-emoji') || '';
+      const desc = btn.getAttribute('data-desc') || '';
+
+      if (modalTitle) modalTitle.textContent = `Edit Category: ${label}`;
+      if (editIdInput) editIdInput.value = id;
+      if (labelInput) labelInput.value = label;
+      if (kannadaInput) kannadaInput.value = kannada;
+      if (emojiInput) emojiInput.value = emoji;
+      if (slugInput) {
+        slugInput.value = id;
+        slugInput.disabled = true;
+      }
+      if (descInput) descInput.value = desc;
+
+      if (catModal) catModal.style.display = 'flex';
+    });
+  });
+
+  // Save category
+  catForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const saveBtn = document.getElementById('save-cat-btn') as HTMLButtonElement;
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+    }
+
+    const editId = editIdInput.value;
+    const isEdit = Boolean(editId);
+
+    const payload = {
+      id: isEdit ? editId : slugInput.value || undefined,
+      label: labelInput.value,
+      kannadaLabel: kannadaInput.value,
+      emoji: emojiInput.value,
+      description: descInput.value
+    };
+
+    try {
+      const url = isEdit ? `/api/categories/${editId}` : '/api/categories';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        (window as any).showToast(isEdit ? 'Category updated!' : 'Category created!', 'success');
+        closeModal();
+        setTimeout(() => window.location.reload(), 300);
+      } else {
+        (window as any).showToast(data.error || 'Failed to save category', 'error');
+      }
+    } catch {
+      (window as any).showToast('Network error saving category', 'error');
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Category';
+      }
+    }
+  });
+
+  // Delete category
+  const deleteButtons = document.querySelectorAll('.delete-cat-btn');
+  deleteButtons.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-id');
+      const label = btn.getAttribute('data-label');
+      const count = parseInt(btn.getAttribute('data-count') || '0', 10);
+
+      if (count > 0) {
+        if (!confirm(`Warning: Category "${label}" currently has ${count} photos linked to it. Are you sure you want to delete it?`)) {
+          return;
+        }
+      } else {
+        if (!confirm(`Delete category "${label}"?`)) return;
+      }
+
+      try {
+        const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          (window as any).showToast('Category deleted', 'success');
+          const card = (btn as HTMLElement).closest('.category-card');
+          card?.remove();
+        } else {
+          (window as any).showToast(data.error || 'Failed to delete category', 'error');
+        }
+      } catch {
+        (window as any).showToast('Network error deleting category', 'error');
+      }
+    });
+  });
+</script>

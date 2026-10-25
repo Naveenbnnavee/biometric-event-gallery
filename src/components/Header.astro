@@ -1,0 +1,852 @@
+---
+import { getStudioSettingsAsync } from '../lib/db';
+
+const currentPath = Astro.url.pathname;
+const settings = await getStudioSettingsAsync();
+const whatsappClean = (settings.whatsappConcierge || '917892706982').replace(/[^0-9]/g, '');
+const whatsappUrl = `https://wa.me/${whatsappClean}?text=${encodeURIComponent('Hello Frames By Hithu, I would like to inquire about photography for my upcoming event.')}`;
+const instagramUrl = settings.instagramUrl?.trim() || 'https://instagram.com/framesbyhithu';
+const instagramHandle = settings.instagramHandle?.trim() || '@framesbyhithu';
+
+const showClientPortal = settings.clientPortalVisible !== false;
+
+const navLinks = [
+  { name: 'Portfolio', href: '/portfolio' },
+  { name: 'Stories', href: '/stories' },
+  { name: 'Services', href: '/services' },
+  ...(showClientPortal ? [{ name: 'Client Portal', href: '/client-portal' }] : []),
+  { name: 'Locations', href: '/locations' },
+  { name: 'About', href: '/about' },
+  { name: 'Contact', href: '/contact' }
+];
+---
+
+<header class="luxury-header" id="main-header">
+  <div class="container header-container">
+    <!-- Brand Logo -->
+    <a href="/" class="brand-logo" aria-label="Frames By Hithu Homepage">
+      <div class="brand-emblem" aria-hidden="true">
+        <svg viewBox="0 0 40 40" width="36" height="36" fill="none">
+          <rect width="40" height="40" rx="9" fill="url(#navGoldGrad)" />
+          <circle cx="20" cy="20" r="14" stroke="#07080B" stroke-width="1.2" stroke-opacity="0.35" stroke-dasharray="3 2" />
+          <text x="50%" y="55%" text-anchor="middle" dominant-baseline="middle" fill="#07080B" font-family="'Cormorant Garamond', Georgia, serif" font-weight="700" font-size="16" letter-spacing="0.5">FH</text>
+          <defs>
+            <linearGradient id="navGoldGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#F7E4A8" />
+              <stop offset="0.5" stop-color="#D4AF37" />
+              <stop offset="1" stop-color="#9B781E" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-title">FRAMES BY HITHU</span>
+        <span class="brand-subtitle">
+          <span class="sub-core">FINE-ART PHOTOGRAPHY</span>
+          <span class="sub-extra"> • KARNATAKA</span>
+        </span>
+      </div>
+    </a>
+
+    <!-- Desktop Navigation (Centered Vertically with identical baseline) -->
+    <nav class="desktop-nav" aria-label="Main Navigation">
+      <ul class="nav-list">
+        {navLinks.map((link) => (
+          <li class="nav-item">
+            <a 
+              href={link.href} 
+              class:list={['nav-link', { active: currentPath === link.href || (link.href !== '/' && currentPath.startsWith(link.href)) }]}
+            >
+              <span>{link.name}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <!-- Header Actions -->
+    <div class="header-actions">
+      <!-- Luxury Champagne Gold Pill Button -->
+      <a href="/contact#inquiry-form" class="header-availability-btn" aria-label="Check Studio Availability">
+        <span class="cta-desktop">Check Availability</span>
+        <span class="cta-mobile">Check Dates</span>
+      </a>
+
+      <!-- Instagram Small Icon Link (Beside 3-dash on Mobile, After Check Availability on PC) -->
+      <a 
+        href={instagramUrl} 
+        target="_blank" 
+        rel="noopener noreferrer" 
+        class="header-instagram-btn" 
+        aria-label="Visit Frames By Hithu on Instagram" 
+        title={`Follow on Instagram (${instagramHandle})`}
+      >
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+          <circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"></circle>
+        </svg>
+      </a>
+
+      <!-- Mobile Hamburger Button (3-dash) -->
+      <button class="mobile-toggle" id="mobile-toggle-btn" aria-label="Toggle Navigation Menu" aria-expanded="false">
+        <span class="hamburger-bar"></span>
+        <span class="hamburger-bar"></span>
+        <span class="hamburger-bar"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Drawer Menu -->
+  <div class="mobile-drawer" id="mobile-drawer">
+    <div class="mobile-drawer-inner">
+      <div class="drawer-header">
+        <div class="drawer-brand">
+          <div class="brand-emblem" aria-hidden="true">
+            <svg viewBox="0 0 40 40" width="34" height="34" fill="none">
+              <rect width="40" height="40" rx="8" fill="url(#drawerGoldGrad)" />
+              <circle cx="20" cy="20" r="14" stroke="#07080B" stroke-width="1.2" stroke-opacity="0.35" stroke-dasharray="3 2" />
+              <text x="50%" y="55%" text-anchor="middle" dominant-baseline="middle" fill="#07080B" font-family="'Cormorant Garamond', Georgia, serif" font-weight="700" font-size="15" letter-spacing="0.5">FH</text>
+              <defs>
+                <linearGradient id="drawerGoldGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#F7E4A8" />
+                  <stop offset="0.5" stop-color="#D4AF37" />
+                  <stop offset="1" stop-color="#9B781E" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <span class="brand-title">FRAMES BY HITHU</span>
+            <span class="brand-subtitle">FINE-ART PHOTOGRAPHY</span>
+          </div>
+        </div>
+        <button class="close-drawer" id="close-drawer-btn" aria-label="Close Menu">✕</button>
+      </div>
+
+      <nav class="mobile-nav" aria-label="Mobile Navigation">
+        <ul>
+          {navLinks.map((link) => (
+            <li>
+              <a 
+                href={link.href} 
+                class:list={['mobile-nav-link', { active: currentPath === link.href || (link.href !== '/' && currentPath.startsWith(link.href)) }]}
+              >
+                <span>{link.name}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <div class="drawer-footer">
+        <a href="/contact#inquiry-form" class="drawer-cta header-availability-btn">
+          Check Date & Request Quote
+        </a>
+        <div class="drawer-social-row">
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" class="btn-whatsapp drawer-whatsapp">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/>
+            </svg>
+            <span>WhatsApp</span>
+          </a>
+          <a href={instagramUrl} target="_blank" rel="noopener noreferrer" class="btn-drawer-instagram" aria-label="Visit Instagram">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"></circle>
+            </svg>
+            <span>Instagram</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<style>
+  .luxury-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: var(--header-height, 80px);
+    background: rgba(8, 9, 13, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.08);
+    z-index: 1000;
+    transform: translateY(0);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    will-change: transform;
+  }
+
+  /* Directional Scroll Classes */
+  .luxury-header.header-hidden {
+    transform: translateY(-100%);
+  }
+
+  .luxury-header.header-scrolled {
+    background: rgba(8, 9, 13, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);
+  }
+
+  .header-container {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+
+  /* Brand Logo */
+  .brand-logo {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.85rem;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+
+  .brand-emblem {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 9px;
+    box-shadow: 0 4px 14px rgba(212, 175, 55, 0.28);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+  }
+
+  .brand-logo:hover .brand-emblem {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.45);
+  }
+
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .brand-title {
+    font-family: var(--font-serif);
+    font-size: clamp(1.15rem, 2.2vw, 1.38rem);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--text-primary);
+    line-height: 1.1;
+    white-space: nowrap;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  }
+
+  .brand-subtitle {
+    font-family: var(--font-sans);
+    font-size: 0.58rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    color: var(--gold-primary);
+    margin-top: 2px;
+    white-space: nowrap;
+  }
+
+  /* Desktop Navigation: Centered Vertically on Exact Same Baseline */
+  .desktop-nav {
+    display: none;
+    align-items: center;
+    height: 100%;
+  }
+
+  @media (min-width: 1024px) {
+    .desktop-nav {
+      display: flex;
+    }
+  }
+
+  .nav-list {
+    display: flex;
+    align-items: center;
+    gap: 1.75rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    height: 100%;
+  }
+
+  .nav-link {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.86rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    padding: 0.5rem 0;
+    line-height: 1;
+    position: relative;
+    white-space: nowrap;
+    transition: color 0.25s ease;
+  }
+
+  .nav-link:hover, .nav-link.active {
+    color: var(--text-primary);
+  }
+
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0%;
+    height: 1.5px;
+    background: var(--gold-gradient);
+    transition: var(--transition-smooth);
+  }
+
+  .nav-link:hover::after, .nav-link.active::after {
+    width: 100%;
+  }
+
+  /* Header Actions */
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  /* Refined Luxury Gold Pill Button */
+  .header-availability-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1.25rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    background: linear-gradient(135deg, #D4AF37, #AA7C11);
+    color: #000000;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.25);
+    text-transform: uppercase;
+    font-family: var(--font-sans);
+    line-height: 1;
+    text-decoration: none;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+    border: none;
+    cursor: pointer;
+  }
+
+  .header-availability-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+    filter: brightness(1.08);
+    color: #000000;
+  }
+
+  /* Small Luxury Instagram Icon in Navbar */
+  .header-instagram-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(212, 175, 55, 0.08);
+    border: 1px solid rgba(212, 175, 55, 0.28);
+    color: var(--gold-light, #E6CA65);
+    text-decoration: none;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    flex-shrink: 0;
+  }
+
+  .header-instagram-btn:hover {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.22), rgba(225, 48, 108, 0.22));
+    border-color: var(--gold-primary, #D4AF37);
+    color: #FFFFFF;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35);
+  }
+
+  .header-instagram-btn svg {
+    display: block;
+    transition: transform 0.22s ease;
+  }
+
+  .header-instagram-btn:hover svg {
+    transform: scale(1.12);
+  }
+
+  .cta-desktop {
+    display: inline;
+  }
+
+  .cta-mobile {
+    display: none;
+  }
+
+  /* Tablet screen adaptations */
+  @media (max-width: 900px) {
+    .header-container {
+      gap: 0.75rem;
+    }
+    .brand-title {
+      font-size: 1.25rem;
+      letter-spacing: 0.08em;
+    }
+    .brand-subtitle {
+      font-size: 0.56rem;
+      letter-spacing: 0.14em;
+    }
+  }
+
+  /* Mobile screen adaptations */
+  @media (max-width: 680px) {
+    .luxury-header {
+      height: 68px;
+    }
+
+    .header-container {
+      padding-left: 0.85rem;
+      padding-right: 0.85rem;
+      gap: 0.45rem;
+    }
+
+    .brand-logo {
+      gap: 0.55rem;
+      min-width: 0;
+      flex-shrink: 1;
+    }
+
+    .brand-emblem svg {
+      width: 32px;
+      height: 32px;
+    }
+
+    .brand-title {
+      font-size: clamp(1.12rem, 4.3vw, 1.25rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      line-height: 1.05;
+    }
+
+    .brand-subtitle {
+      font-size: 0.52rem;
+      letter-spacing: 0.08em;
+      margin-top: 1px;
+    }
+
+    .sub-extra {
+      display: none;
+    }
+
+    .header-actions {
+      gap: 0.35rem;
+      flex-shrink: 0;
+    }
+
+    .cta-desktop {
+      display: none;
+    }
+    .cta-mobile {
+      display: inline;
+    }
+
+    .header-availability-btn {
+      padding: 0.42rem 0.68rem;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    .header-instagram-btn {
+      width: 30px;
+      height: 30px;
+    }
+
+    .header-instagram-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .mobile-toggle {
+      width: 30px;
+      height: 24px;
+      padding: 2px 0;
+    }
+  }
+
+  /* Narrow mobile screens (<= 365px) */
+  @media (max-width: 365px) {
+    .header-container {
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+      gap: 0.25rem;
+    }
+
+    .brand-logo {
+      gap: 0.45rem;
+    }
+
+    .brand-emblem svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    .brand-title {
+      font-size: 1.05rem;
+      letter-spacing: 0.03em;
+    }
+
+    .brand-subtitle {
+      font-size: 0.48rem;
+      letter-spacing: 0.05em;
+    }
+
+    .header-availability-btn {
+      padding: 0.38rem 0.55rem;
+      font-size: 0.65rem;
+    }
+
+    .header-instagram-btn {
+      display: none; /* Keep CTA + Hamburger 100% visible on the narrowest phones */
+    }
+  }
+
+  /* Mobile Hamburger Toggle */
+  .mobile-toggle {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 32px;
+    height: 26px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  @media (min-width: 1024px) {
+    .mobile-toggle {
+      display: none;
+    }
+  }
+
+  .hamburger-bar {
+    width: 100%;
+    height: 2px;
+    background: var(--gold-primary);
+    border-radius: 2px;
+    transition: var(--transition-smooth);
+  }
+
+  /* Mobile Drawer */
+  .mobile-drawer {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 100%;
+    max-width: 360px;
+    height: 100vh;
+    background: #090B10;
+    border-left: 1px solid rgba(212, 175, 55, 0.22);
+    z-index: 1001;
+    transition: right 0.4s var(--ease-luxury);
+    box-shadow: -15px 0 50px rgba(0, 0, 0, 0.85);
+  }
+
+  .mobile-drawer.open {
+    right: 0;
+  }
+
+  .mobile-drawer-inner {
+    padding: 2rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  .drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .drawer-brand {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .close-drawer {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.25rem;
+    transition: color 0.2s ease;
+  }
+
+  .close-drawer:hover {
+    color: var(--gold-primary);
+  }
+
+  .mobile-nav {
+    margin-top: 1.75rem;
+    flex-grow: 1;
+  }
+
+  .mobile-nav ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+    padding: 0;
+    margin: 0;
+  }
+
+  .mobile-nav-link {
+    font-family: var(--font-serif);
+    font-size: 1.3rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-decoration: none;
+    transition: color 0.2s ease;
+    padding: 0.25rem 0;
+  }
+
+  .mobile-nav-link:hover, .mobile-nav-link.active {
+    color: var(--gold-light);
+  }
+
+  .drawer-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .drawer-cta {
+    width: 100%;
+    text-align: center;
+  }
+
+  .drawer-social-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+
+  .drawer-whatsapp {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.75rem 0.85rem;
+    font-size: 0.8rem;
+    border-radius: 9999px;
+    background: #25D366;
+    color: #FFFFFF;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background 0.2s ease;
+  }
+
+  .drawer-whatsapp:hover {
+    background: #20BD5A;
+  }
+
+  .btn-drawer-instagram {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.75rem 0.85rem;
+    font-size: 0.8rem;
+    border-radius: 9999px;
+    background: rgba(212, 175, 55, 0.08);
+    border: 1px solid rgba(212, 175, 55, 0.28);
+    color: var(--gold-light, #E6CA65);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .btn-drawer-instagram:hover {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.22), rgba(225, 48, 108, 0.22));
+    border-color: var(--gold-primary, #D4AF37);
+    color: #FFFFFF;
+  }
+</style>
+
+<script is:inline>
+  (function initHeaderScroll() {
+    function setupScroll() {
+      const header = document.getElementById('main-header');
+      if (!header) return;
+
+      let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      let isHidden = false;
+      let isScrolled = false;
+      let ticking = false;
+
+      function onScroll() {
+        const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+
+        // Top of page (scrollY < 50px): reset to default positioning
+        if (currentScrollY < 50) {
+          if (isHidden) {
+            header.classList.remove('header-hidden');
+            isHidden = false;
+          }
+          if (isScrolled) {
+            header.classList.remove('header-scrolled');
+            isScrolled = false;
+          }
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
+
+        // Visible while scrolled: apply sleek frosted dark glass backdrop
+        if (!isScrolled) {
+          header.classList.add('header-scrolled');
+          isScrolled = true;
+        }
+
+        const delta = currentScrollY - lastScrollY;
+
+        // When user scrolls DOWN and scrollY > 80px: slide smoothly UP out of sight
+        if (delta > 4 && currentScrollY > 80) {
+          if (!isHidden) {
+            const drawer = document.getElementById('mobile-drawer');
+            if (!drawer || !drawer.classList.contains('open')) {
+              header.classList.add('header-hidden');
+              isHidden = true;
+            }
+          }
+        }
+        // When user scrolls UP: immediately slide back DOWN into view
+        else if (delta < -4) {
+          if (isHidden) {
+            header.classList.remove('header-hidden');
+            isHidden = false;
+          }
+        }
+
+        lastScrollY = Math.max(0, currentScrollY);
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          window.requestAnimationFrame(onScroll);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      // Run once on setup
+      onScroll();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', setupScroll);
+    } else {
+      setupScroll();
+    }
+    document.addEventListener('astro:page-load', setupScroll);
+  })();
+
+  // Mobile drawer controls
+  (function initMobileDrawer() {
+    function setupDrawer() {
+      const toggleBtn = document.getElementById('mobile-toggle-btn');
+      const closeBtn = document.getElementById('close-drawer-btn');
+      const drawer = document.getElementById('mobile-drawer');
+
+      if (!toggleBtn || !drawer || !closeBtn) return;
+
+      toggleBtn.onclick = (e) => {
+        e.stopPropagation();
+        drawer.classList.add('open');
+        toggleBtn.setAttribute('aria-expanded', 'true');
+      };
+
+      closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        drawer.classList.remove('open');
+        toggleBtn.setAttribute('aria-expanded', 'false');
+      };
+
+      document.onclick = (e) => {
+        const target = e.target;
+        if (drawer.classList.contains('open') && !drawer.contains(target) && !toggleBtn.contains(target)) {
+          drawer.classList.remove('open');
+          toggleBtn.setAttribute('aria-expanded', 'false');
+        }
+      };
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', setupDrawer);
+    } else {
+      setupDrawer();
+    }
+    document.addEventListener('astro:page-load', setupDrawer);
+  })();
+
+  // Instant smooth scroll for Check Availability if already on the contact page
+  (function initAvailabilityScroll() {
+    function setupAvailabilityLinks() {
+      const links = document.querySelectorAll('.header-availability-btn, a[href*="#inquiry-form"]');
+      links.forEach((link) => {
+        link.addEventListener('click', (e) => {
+          const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
+          if (currentPath === '/contact') {
+            const formTarget = document.getElementById('inquiry-form');
+            if (formTarget) {
+              e.preventDefault();
+              const drawer = document.getElementById('mobile-drawer');
+              if (drawer && drawer.classList.contains('open')) {
+                drawer.classList.remove('open');
+                const toggleBtn = document.getElementById('mobile-toggle-btn');
+                if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
+              }
+              if (window.location.hash !== '#inquiry-form') {
+                history.pushState(null, '', '#inquiry-form');
+              }
+              formTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }
+        });
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', setupAvailabilityLinks);
+    } else {
+      setupAvailabilityLinks();
+    }
+    document.addEventListener('astro:page-load', setupAvailabilityLinks);
+  })();
+</script>

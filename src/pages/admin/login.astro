@@ -1,0 +1,362 @@
+---
+import '../../styles/global.css';
+import { isAuthenticated } from '../../lib/auth';
+
+export const prerender = false;
+
+// If already logged in, redirect to admin dashboard
+const authed = await isAuthenticated(Astro.request);
+if (authed) {
+  return Astro.redirect('/admin');
+}
+
+const isDefaultPass = !process.env.ADMIN_PASSWORD;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Studio Admin Login | Frames By Hithu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="login-body">
+    <div class="login-container">
+      <div class="login-card glass-card">
+        <div class="login-header text-center">
+          <div class="brand-monogram" aria-hidden="true">
+            <svg viewBox="0 0 52 52" width="56" height="56" fill="none">
+              <rect width="52" height="52" rx="13" fill="url(#loginGoldGrad)" />
+              <circle cx="26" cy="26" r="19" stroke="#07080B" stroke-width="1.3" stroke-opacity="0.35" stroke-dasharray="3.5 2.5" />
+              <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" fill="#07080B" font-family="'Cormorant Garamond', Georgia, serif" font-weight="700" font-size="22" letter-spacing="0.5">FH</text>
+              <defs>
+                <linearGradient id="loginGoldGrad" x1="0" y1="0" x2="52" y2="52" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#F7E4A8" />
+                  <stop offset="0.5" stop-color="#D4AF37" />
+                  <stop offset="1" stop-color="#9B781E" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <span class="gold-pill">AUTHENTICATED CONCIERGE ACCESS</span>
+          <h1 class="login-title">Frames By Hithu</h1>
+          <p class="login-subtitle">
+            Master administrative console for managing celebrations, ceremonies, and private client proofing suites across Karnataka.
+          </p>
+        </div>
+
+        <form id="login-form" class="login-form">
+          <div id="login-error" class="login-error" style="display: none;"></div>
+
+          <div class="form-group">
+            <label for="password-input" class="form-label">Admin Security Key</label>
+            <div class="input-wrap">
+              <input
+                type="password"
+                id="password-input"
+                name="password"
+                placeholder="Enter admin password"
+                class="form-input"
+                required
+                autocomplete="current-password"
+              />
+              <button type="button" id="toggle-pwd-btn" class="pwd-toggle" aria-label="Toggle password visibility">
+                👁️
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" id="submit-btn" class="btn-gold login-submit-btn">
+            <span id="btn-text">Authenticate & Enter Console</span>
+            <span id="btn-spinner" class="spinner" style="display: none;"></span>
+          </button>
+        </form>
+
+        <div class="login-footer">
+          <div class="dev-hint-box">
+            <span class="hint-label">🔑 Security Notice:</span>
+            <span>Password configured via <code>ADMIN_PASSWORD</code>.</span>
+            {isDefaultPass && (
+              <span class="default-pill">Default: <strong>FramesHithu@2026</strong></span>
+            )}
+          </div>
+
+          <div class="back-link-row">
+            <a href="/" class="back-home-link">← Return to Public Portfolio</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      body.login-body {
+        margin: 0;
+        padding: 0;
+        background: radial-gradient(ellipse at center, #141622 0%, #07080A 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-sans);
+        color: #F3F4F6;
+        padding: 1.5rem;
+        box-sizing: border-box;
+      }
+
+      .login-container {
+        width: 100%;
+        max-width: 460px;
+      }
+
+      .login-card {
+        padding: clamp(2rem, 5vw, 3rem);
+        border: 1px solid var(--gold-border);
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), var(--gold-glow-subtle);
+        background: rgba(19, 20, 27, 0.95);
+      }
+
+      .brand-monogram {
+        width: 56px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 13px;
+        margin: 0 auto 1.25rem auto;
+        box-shadow: 0 6px 24px rgba(212, 175, 55, 0.4);
+        transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+      }
+
+      .brand-monogram:hover {
+        transform: scale(1.05);
+        box-shadow: 0 8px 30px rgba(212, 175, 55, 0.6);
+      }
+
+      .login-title {
+        font-family: var(--font-serif);
+        font-size: 1.95rem;
+        margin: 0.85rem 0 0.5rem 0;
+        color: #FFFFFF;
+      }
+
+      .login-subtitle {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+        margin-bottom: 2rem;
+      }
+
+      .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+      }
+
+      .login-error {
+        background: rgba(239, 68, 68, 0.12);
+        border: 1px solid rgba(239, 68, 68, 0.35);
+        color: #F87171;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .form-label {
+        font-size: 0.825rem;
+        font-weight: 600;
+        color: var(--gold-light);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .input-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+
+      .form-input {
+        width: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        padding: 0.85rem 3rem 0.85rem 1rem;
+        color: #FFFFFF;
+        font-family: var(--font-sans);
+        font-size: 0.95rem;
+        outline: none;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .form-input:focus {
+        border-color: var(--gold-primary);
+        box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+      }
+
+      .pwd-toggle {
+        position: absolute;
+        right: 12px;
+        background: transparent;
+        border: none;
+        color: #9CA3AF;
+        cursor: pointer;
+        font-size: 1.1rem;
+        padding: 4px;
+      }
+
+      .login-submit-btn {
+        width: 100%;
+        margin-top: 0.5rem;
+        padding: 0.9rem;
+        font-family: var(--font-sans);
+        font-size: 0.95rem;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        background: linear-gradient(135deg, #F7E4A8 0%, #D4AF37 50%, #9B781E 100%);
+        color: #07080B;
+        border: 1px solid rgba(255, 240, 180, 0.5);
+        border-radius: 8px;
+        box-shadow: 0 4px 18px rgba(212, 175, 55, 0.35);
+        transition: all 0.25s ease;
+      }
+
+      .login-submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 26px rgba(212, 175, 55, 0.55);
+        filter: brightness(1.08);
+      }
+
+      .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(0, 0, 0, 0.3);
+        border-top-color: #000000;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .login-footer {
+        margin-top: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+      }
+
+      .dev-hint-box {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px dashed rgba(212, 175, 55, 0.3);
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        color: #9CA3AF;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+
+      .dev-hint-box code {
+        color: var(--gold-light);
+      }
+
+      .default-pill {
+        color: var(--gold-primary);
+        font-weight: 500;
+      }
+
+      .back-link-row {
+        text-align: center;
+      }
+
+      .back-home-link {
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 0.825rem;
+        transition: color 0.2s ease;
+      }
+
+      .back-home-link:hover {
+        color: var(--gold-primary);
+      }
+    </style>
+
+    <script>
+      const form = document.getElementById('login-form') as HTMLFormElement;
+      const pwdInput = document.getElementById('password-input') as HTMLInputElement;
+      const toggleBtn = document.getElementById('toggle-pwd-btn');
+      const errorElem = document.getElementById('login-error');
+      const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+      const btnText = document.getElementById('btn-text');
+      const btnSpinner = document.getElementById('btn-spinner');
+
+      toggleBtn?.addEventListener('click', () => {
+        if (pwdInput.type === 'password') {
+          pwdInput.type = 'text';
+          toggleBtn.textContent = '🔒';
+        } else {
+          pwdInput.type = 'password';
+          toggleBtn.textContent = '👁️';
+        }
+      });
+
+      form?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!errorElem || !submitBtn || !btnText || !btnSpinner) return;
+
+        errorElem.style.display = 'none';
+        submitBtn.disabled = true;
+        btnText.textContent = 'Verifying...';
+        btnSpinner.style.display = 'inline-block';
+
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pwdInput.value })
+          });
+
+          const data = await res.json();
+
+          if (res.ok && data.success) {
+            btnText.textContent = 'Granted! Redirecting...';
+            setTimeout(() => {
+              window.location.href = '/admin';
+            }, 400);
+          } else {
+            errorElem.textContent = data.error || 'Authentication rejected';
+            errorElem.style.display = 'block';
+            submitBtn.disabled = false;
+            btnText.textContent = 'Authenticate & Enter Console';
+            btnSpinner.style.display = 'none';
+          }
+        } catch (err: any) {
+          errorElem.textContent = 'Connection error. Please try again.';
+          errorElem.style.display = 'block';
+          submitBtn.disabled = false;
+          btnText.textContent = 'Authenticate & Enter Console';
+          btnSpinner.style.display = 'none';
+        }
+      });
+    </script>
+  </body>
+</html>

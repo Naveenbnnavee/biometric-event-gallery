@@ -1,0 +1,794 @@
+---
+import { getStudioSettingsAsync } from '../lib/db';
+
+interface Props {
+  initialService?: string;
+  initialCity?: string;
+}
+
+const { initialService = '', initialCity = '' } = Astro.props;
+const settings = await getStudioSettingsAsync();
+const whatsappClean = (settings.whatsappConcierge || '917892706982').replace(/[^0-9]/g, '');
+---
+
+<div class="inquiry-form-card glass-card" id="inquiry-card">
+  <div class="form-header">
+    <div class="gold-pill">BESPOKE COMMISSIONS ONLY</div>
+    <h3 class="form-title">Check Date Availability & Request Custom Quote</h3>
+    <p class="form-desc">
+      Every celebration is unique. Share your event itinerary below to receive a personalized proposal and immediate date confirmation directly from our lead photographer.
+    </p>
+  </div>
+
+  <form id="bespoke-quote-form" class="inquiry-form" data-whatsapp={whatsappClean} novalidate>
+    <!-- Honeypot Bot Shield -->
+    <div style="display: none;" aria-hidden="true">
+      <label for="form-website-token">Do not fill this</label>
+      <input type="text" id="form-website-token" name="website_token" tabindex="-1" autocomplete="off" />
+    </div>
+
+    <div class="form-grid">
+      <!-- Full Name -->
+      <div class="form-group">
+        <label for="client-name" class="form-label">Your Full Name <span class="required">*</span></label>
+        <input
+          type="text"
+          id="client-name"
+          name="name"
+          required
+          placeholder="e.g. Radhika Sharma"
+          class="form-input"
+        />
+      </div>
+
+      <!-- WhatsApp Phone (Strict 10-digit Indian Number with locked +91) -->
+      <div class="form-group">
+        <div class="inquiry-phone-label-row">
+          <label for="client-phone-digits" class="form-label">WhatsApp Contact Number <span class="required">*</span></label>
+          <span class="inquiry-digit-counter" id="inquiry-phone-counter">0/10 digits</span>
+        </div>
+        <div class="inquiry-phone-input-wrap" id="inquiry-phone-wrap">
+          <span class="inquiry-phone-prefix" title="Default Country Code: India (+91)">
+            <span class="country-flag">🇮🇳</span>
+            <span class="country-code">+91</span>
+          </span>
+          <input
+            type="tel"
+            id="client-phone-digits"
+            class="form-input inquiry-phone-digits"
+            placeholder="9845012345"
+            maxlength="10"
+            inputmode="numeric"
+            autocomplete="tel-national"
+            required
+          />
+        </div>
+        <input type="hidden" id="client-phone" name="phone" value="" />
+        <span class="field-hint">Default +91 prefix. Please enter exactly 10 digits.</span>
+      </div>
+
+      <!-- Email Address -->
+      <div class="form-group">
+        <label for="client-email" class="form-label">Email Address <span class="required">*</span></label>
+        <input
+          type="email"
+          id="client-email"
+          name="email"
+          required
+          placeholder="radhika@example.com"
+          class="form-input"
+          autocomplete="email"
+        />
+        <span class="field-hint" id="client-email-hint">We will share your tailored fine-art proposal and rate brochure here.</span>
+      </div>
+
+      <!-- Ceremony / Event Type -->
+      <div class="form-group">
+        <label for="client-event-type" class="form-label">Ceremony / Event Type <span class="required">*</span></label>
+        <select id="client-event-type" name="eventType" required class="form-select">
+          <option value="" disabled selected={!initialService}>Select Ceremony Type</option>
+          <option value="Grand Karnataka Wedding & Muhurtham" selected={initialService === 'wedding-photography'}>Grand Karnataka Wedding & Muhurtham</option>
+          <option value="Vedic Gruhapravesham (Housewarming)" selected={initialService === 'housewarming-gruhapravesham'}>Vedic Gruhapravesham (Housewarming)</option>
+          <option value="Cinematic Pre-Wedding Shoot" selected={initialService === 'pre-wedding-shoots'}>Cinematic Pre-Wedding Shoot</option>
+          <option value="Traditional Pooja & Upanayana" selected={initialService === 'poojas-traditional-rituals'}>Traditional Pooja & Upanayana</option>
+          <option value="Family Milestone / Seemantha">Family Milestone / Seemantha</option>
+          <option value="Other Bespoke Celebration">Other Bespoke Celebration</option>
+        </select>
+      </div>
+
+      <!-- Event Date -->
+      <div class="form-group">
+        <label for="client-date" class="form-label">Event Date / Muhurtham <span class="required">*</span></label>
+        <input
+          type="date"
+          id="client-date"
+          name="eventDate"
+          required
+          class="form-input"
+        />
+      </div>
+
+      <!-- Location / City in Karnataka -->
+      <div class="form-group">
+        <label for="client-city" class="form-label">Location in Karnataka <span class="required">*</span></label>
+        <select id="client-city" name="city" required class="form-select">
+          <option value="" disabled selected={!initialCity}>Select City / District</option>
+          <option value="Bengaluru" selected={initialCity.toLowerCase() === 'bangalore' || initialCity.toLowerCase() === 'bengaluru'}>Bengaluru</option>
+          <option value="Mysuru" selected={initialCity.toLowerCase() === 'mysore' || initialCity.toLowerCase() === 'mysuru'}>Mysuru</option>
+          <option value="Mangaluru" selected={initialCity.toLowerCase() === 'mangalore' || initialCity.toLowerCase() === 'mangaluru'}>Mangaluru</option>
+          <option value="Udupi" selected={initialCity.toLowerCase() === 'udupi'}>Udupi</option>
+          <option value="Hubballi / Dharwad" selected={initialCity.toLowerCase() === 'hubballi'}>Hubballi / Dharwad</option>
+          <option value="Coorg / Madikeri">Coorg / Madikeri</option>
+          <option value="Chikmagalur / Hassan">Chikmagalur / Hassan</option>
+          <option value="Other Karnataka Location">Other Karnataka Location</option>
+        </select>
+      </div>
+
+      <!-- Venue Name -->
+      <div class="form-group">
+        <label for="client-venue" class="form-label">Venue / Mantapam Name</label>
+        <input
+          type="text"
+          id="client-venue"
+          name="venue"
+          placeholder="e.g. Bangalore Palace or Residence"
+          class="form-input"
+        />
+      </div>
+
+      <!-- Estimated Guest Scale -->
+      <div class="form-group">
+        <label for="client-guests" class="form-label">Estimated Guest Scale</label>
+        <select id="client-guests" name="guests" class="form-select">
+          <option value="Intimate (< 100 Guests)">Intimate (< 100 Guests)</option>
+          <option value="Mid-Scale (100 - 400 Guests)" selected>Mid-Scale (100 - 400 Guests)</option>
+          <option value="Grand Celebration (400 - 1,000 Guests)">Grand Celebration (400 - 1,000 Guests)</option>
+          <option value="Royal / Opulent (1,000+ Guests)">Royal / Opulent (1,000+ Guests)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Notes / Specific Rituals -->
+    <div class="form-group full-width">
+      <label for="client-notes" class="form-label">Specific Rituals, Timings or Requirements</label>
+      <textarea
+        id="client-notes"
+        name="notes"
+        rows="3"
+        placeholder="e.g. 5:00 AM Brahma Muhurtham milk boiling, drone cinematography needed for lawn reception, heirloom album desired..."
+        class="form-textarea"
+      ></textarea>
+    </div>
+
+    <!-- Cloudflare Turnstile simulation / bot verification container -->
+    <div class="turnstile-box">
+      <div class="turnstile-badge">
+        <span class="shield-icon">🛡️</span>
+        <span>Cloudflare Verified Secure Booking Channel</span>
+      </div>
+    </div>
+
+    <!-- Submission Buttons -->
+    <div class="form-actions">
+      <button type="submit" id="submit-whatsapp-btn" class="btn-whatsapp submit-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/>
+        </svg>
+        <span>Send & Chat Directly on WhatsApp</span>
+      </button>
+
+      <button type="button" id="submit-portal-btn" class="btn-gold submit-btn">
+        <span>Request Email Consultation</span>
+      </button>
+    </div>
+  </form>
+
+  <!-- Success Confirmation View -->
+  <div id="form-success-message" class="form-success" style="display: none;">
+    <div class="success-icon">✨</div>
+    <h3 class="success-title">Inquiry Received with Sacred Care</h3>
+    <p class="success-body">
+      Thank you for considering <strong>Frames By Hithu</strong>. Your details have been queued for priority review. Lead photographer Hithu will review the Muhurtham schedule and revert with date confirmation within 4 hours.
+    </p>
+    <div class="direct-wa-box">
+      <p class="wa-lead-text">Need urgent date reservation?</p>
+      <a id="success-wa-link" href="#" target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
+        Continue to WhatsApp Conversation
+      </a>
+    </div>
+  </div>
+</div>
+
+<style>
+  .inquiry-form-card {
+    padding: clamp(2rem, 5vw, 3.5rem);
+    max-width: 860px;
+    margin: 0 auto;
+    border: 1px solid var(--gold-border);
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .form-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .form-header .gold-pill {
+    margin-bottom: 1rem;
+  }
+
+  .form-title {
+    font-size: clamp(1.8rem, 3.5vw, 2.4rem);
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+  }
+
+  .form-desc {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    max-width: 680px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  @media (min-width: 640px) {
+    .form-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .form-group.full-width {
+    grid-column: 1 / -1;
+    margin-bottom: 1.5rem;
+  }
+
+  .form-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0.04em;
+  }
+
+  .required {
+    color: var(--gold-primary);
+  }
+
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    background: rgba(11, 12, 16, 0.85);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    transition: var(--transition-smooth);
+    outline: none;
+  }
+
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--gold-primary);
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.25);
+    background: rgba(15, 17, 24, 0.95);
+  }
+
+  .form-input.has-error {
+    border-color: #EF4444 !important;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.3) !important;
+  }
+
+  /* Phone input styling with locked +91 prefix and digit counter */
+  .inquiry-phone-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .inquiry-digit-counter {
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #9CA3AF;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+    user-select: none;
+  }
+
+  .inquiry-digit-counter.valid {
+    background: rgba(37, 211, 102, 0.15);
+    color: #25D366;
+    border-color: rgba(37, 211, 102, 0.35);
+  }
+
+  .inquiry-digit-counter.invalid {
+    background: rgba(239, 68, 68, 0.12);
+    color: #EF4444;
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+
+  .inquiry-phone-input-wrap {
+    display: flex;
+    align-items: stretch;
+    background: rgba(11, 12, 16, 0.85);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    overflow: hidden;
+    transition: var(--transition-smooth);
+  }
+
+  .inquiry-phone-input-wrap:focus-within {
+    border-color: var(--gold-primary);
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.25);
+    background: rgba(15, 17, 24, 0.95);
+  }
+
+  .inquiry-phone-input-wrap.has-error {
+    border-color: #EF4444 !important;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.3) !important;
+  }
+
+  .inquiry-phone-prefix {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0 0.85rem;
+    background: rgba(212, 175, 55, 0.08);
+    border-right: 1px solid rgba(212, 175, 55, 0.2);
+    color: var(--gold-light, #F3E5AB);
+    font-size: 0.875rem;
+    font-weight: 600;
+    user-select: none;
+    letter-spacing: 0.03em;
+  }
+
+  .inquiry-phone-prefix .country-flag {
+    font-size: 1.05rem;
+    line-height: 1;
+  }
+
+  .inquiry-phone-digits {
+    flex: 1;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0.85rem 1rem !important;
+    font-size: 0.95rem;
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+  }
+
+  .inquiry-phone-digits:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  .field-hint {
+    font-size: 0.725rem;
+    color: #9CA3AF;
+  }
+
+  .form-select {
+    cursor: pointer;
+  }
+
+  .form-select option {
+    background: #14161D;
+    color: #F4F4F6;
+  }
+
+  .turnstile-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px dashed var(--border-subtle);
+    border-radius: 4px;
+    margin-bottom: 2rem;
+  }
+
+  .turnstile-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  .shield-icon {
+    font-size: 0.9rem;
+  }
+
+  .form-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .form-actions {
+      flex-direction: row;
+    }
+  }
+
+  .submit-btn {
+    flex: 1;
+    padding: 1rem;
+    font-size: 0.875rem;
+  }
+
+  /* Success Message */
+  .form-success {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+  }
+
+  .success-icon {
+    font-size: 3rem;
+    color: var(--gold-primary);
+    margin-bottom: 1rem;
+  }
+
+  .success-title {
+    font-size: 2rem;
+    color: var(--gold-light);
+    margin-bottom: 0.75rem;
+  }
+
+  .success-body {
+    font-size: 1rem;
+    color: var(--text-muted);
+    max-width: 600px;
+    margin: 0 auto 2rem auto;
+    line-height: 1.7;
+  }
+
+  .direct-wa-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(37, 211, 102, 0.08);
+    border: 1px solid rgba(37, 211, 102, 0.25);
+    padding: 1.5rem;
+    border-radius: 6px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .wa-lead-text {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  @keyframes goldFocusPulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.7);
+    }
+    50% {
+      box-shadow: 0 0 35px 8px rgba(212, 175, 55, 0.45);
+    }
+    100% {
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+    }
+  }
+
+  .pulse-focus {
+    animation: goldFocusPulse 1.5s ease-in-out;
+  }
+</style>
+
+<script>
+  function initInquiryForm() {
+    const form = document.getElementById('bespoke-quote-form') as HTMLFormElement;
+    const successBox = document.getElementById('form-success-message');
+    const waLink = document.getElementById('success-wa-link') as HTMLAnchorElement;
+    const portalBtn = document.getElementById('submit-portal-btn');
+    const phoneDigitsInput = document.getElementById('client-phone-digits') as HTMLInputElement | null;
+    const phoneHiddenInput = document.getElementById('client-phone') as HTMLInputElement | null;
+    const phoneCounter = document.getElementById('inquiry-phone-counter') as HTMLElement | null;
+    const phoneWrap = document.getElementById('inquiry-phone-wrap') as HTMLElement | null;
+
+    if (!form) return;
+
+    if (phoneDigitsInput && phoneCounter && phoneHiddenInput) {
+      const counterEl = phoneCounter;
+      const digitsEl = phoneDigitsInput;
+      const hiddenEl = phoneHiddenInput;
+
+      function sanitizePhone() {
+        let digits = digitsEl.value.replace(/\D/g, '');
+        if (digits.length > 10) {
+          if (digits.startsWith('91')) {
+            digits = digits.slice(2);
+          } else if (digits.startsWith('0')) {
+            digits = digits.slice(1);
+          }
+          if (digits.length > 10) {
+            digits = digits.slice(-10);
+          }
+        }
+        if (digits.length > 10) {
+          digits = digits.slice(0, 10);
+        }
+        digitsEl.value = digits;
+
+        if (digits.length === 10) {
+          counterEl.textContent = '✓ 10 digits';
+          counterEl.className = 'inquiry-digit-counter valid';
+          phoneWrap?.classList.remove('has-error');
+          hiddenEl.value = `+91 ${digits}`;
+        } else {
+          counterEl.textContent = `${digits.length}/10 digits`;
+          counterEl.className = digits.length > 0 ? 'inquiry-digit-counter invalid' : 'inquiry-digit-counter';
+          hiddenEl.value = digits ? `+91 ${digits}` : '';
+        }
+      }
+
+      digitsEl.addEventListener('keydown', (e) => {
+        const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter', 'Home', 'End'];
+        if (allowedKeys.includes(e.key) || e.ctrlKey || e.metaKey) {
+          return;
+        }
+        if (!/^[0-9]$/.test(e.key)) {
+          e.preventDefault();
+        }
+      });
+
+      digitsEl.addEventListener('input', sanitizePhone);
+      digitsEl.addEventListener('paste', () => setTimeout(sanitizePhone, 10));
+      digitsEl.addEventListener('blur', sanitizePhone);
+      sanitizePhone();
+    }
+
+    const emailInput = form.querySelector('[name="email"]') as HTMLInputElement | null;
+    const emailHint = document.getElementById('client-email-hint') as HTMLElement | null;
+
+    function validateEmail(val: string): boolean {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(val.trim());
+    }
+
+    if (emailInput) {
+      emailInput.addEventListener('blur', () => {
+        const val = emailInput.value.trim();
+        if (val && !validateEmail(val)) {
+          emailInput.classList.add('has-error');
+          if (emailHint) {
+            emailHint.textContent = '⚠️ Please enter a complete, valid email (e.g. name@gmail.com)';
+            emailHint.style.color = '#EF4444';
+          }
+        } else {
+          emailInput.classList.remove('has-error');
+          if (emailHint) {
+            emailHint.textContent = 'We will share your tailored fine-art proposal and rate brochure here.';
+            emailHint.style.color = '';
+          }
+        }
+      });
+
+      emailInput.addEventListener('input', () => {
+        if (emailInput.classList.contains('has-error') && validateEmail(emailInput.value.trim())) {
+          emailInput.classList.remove('has-error');
+          if (emailHint) {
+            emailHint.textContent = 'We will share your tailored fine-art proposal and rate brochure here.';
+            emailHint.style.color = '';
+          }
+        }
+      });
+    }
+
+    // Auto-prefill form from URL search parameters or hash query strings (e.g. from Instant Decks)
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      let hashQuery = '';
+      if (window.location.hash.includes('?')) {
+        hashQuery = window.location.hash.split('?')[1];
+      }
+      const hashParams = new URLSearchParams(hashQuery);
+
+      const getParam = (key: string) => urlParams.get(key) || hashParams.get(key);
+
+      const venueParam = getParam('venue');
+      const titleParam = getParam('title');
+      const locationParam = getParam('location') || getParam('city');
+      const serviceParam = getParam('service');
+
+      const venueInput = form.querySelector('[name="venue"]') as HTMLInputElement | null;
+      const notesInput = form.querySelector('[name="notes"]') as HTMLTextAreaElement | null;
+      const citySelect = form.querySelector('[name="city"]') as HTMLSelectElement | null;
+      const serviceSelect = form.querySelector('[name="eventType"]') as HTMLSelectElement | null;
+
+      if (venueParam && venueInput && !venueInput.value) {
+        venueInput.value = venueParam;
+      }
+
+      if (titleParam && notesInput && !notesInput.value) {
+        notesInput.value = `Inquiring about Instant Deck frame: "${titleParam}"` + (venueParam ? ` at ${venueParam}` : '');
+      }
+
+      if (locationParam && citySelect) {
+        const locLower = locationParam.toLowerCase();
+        for (let i = 0; i < citySelect.options.length; i++) {
+          const optVal = citySelect.options[i].value.toLowerCase();
+          if (optVal && (locLower.includes(optVal) || (optVal.includes('bengaluru') && locLower.includes('bangalore')) || (optVal.includes('mysuru') && locLower.includes('mysore')) || (optVal.includes('mangaluru') && locLower.includes('mangalore')))) {
+            citySelect.selectedIndex = i;
+            break;
+          }
+        }
+      }
+
+      if (serviceParam && serviceSelect) {
+        const sLower = serviceParam.toLowerCase();
+        for (let i = 0; i < serviceSelect.options.length; i++) {
+          if (serviceSelect.options[i].value.toLowerCase().includes(sLower)) {
+            serviceSelect.selectedIndex = i;
+            break;
+          }
+        }
+      }
+    } catch (_) {}
+
+    function buildWhatsAppPayload() {
+      const name = (form.querySelector('[name="name"]') as HTMLInputElement)?.value.trim() || '';
+      const phone = (form.querySelector('[name="phone"]') as HTMLInputElement)?.value.trim() || '';
+      const email = (form.querySelector('[name="email"]') as HTMLInputElement)?.value.trim() || '';
+      const eventType = (form.querySelector('[name="eventType"]') as HTMLSelectElement)?.value || 'Celebration';
+      const eventDate = (form.querySelector('[name="eventDate"]') as HTMLInputElement)?.value || 'TBD';
+      const city = (form.querySelector('[name="city"]') as HTMLSelectElement)?.value || 'Karnataka';
+      const venueRaw = (form.querySelector('[name="venue"]') as HTMLInputElement)?.value.trim() || '';
+      const venue = venueRaw && venueRaw.toLowerCase() !== 'not specified' ? venueRaw : '';
+      const guests = (form.querySelector('[name="guests"]') as HTMLSelectElement)?.value || 'Unspecified';
+      const notes = (form.querySelector('[name="notes"]') as HTMLTextAreaElement)?.value.trim() || '';
+
+      const locationStr = venue ? `${city} (${venue})` : city;
+
+      const text =
+        `✨ *Frames By Hithu — Bespoke Commission Inquiry*\n\n` +
+        `👤 *Client Name:* ${name}\n` +
+        `📱 *WhatsApp Phone:* ${phone}\n` +
+        `✉️ *Email Address:* ${email}\n` +
+        `🗓️ *Event Type:* ${eventType}\n` +
+        `📅 *Date / Muhurtham:* ${eventDate}\n` +
+        `📍 *Location:* ${locationStr}\n` +
+        `👥 *Guest Scale:* ${guests}\n` +
+        (notes ? `📝 *Rituals / Notes:* ${notes}\n\n` : `\n`) +
+        `Please confirm date availability and share a tailored fine-art proposal.`;
+
+      return encodeURIComponent(text);
+    }
+
+    function persistInquiry() {
+      const name = (form.querySelector('[name="name"]') as HTMLInputElement)?.value.trim() || '';
+      const phone = (form.querySelector('[name="phone"]') as HTMLInputElement)?.value.trim() || '';
+      const email = (form.querySelector('[name="email"]') as HTMLInputElement)?.value.trim() || '';
+      const eventType = (form.querySelector('[name="eventType"]') as HTMLSelectElement)?.value || 'Grand Karnataka Wedding & Muhurtham';
+      const eventDate = (form.querySelector('[name="eventDate"]') as HTMLInputElement)?.value || '';
+      const city = (form.querySelector('[name="city"]') as HTMLSelectElement)?.value || 'Bengaluru';
+      const venueRaw = (form.querySelector('[name="venue"]') as HTMLInputElement)?.value.trim() || '';
+      const venue = venueRaw && venueRaw.toLowerCase() !== 'not specified' ? venueRaw : '';
+      const guests = (form.querySelector('[name="guests"]') as HTMLSelectElement)?.value || '';
+      const notes = (form.querySelector('[name="notes"]') as HTMLTextAreaElement)?.value.trim() || '';
+
+      if (name && eventDate) {
+        fetch('/api/inquiries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clientName: name,
+            phone: phone,
+            email: email,
+            ceremonyType: eventType,
+            eventDate: eventDate,
+            location: city,
+            venue: venue,
+            estimatedGuests: guests,
+            notes: notes,
+            status: 'new'
+          })
+        }).catch(err => console.warn('Could not persist inquiry:', err));
+      }
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      // Validate required
+      const name = ((form.querySelector('[name="name"]') as HTMLInputElement)?.value || '').trim();
+      const date = ((form.querySelector('[name="eventDate"]') as HTMLInputElement)?.value || '').trim();
+      const rawDigits = (phoneDigitsInput?.value || '').replace(/\D/g, '');
+      const emailVal = (emailInput?.value || '').trim();
+
+      if (!name || !date) {
+        alert('Please complete the required fields: Full Name and Event Date.');
+        return;
+      }
+
+      if (rawDigits.length !== 10) {
+        alert('Please enter a valid 10-digit WhatsApp number (India +91).');
+        phoneWrap?.classList.add('has-error');
+        phoneDigitsInput?.focus();
+        return;
+      }
+
+      if (!emailVal || !validateEmail(emailVal)) {
+        alert('Please enter a complete and valid email address (e.g. name@gmail.com).');
+        emailInput?.classList.add('has-error');
+        emailInput?.focus();
+        return;
+      }
+
+      // Persist to admin inquiry inbox
+      persistInquiry();
+
+      const waNumber = form.getAttribute('data-whatsapp') || '917892706982';
+      const text = buildWhatsAppPayload();
+      const targetUrl = `https://wa.me/${waNumber}?text=${text}`;
+
+      // Show success
+      form.style.display = 'none';
+      if (successBox) successBox.style.display = 'block';
+      if (waLink) waLink.href = targetUrl;
+
+      // Open WhatsApp in new window
+      window.open(targetUrl, '_blank');
+    });
+
+    if (portalBtn) {
+      portalBtn.addEventListener('click', () => {
+        const name = ((form.querySelector('[name="name"]') as HTMLInputElement)?.value || '').trim();
+        const date = ((form.querySelector('[name="eventDate"]') as HTMLInputElement)?.value || '').trim();
+        const rawDigits = (phoneDigitsInput?.value || '').replace(/\D/g, '');
+        const emailVal = (emailInput?.value || '').trim();
+
+        if (!name || !date) {
+          alert('Please enter your Name and Event Date.');
+          return;
+        }
+
+        if (rawDigits.length !== 10) {
+          alert('Please enter a valid 10-digit WhatsApp number (India +91).');
+          phoneWrap?.classList.add('has-error');
+          phoneDigitsInput?.focus();
+          return;
+        }
+
+        if (!emailVal || !validateEmail(emailVal)) {
+          alert('Please enter a complete and valid email address (e.g. name@gmail.com).');
+          emailInput?.classList.add('has-error');
+          emailInput?.focus();
+          return;
+        }
+
+        // Persist to admin inquiry inbox
+        persistInquiry();
+
+        const waNumber = form.getAttribute('data-whatsapp') || '917892706982';
+        const text = buildWhatsAppPayload();
+        form.style.display = 'none';
+        if (successBox) successBox.style.display = 'block';
+        if (waLink) waLink.href = `https://wa.me/${waNumber}?text=${text}`;
+      });
+    }
+  }
+
+  initInquiryForm();
+  document.addEventListener('astro:page-load', initInquiryForm);
+</script>

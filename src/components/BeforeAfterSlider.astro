@@ -1,0 +1,605 @@
+---
+import { getBeforeAfterPhotosAsync, getPortfolioItemsAsync } from '../lib/db';
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  pill?: string;
+}
+
+const {
+  pill = "THE COLOR SCIENCE",
+  title = "RAW Sensor vs. Fine-Art Master Grade",
+  subtitle = "Experience our signature warm golden grading: transforming flat digital sensor files into luminous, generational heirlooms honoring pure Kanjeevaram silks, temple diya warmth, and natural Indian skin tones."
+} = Astro.props;
+
+// Fetch photos enabled for before/after comparison by admin
+const dbRetouchPhotos = await getBeforeAfterPhotosAsync();
+const allPhotos = await getPortfolioItemsAsync();
+
+// Fallback to first available portfolio item if none is explicitly enabled
+const displayPhotos = dbRetouchPhotos.length > 0 
+  ? dbRetouchPhotos 
+  : (allPhotos.slice(0, 1).length > 0 ? allPhotos.slice(0, 1) : [
+      {
+        id: 'fallback-ba',
+        title: 'Melukote Hoysala Stepwells',
+        categoryLabel: 'Pre-Wedding',
+        venue: 'Kalyani Stepwell & Raya Gopura',
+        location: 'Melukote, Karnataka',
+        image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Melkote_kalyani.jpg/1280px-Melkote_kalyani.jpg',
+        beforeImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Melkote_kalyani.jpg/640px-Melkote_kalyani.jpg',
+        placements: { beforeAfterSlider: true, heroSlider: false, instantDeck: false, portfolioGrid: true, clientStories: false }
+      }
+    ]);
+---
+
+<section class="before-after-section section-py" id="retouch-slider">
+  <div class="container">
+    <div class="section-header text-center">
+      <div class="gold-pill">{pill}</div>
+      <h2 class="ba-headline">{title}</h2>
+      <div class="gold-divider"></div>
+      <p class="ba-subheadline">{subtitle}</p>
+    </div>
+
+    {displayPhotos.length > 1 && (
+      <div class="ba-frame-selector-wrap">
+        <span class="selector-label">Curated Retouch Frames:</span>
+        <div class="ba-selector-pills" id="ba-selector-pills">
+          {displayPhotos.map((photo, idx) => (
+            <button
+              class:list={['ba-pill-btn', { active: idx === 0 }]}
+              data-photo-idx={idx}
+              type="button"
+            >
+              <span class="pill-dot"></span>
+              <span>{photo.title}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    )}
+
+    <!-- Interactive Comparison Stage -->
+    <div class="ba-stage-wrapper glass-card">
+      {displayPhotos.map((photo, idx) => {
+        const hasCustomRaw = Boolean(photo.beforeImage && photo.beforeImage.trim());
+        const rawImgSrc = hasCustomRaw ? photo.beforeImage! : photo.image;
+        
+        return (
+          <div
+            class:list={['ba-slider-instance', { active: idx === 0 }]}
+            id={`ba-instance-${idx}`}
+            data-index={idx}
+            style={idx === 0 ? 'display: block;' : 'display: none;'}
+          >
+            <!-- Viewport -->
+            <div class="ba-viewport protected-media" style="--slider-pos: 50%;">
+              <!-- Layer 1: AFTER (Graded Master) -->
+              <div class="ba-layer ba-after-layer">
+                <img
+                  src={photo.image}
+                  alt={`${photo.title} - Signature Fine-Art Grade`}
+                  class="ba-img"
+                  loading="lazy"
+                />
+                <div class="ba-badge ba-badge-right">
+                  <span class="badge-dot gold"></span>
+                  <span>SIGNATURE FINE-ART GRADE</span>
+                </div>
+              </div>
+
+              <!-- Layer 2: BEFORE (RAW Unprocessed Sensor Capture) -->
+              <div
+                class:list={['ba-layer ba-before-layer', { 'emulated-raw': !hasCustomRaw }]}
+              >
+                <img
+                  src={rawImgSrc}
+                  alt={`${photo.title} - RAW Sensor Capture`}
+                  class="ba-img"
+                  loading="lazy"
+                />
+                <div class="ba-badge ba-badge-left">
+                  <span class="badge-dot silver"></span>
+                  <span>RAW SENSOR CAPTURE (FLAT)</span>
+                </div>
+              </div>
+
+              <!-- Divider Line & Touch Handle -->
+              <div class="ba-handle" aria-hidden="true">
+                <div class="handle-line"></div>
+                <div class="handle-knob">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
+                  <span class="handle-divider"></span>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Subtle Watermark & Anti-Theft -->
+              <div class="protected-overlay"></div>
+              <div class="watermark-subtle">FRAMES BY HITHU • COLOR INTEGRITY</div>
+            </div>
+
+            <!-- Frame Details Bar -->
+            <div class="ba-details-bar">
+              <div class="ba-meta">
+                <h3 class="ba-frame-title">{photo.title}</h3>
+                <div class="ba-tags">
+                  <span class="gold-pill">{photo.categoryLabel || 'Fine-Art'}</span>
+                  <span class="ba-location">📍 {photo.venue || 'Heritage Venue'}, {photo.location || 'Karnataka'}</span>
+                </div>
+              </div>
+
+              <div class="ba-tech-pills">
+                <div class="tech-pill">
+                  <span class="tech-icon">🎨</span>
+                  <span>Preserved Kanjeevaram Silks</span>
+                </div>
+                <div class="tech-pill">
+                  <span class="tech-icon">✨</span>
+                  <span>Natural Golden Skin Tones</span>
+                </div>
+                <div class="tech-pill">
+                  <span class="tech-icon">🪔</span>
+                  <span>Authentic Diya Light Warmth</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+
+    <!-- Drag Instructions Hint -->
+    <div class="ba-instruction-hint text-center">
+      <span class="hint-icon">⟷</span>
+      <span>Drag or tap the slider to inspect the depth of our color grading</span>
+    </div>
+  </div>
+</section>
+
+<style>
+  .before-after-section {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .text-center {
+    text-align: center;
+  }
+
+  .ba-headline {
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    margin-top: 1rem;
+    margin-bottom: 0.75rem;
+    color: var(--text-primary);
+  }
+
+  .ba-subheadline {
+    max-width: 760px;
+    margin: 0 auto 2rem auto;
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    line-height: 1.75;
+  }
+
+  /* Selector Pills for Multiple Retouch Photos */
+  .ba-frame-selector-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .selector-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .ba-selector-pills {
+    display: inline-flex;
+    gap: 0.5rem;
+    background: rgba(20, 22, 29, 0.7);
+    padding: 5px;
+    border-radius: 9999px;
+    border: 1px solid var(--border-subtle);
+    backdrop-filter: blur(12px);
+  }
+
+  .ba-pill-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 0.825rem;
+    font-weight: 500;
+    padding: 0.5rem 1.15rem;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .ba-pill-btn .pill-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: background 0.3s ease;
+  }
+
+  .ba-pill-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .ba-pill-btn.active {
+    background: var(--gold-gradient);
+    color: #0B0C10;
+    font-weight: 600;
+  }
+
+  .ba-pill-btn.active .pill-dot {
+    background: #0B0C10;
+  }
+
+  /* Stage Wrapper */
+  .ba-stage-wrapper {
+    max-width: 1040px;
+    margin: 0 auto;
+    border-radius: 12px;
+    padding: 1.25rem;
+    background: rgba(14, 16, 22, 0.75);
+    border: 1px solid var(--gold-border);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(212, 175, 55, 0.06);
+  }
+
+  /* Viewport with CSS Clip-Path */
+  .ba-viewport {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #000;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    cursor: ew-resize;
+  }
+
+  @media (max-width: 640px) {
+    .ba-viewport {
+      aspect-ratio: 4 / 3;
+    }
+  }
+
+  .ba-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .ba-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    pointer-events: none;
+    -webkit-user-drag: none;
+  }
+
+  /* BEFORE layer clipped via polygon matching --slider-pos */
+  .ba-before-layer {
+    clip-path: polygon(0 0, var(--slider-pos) 0, var(--slider-pos) 100%, 0 100%);
+    -webkit-clip-path: polygon(0 0, var(--slider-pos) 0, var(--slider-pos) 100%, 0 100%);
+    z-index: 2;
+  }
+
+  /* Emulated RAW flat sensor profile when raw file is not provided */
+  .emulated-raw .ba-img {
+    filter: saturate(0.62) contrast(0.85) brightness(0.92) sepia(0.06);
+  }
+
+  /* Floating Badges */
+  .ba-badge {
+    position: absolute;
+    top: 1.25rem;
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.85rem;
+    border-radius: 9999px;
+    background: rgba(11, 12, 16, 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--border-subtle);
+    font-size: 0.725rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+  }
+
+  .ba-badge-left {
+    left: 1.25rem;
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .ba-badge-right {
+    right: 1.25rem;
+    border-color: var(--gold-border);
+    color: var(--gold-light);
+  }
+
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .badge-dot.gold {
+    background: var(--gold-primary);
+    box-shadow: 0 0 8px var(--gold-primary);
+  }
+
+  .badge-dot.silver {
+    background: #9CA3AF;
+  }
+
+  /* Luxury Handle & Divider Line */
+  .ba-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--slider-pos);
+    width: 0;
+    z-index: 5;
+    pointer-events: none;
+    transform: translateX(-50%);
+  }
+
+  .handle-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    background: var(--gold-gradient);
+    transform: translateX(-50%);
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+  }
+
+  .handle-knob {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(11, 12, 16, 0.95);
+    border: 2px solid var(--gold-primary);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.6), inset 0 0 10px rgba(212, 175, 55, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gold-primary);
+    cursor: ew-resize;
+    pointer-events: auto;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .ba-viewport:active .handle-knob,
+  .handle-knob:hover {
+    transform: translate(-50%, -50%) scale(1.12);
+    box-shadow: 0 0 28px rgba(212, 175, 55, 0.85);
+  }
+
+  .handle-divider {
+    width: 1px;
+    height: 12px;
+    background: rgba(212, 175, 55, 0.4);
+    margin: 0 1px;
+  }
+
+  /* Details Bar */
+  .ba-details-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    padding-top: 1.25rem;
+    margin-top: 1rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .ba-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .ba-frame-title {
+    font-size: 1.35rem;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .ba-tags {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .ba-location {
+    font-size: 0.825rem;
+    color: var(--text-muted);
+  }
+
+  .ba-tech-pills {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  .tech-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.775rem;
+    color: var(--text-muted);
+  }
+
+  .tech-icon {
+    font-size: 0.85rem;
+  }
+
+  /* Instruction Hint */
+  .ba-instruction-hint {
+    margin-top: 1.5rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .hint-icon {
+    color: var(--gold-primary);
+    font-size: 1.1rem;
+    animation: pulse-horizontal 2s infinite ease-in-out;
+  }
+
+  @keyframes pulse-horizontal {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(4px); }
+  }
+
+  @media (max-width: 768px) {
+    .ba-details-bar {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .ba-badge {
+      font-size: 0.65rem;
+      padding: 0.3rem 0.6rem;
+    }
+
+    .ba-tech-pills {
+      width: 100%;
+    }
+  }
+</style>
+
+<script>
+  function initBeforeAfterSliders() {
+    const instances = document.querySelectorAll('.ba-slider-instance');
+
+    instances.forEach((inst) => {
+      const viewport = inst.querySelector('.ba-viewport') as HTMLElement;
+      if (!viewport) return;
+
+      let isDragging = false;
+
+      function updatePosition(clientX: number) {
+        const rect = viewport.getBoundingClientRect();
+        const offsetX = clientX - rect.left;
+        let percent = (offsetX / rect.width) * 100;
+        if (percent < 0) percent = 0;
+        if (percent > 100) percent = 100;
+
+        viewport.style.setProperty('--slider-pos', `${percent.toFixed(2)}%`);
+      }
+
+      // Pointer events for universal desktop & mobile drag
+      function onPointerDown(e: PointerEvent) {
+        isDragging = true;
+        viewport.setPointerCapture(e.pointerId);
+        updatePosition(e.clientX);
+      }
+
+      function onPointerMove(e: PointerEvent) {
+        if (!isDragging) return;
+        updatePosition(e.clientX);
+      }
+
+      function onPointerUp(e: PointerEvent) {
+        if (!isDragging) return;
+        isDragging = false;
+        try {
+          viewport.releasePointerCapture(e.pointerId);
+        } catch {
+          // ignore
+        }
+      }
+
+      viewport.addEventListener('pointerdown', onPointerDown);
+      viewport.addEventListener('pointermove', onPointerMove);
+      viewport.addEventListener('pointerup', onPointerUp);
+      viewport.addEventListener('pointercancel', onPointerUp);
+
+      // Keyboard support
+      viewport.tabIndex = 0;
+      viewport.addEventListener('keydown', (e: KeyboardEvent) => {
+        const currentStyle = getComputedStyle(viewport).getPropertyValue('--slider-pos');
+        let currentPos = parseFloat(currentStyle) || 50;
+
+        if (e.key === 'ArrowLeft') {
+          currentPos = Math.max(0, currentPos - 5);
+          viewport.style.setProperty('--slider-pos', `${currentPos}%`);
+          e.preventDefault();
+        } else if (e.key === 'ArrowRight') {
+          currentPos = Math.min(100, currentPos + 5);
+          viewport.style.setProperty('--slider-pos', `${currentPos}%`);
+          e.preventDefault();
+        }
+      });
+    });
+
+    // Handle frame selector pills
+    const pillButtons = document.querySelectorAll('.ba-pill-btn');
+    pillButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        pillButtons.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const targetIdx = btn.getAttribute('data-photo-idx');
+        instances.forEach((inst) => {
+          if (inst.getAttribute('data-index') === targetIdx) {
+            (inst as HTMLElement).style.display = 'block';
+          } else {
+            (inst as HTMLElement).style.display = 'none';
+          }
+        });
+      });
+    });
+  }
+
+  // Initialize on load & Astro transitions
+  initBeforeAfterSliders();
+  document.addEventListener('astro:page-load', initBeforeAfterSliders);
+</script>

@@ -1,0 +1,945 @@
+---
+import '../../../styles/global.css';
+import { getLiveEventBySlugAsync } from '../../../lib/db';
+import { getCloudflareEnv } from '../../../lib/cloudflare';
+
+export const prerender = false;
+
+const env = await getCloudflareEnv();
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect('/');
+}
+
+const event = await getLiveEventBySlugAsync(slug, env);
+if (!event) {
+  return Astro.redirect('/404');
+}
+
+const livePhotos = event.photos || [];
+const initialPhotosJson = JSON.stringify(livePhotos);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>{event.title} • Live Ballroom Projector & LED Display | Frames By Hithu</title>
+    <meta name="description" content={`Live ballroom LED screen stream for ${event.title} at ${event.venue}. Powered by Frames By Hithu.`} />
+    <meta name="robots" content="noindex, nofollow" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=Montserrat:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --color-black: #05060A;
+        --color-gold: #D4AF37;
+        --color-gold-light: #F3E5AB;
+        --color-gold-dark: #997A15;
+        --font-serif: 'Cormorant Garamond', Georgia, serif;
+        --font-sans: 'Montserrat', system-ui, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html, body {
+        width: 100%;
+        height: 100%;
+        background-color: var(--color-black);
+        color: #FFFFFF;
+        font-family: var(--font-sans);
+        overflow: hidden;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      /* Fullscreen Stage */
+      .projector-stage {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        background-color: var(--color-black);
+        overflow: hidden;
+      }
+
+      /* Slide Layer Elements */
+      .slide-viewport {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+
+      .slide-layer {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        background-size: cover;
+        background-position: center center;
+        background-repeat: no-repeat;
+        opacity: 0;
+        transition: opacity 1.6s cubic-bezier(0.4, 0, 0.2, 1);
+        transform-origin: center center;
+        will-change: transform, opacity;
+      }
+
+      .slide-layer.active {
+        opacity: 1;
+        z-index: 2;
+      }
+
+      .slide-layer.fading-out {
+        opacity: 0;
+        z-index: 1;
+      }
+
+      /* Ken Burns Keyframes */
+      .ken-burns-zoom-in {
+        animation: kbZoomIn 10s ease-out forwards;
+      }
+
+      .ken-burns-zoom-out {
+        animation: kbZoomOut 10s ease-out forwards;
+      }
+
+      .ken-burns-pan-left {
+        animation: kbPanLeft 10s ease-out forwards;
+      }
+
+      .ken-burns-pan-right {
+        animation: kbPanRight 10s ease-out forwards;
+      }
+
+      @keyframes kbZoomIn {
+        0% { transform: scale(1) translate(0, 0); }
+        100% { transform: scale(1.12) translate(-1%, -1%); }
+      }
+
+      @keyframes kbZoomOut {
+        0% { transform: scale(1.14) translate(1%, 1%); }
+        100% { transform: scale(1.02) translate(0, 0); }
+      }
+
+      @keyframes kbPanLeft {
+        0% { transform: scale(1.08) translate(2%, 0); }
+        100% { transform: scale(1.08) translate(-2%, -1%); }
+      }
+
+      @keyframes kbPanRight {
+        0% { transform: scale(1.08) translate(-2%, 0); }
+        100% { transform: scale(1.08) translate(2%, 1%); }
+      }
+
+      /* Luxury Ambient Vignette & Cinema Gradient */
+      .stage-vignette {
+        position: absolute;
+        inset: 0;
+        z-index: 5;
+        pointer-events: none;
+        background: radial-gradient(circle at center, transparent 40%, rgba(5, 6, 10, 0.45) 80%, rgba(5, 6, 10, 0.85) 100%),
+                    linear-gradient(to bottom, rgba(5, 6, 10, 0.8) 0%, transparent 20%, transparent 80%, rgba(5, 6, 10, 0.9) 100%);
+      }
+
+      /* Top Header Banner */
+      .projector-header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.5rem 2.5rem;
+        background: linear-gradient(to bottom, rgba(5, 6, 10, 0.88), transparent);
+        transition: opacity 0.4s ease;
+      }
+
+      .projector-stage.cinema-mode .projector-header {
+        opacity: 0.15;
+      }
+
+      .projector-stage.cinema-mode:hover .projector-header {
+        opacity: 1;
+      }
+
+      .brand-block {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+      }
+
+      .studio-monogram-ring {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        border: 1.5px solid var(--color-gold);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-gold);
+        font-family: var(--font-serif);
+        font-weight: 700;
+        font-size: 1.15rem;
+        background: rgba(212, 175, 55, 0.12);
+        box-shadow: 0 0 16px rgba(212, 175, 55, 0.35);
+      }
+
+      .brand-text {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .brand-title {
+        font-size: 0.85rem;
+        letter-spacing: 0.22em;
+        font-weight: 700;
+        color: var(--color-gold-light);
+        text-transform: uppercase;
+      }
+
+      .live-badge-inline {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        color: #10B981;
+      }
+
+      .pulse-dot {
+        width: 7px;
+        height: 7px;
+        background: #10B981;
+        border-radius: 50%;
+        animation: pulseAnimation 2s infinite ease-in-out;
+      }
+
+      @keyframes pulseAnimation {
+        0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+        50% { transform: scale(1.25); opacity: 0.8; box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      }
+
+      /* Center Event Information */
+      .event-title-center {
+        text-align: center;
+        max-width: 50%;
+      }
+
+      .event-title-center h1 {
+        font-family: var(--font-serif);
+        font-size: 1.85rem;
+        font-weight: 500;
+        color: #FFFFFF;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .event-meta-line {
+        font-size: 0.8rem;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.75);
+        margin-top: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .meta-dot {
+        color: var(--color-gold);
+      }
+
+      /* Top Controls Right */
+      .controls-block {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .slide-counter-badge {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        padding: 5px 12px;
+        border-radius: 9999px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .counter-gold {
+        color: var(--color-gold-light);
+        font-weight: 600;
+      }
+
+      .ctrl-btn {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(212, 175, 55, 0.35);
+        color: var(--color-gold-light);
+        padding: 6px 14px;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+      }
+
+      .ctrl-btn:hover {
+        background: rgba(212, 175, 55, 0.2);
+        border-color: var(--color-gold);
+        transform: translateY(-1px);
+        box-shadow: 0 0 12px rgba(212, 175, 55, 0.3);
+      }
+
+      /* Bottom Progress Bar */
+      .progress-line-container {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.12);
+        z-index: 25;
+      }
+
+      .progress-line-bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--color-gold-dark), var(--color-gold), var(--color-gold-light));
+        box-shadow: 0 0 8px rgba(212, 175, 55, 0.8);
+        transition: width 0.1s linear;
+      }
+
+      /* Bottom Corner Luxury Tent-Card QR Floating Card */
+      .projector-qr-card {
+        position: absolute;
+        bottom: 2rem;
+        right: 2.5rem;
+        z-index: 30;
+        background: rgba(11, 12, 16, 0.88);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1.5px solid var(--color-gold);
+        border-radius: 16px;
+        padding: 1.25rem 1.4rem;
+        display: flex;
+        align-items: center;
+        gap: 1.2rem;
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.8), 0 0 20px rgba(212, 175, 55, 0.25);
+        max-width: 380px;
+        animation: qrFloat 6s ease-in-out infinite alternate;
+      }
+
+      @keyframes qrFloat {
+        0% { transform: translateY(0); }
+        100% { transform: translateY(-4px); }
+      }
+
+      .qr-img-box {
+        position: relative;
+        width: 105px;
+        height: 105px;
+        background: #FFFFFF;
+        border-radius: 10px;
+        padding: 5px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        flex-shrink: 0;
+      }
+
+      .qr-img-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+      }
+
+      .qr-card-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .qr-lead-tag {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        color: var(--color-gold-light);
+        text-transform: uppercase;
+        margin-bottom: 2px;
+      }
+
+      .qr-card-headline {
+        font-family: var(--font-serif);
+        font-size: 1.25rem;
+        font-weight: 600;
+        line-height: 1.15;
+        color: #FFFFFF;
+        margin-bottom: 4px;
+      }
+
+      .qr-card-desc {
+        font-size: 0.72rem;
+        line-height: 1.35;
+        color: rgba(255, 255, 255, 0.75);
+      }
+
+      .qr-footer-hint {
+        font-size: 0.65rem;
+        color: var(--color-gold);
+        font-weight: 600;
+        margin-top: 6px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      /* Bottom Left Live Notification Capsule */
+      .projector-toast {
+        position: absolute;
+        bottom: 2.2rem;
+        left: 2.5rem;
+        z-index: 30;
+        background: rgba(11, 12, 16, 0.85);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(212, 175, 55, 0.35);
+        border-radius: 9999px;
+        padding: 8px 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #FFFFFF;
+        font-size: 0.8rem;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+        transition: all 0.4s ease;
+      }
+
+      .toast-spark {
+        font-size: 1rem;
+        color: var(--color-gold);
+      }
+
+      .projector-toast.new-frame-alert {
+        border-color: #10B981;
+        background: rgba(16, 185, 129, 0.18);
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+      }
+
+      /* Studio Subtle Watermark Overlay */
+      .projector-watermark {
+        position: absolute;
+        bottom: 2.5rem;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        pointer-events: none;
+        opacity: 0.35;
+        font-family: var(--font-serif);
+        font-size: 0.95rem;
+        letter-spacing: 0.25em;
+        color: var(--color-gold);
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+        text-transform: uppercase;
+      }
+
+      /* Empty State Display (before photos are ingested) */
+      .empty-projector-state {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 15;
+        text-align: center;
+        padding: 2rem;
+        background: radial-gradient(circle at center, rgba(212, 175, 55, 0.08) 0%, rgba(5, 6, 10, 0.95) 75%);
+      }
+
+      .empty-monogram {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        border: 2px solid var(--color-gold);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-serif);
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--color-gold);
+        box-shadow: 0 0 40px rgba(212, 175, 55, 0.4);
+        margin-bottom: 1.5rem;
+        animation: emptyGlow 4s infinite alternate ease-in-out;
+      }
+
+      @keyframes emptyGlow {
+        0% { transform: scale(1); box-shadow: 0 0 25px rgba(212, 175, 55, 0.3); }
+        100% { transform: scale(1.05); box-shadow: 0 0 50px rgba(212, 175, 55, 0.6); }
+      }
+
+      .empty-lead {
+        font-size: 0.85rem;
+        letter-spacing: 0.25em;
+        color: var(--color-gold-light);
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+      }
+
+      .empty-title {
+        font-family: var(--font-serif);
+        font-size: 2.85rem;
+        font-weight: 500;
+        color: #FFFFFF;
+        margin-bottom: 0.5rem;
+        max-width: 800px;
+      }
+
+      .empty-venue {
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin-bottom: 2rem;
+      }
+
+      .empty-qr-wrap {
+        background: rgba(11, 12, 16, 0.9);
+        border: 2px solid var(--color-gold);
+        border-radius: 20px;
+        padding: 1.5rem 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+      }
+
+      .empty-qr-img {
+        width: 180px;
+        height: 180px;
+        background: #FFFFFF;
+        border-radius: 12px;
+        padding: 8px;
+      }
+
+      .empty-qr-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+
+      .empty-qr-text {
+        font-size: 0.9rem;
+        color: #FFFFFF;
+        font-weight: 500;
+      }
+
+      .empty-pulse-msg {
+        font-size: 0.8rem;
+        color: var(--color-gold-light);
+        margin-top: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* Responsive Adjustments */
+      @media (max-width: 900px) {
+        .projector-header {
+          padding: 1rem 1.25rem;
+        }
+        .event-title-center {
+          display: none;
+        }
+        .projector-qr-card {
+          bottom: 1.5rem;
+          right: 1.5rem;
+          padding: 1rem;
+          max-width: 320px;
+        }
+        .qr-img-box {
+          width: 80px;
+          height: 80px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      class="projector-stage"
+      id="projector-stage"
+      data-event-id={event.id}
+      data-event-slug={event.slug}
+    >
+      <!-- Dual Crossfade Slide Layers -->
+      <div class="slide-viewport">
+        <div id="slide-layer-a" class="slide-layer active"></div>
+        <div id="slide-layer-b" class="slide-layer"></div>
+      </div>
+
+      <!-- Luxury Dark Vignette -->
+      <div class="stage-vignette"></div>
+
+      <!-- Top Header Bar -->
+      <header class="projector-header">
+        <div class="brand-block">
+          <div class="studio-monogram-ring">FBH</div>
+          <div class="brand-text">
+            <span class="brand-title">FRAMES BY HITHU</span>
+            <span class="live-badge-inline">
+              <span class="pulse-dot"></span>
+              LIVE CEREMONY STREAM
+            </span>
+          </div>
+        </div>
+
+        <div class="event-title-center">
+          <h1 id="screen-event-title">{event.title}</h1>
+          <div class="event-meta-line">
+            <span>📍 {event.venue}</span>
+            <span class="meta-dot">♦</span>
+            <span>📅 {event.date}</span>
+          </div>
+        </div>
+
+        <div class="controls-block">
+          <div class="slide-counter-badge">
+            Frame <span id="current-frame-idx" class="counter-gold">1</span> of <span id="total-frames-count">{livePhotos.length}</span>
+          </div>
+
+          <button type="button" class="ctrl-btn" id="toggle-play-btn" title="Pause / Resume rotation (Spacebar)">
+            <span id="play-icon">⏸</span>
+            <span id="play-text">Pause</span>
+          </button>
+
+          <button type="button" class="ctrl-btn" id="toggle-fullscreen-btn" title="Toggle Fullscreen (F)">
+            <span>⛶</span>
+            <span>Fullscreen</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Bottom Progress Bar for Active Slide -->
+      <div class="progress-line-container">
+        <div class="progress-line-bar" id="slide-progress-bar"></div>
+      </div>
+
+      <!-- Bottom Left Notification Capsule -->
+      <div class="projector-toast" id="live-toast">
+        <span class="toast-spark">✨</span>
+        <span id="toast-text">Broadcasting moments live from the ceremony</span>
+      </div>
+
+      <!-- Watermark Overlay -->
+      <div class="projector-watermark">
+        Frames By Hithu • Fine-Art Photography
+      </div>
+
+      <!-- Bottom Right Table QR Code Floating Card -->
+      <div class="projector-qr-card" id="projector-qr-card">
+        <div class="qr-img-box">
+          <img id="screen-qr-img" src="" alt="Scan Table QR Code" />
+        </div>
+        <div class="qr-card-info">
+          <span class="qr-lead-tag">Scan From Your Seat</span>
+          <h3 class="qr-card-headline">Find Your Moments</h3>
+          <p class="qr-card-desc">
+            {(event.accessMode === 'face_only' || event.accessMode === 'face_and_all' || event.accessMode === 'face_match')
+              ? 'Take a quick selfie to discover every frame you appear in live.'
+              : 'Scan to browse and download high-res ceremony frames on your phone.'}
+          </p>
+          <div class="qr-footer-hint">
+            <span>framesbyhithu.com/live/{event.slug}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State (Shown if no photos are ingested yet) -->
+      <div class="empty-projector-state" id="empty-state-view" style={livePhotos.length > 0 ? 'display: none;' : 'display: flex;'}>
+        <div class="empty-monogram">FBH</div>
+        <span class="empty-lead">FRAMES BY HITHU • LIVE STREAM ACTIVATED</span>
+        <h2 class="empty-title">{event.title}</h2>
+        <p class="empty-venue">📍 {event.venue} • 📅 {event.date}</p>
+
+        <div class="empty-qr-wrap">
+          <div class="empty-qr-img">
+            <img id="empty-qr-img" src="" alt="Scan Live Event QR" />
+          </div>
+          <span class="empty-qr-text">Scan with your smartphone camera to connect to the live gallery</span>
+        </div>
+
+        <div class="empty-pulse-msg">
+          <span class="pulse-dot"></span>
+          <span>Photographer is capturing sacred rituals. As new frames are shot, they will beam onto this screen live.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Projector Engine Script -->
+    <script define:vars={{ initialPhotosJson, eventSlug: event.slug, eventId: event.id }}>
+      let photos = [];
+      try {
+        photos = JSON.parse(initialPhotosJson || '[]');
+      } catch (e) {
+        photos = [];
+      }
+
+      let currentIndex = 0;
+      let activeLayer = 'a'; // 'a' or 'b'
+      let isPlaying = true;
+      let slideTimer = null;
+      let progressTimer = null;
+      let progressPercent = 0;
+      const SLIDE_DURATION_MS = 8000;
+      const PROGRESS_TICK_MS = 100;
+      const POLL_INTERVAL_MS = 15000;
+
+      const layerA = document.getElementById('slide-layer-a');
+      const layerB = document.getElementById('slide-layer-b');
+      const progressBar = document.getElementById('slide-progress-bar');
+      const currentIdxEl = document.getElementById('current-frame-idx');
+      const totalCountEl = document.getElementById('total-frames-count');
+      const playBtn = document.getElementById('toggle-play-btn');
+      const playIcon = document.getElementById('play-icon');
+      const playText = document.getElementById('play-text');
+      const fullscreenBtn = document.getElementById('toggle-fullscreen-btn');
+      const projectorStage = document.getElementById('projector-stage');
+      const screenQrImg = document.getElementById('screen-qr-img');
+      const emptyQrImg = document.getElementById('empty-qr-img');
+      const emptyStateView = document.getElementById('empty-state-view');
+      const liveToast = document.getElementById('live-toast');
+      const toastText = document.getElementById('toast-text');
+
+      // Generate dynamic QR Code URL
+      const origin = window.location.origin;
+      const publicLiveUrl = `${origin}/live/${eventSlug}`;
+      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(publicLiveUrl)}&margin=1`;
+
+      if (screenQrImg) screenQrImg.src = qrApiUrl;
+      if (emptyQrImg) emptyQrImg.src = qrApiUrl;
+
+      const kenBurnsStyles = [
+        'ken-burns-zoom-in',
+        'ken-burns-zoom-out',
+        'ken-burns-pan-left',
+        'ken-burns-pan-right'
+      ];
+
+      function updateCounter() {
+        if (currentIdxEl) currentIdxEl.textContent = photos.length > 0 ? (currentIndex + 1).toString() : '0';
+        if (totalCountEl) totalCountEl.textContent = photos.length.toString();
+      }
+
+      function applySlideToLayer(targetLayerEl, photoUrl) {
+        if (!targetLayerEl) return;
+        // Strip previous animations
+        kenBurnsStyles.forEach(s => targetLayerEl.classList.remove(s));
+
+        // Choose random Ken Burns animation style
+        const chosenAnim = kenBurnsStyles[Math.floor(Math.random() * kenBurnsStyles.length)];
+        targetLayerEl.style.backgroundImage = `url("${photoUrl}")`;
+        // Force reflow to restart CSS keyframe animation
+        void targetLayerEl.offsetWidth;
+        targetLayerEl.classList.add(chosenAnim);
+      }
+
+      function showSlide(index) {
+        if (!photos || photos.length === 0) {
+          if (emptyStateView) emptyStateView.style.display = 'flex';
+          return;
+        }
+
+        if (emptyStateView) emptyStateView.style.display = 'none';
+
+        currentIndex = (index + photos.length) % photos.length;
+        const currentPhoto = photos[currentIndex];
+        const nextLayer = activeLayer === 'a' ? layerB : layerA;
+        const currentActiveLayer = activeLayer === 'a' ? layerA : layerB;
+
+        if (nextLayer && currentActiveLayer) {
+          applySlideToLayer(nextLayer, currentPhoto.url);
+
+          nextLayer.classList.remove('fading-out');
+          nextLayer.classList.add('active');
+
+          currentActiveLayer.classList.remove('active');
+          currentActiveLayer.classList.add('fading-out');
+
+          activeLayer = activeLayer === 'a' ? 'b' : 'a';
+        }
+
+        updateCounter();
+        resetProgressBar();
+
+        // Preload next photo in background for zero-latency crossfade
+        const nextIdx = (currentIndex + 1) % photos.length;
+        if (photos[nextIdx]) {
+          const preImg = new Image();
+          preImg.src = photos[nextIdx].url;
+        }
+      }
+
+      function nextSlide() {
+        showSlide(currentIndex + 1);
+      }
+
+      function prevSlide() {
+        showSlide(currentIndex - 1);
+      }
+
+      function resetProgressBar() {
+        progressPercent = 0;
+        if (progressBar) progressBar.style.width = '0%';
+      }
+
+      function startSlideshow() {
+        stopSlideshow();
+        if (photos.length <= 1) return;
+
+        progressTimer = setInterval(() => {
+          if (!isPlaying) return;
+          progressPercent += (PROGRESS_TICK_MS / SLIDE_DURATION_MS) * 100;
+          if (progressBar) progressBar.style.width = `${Math.min(progressPercent, 100)}%`;
+
+          if (progressPercent >= 100) {
+            nextSlide();
+          }
+        }, PROGRESS_TICK_MS);
+      }
+
+      function stopSlideshow() {
+        if (progressTimer) {
+          clearInterval(progressTimer);
+          progressTimer = null;
+        }
+        if (slideTimer) {
+          clearTimeout(slideTimer);
+          slideTimer = null;
+        }
+      }
+
+      function togglePlayPause() {
+        isPlaying = !isPlaying;
+        if (playIcon) playIcon.textContent = isPlaying ? '⏸' : '▶';
+        if (playText) playText.textContent = isPlaying ? 'Pause' : 'Play';
+
+        if (liveToast && toastText) {
+          toastText.textContent = isPlaying ? 'Live rotation resumed' : 'Rotation paused';
+          liveToast.classList.remove('new-frame-alert');
+        }
+      }
+
+      playBtn?.addEventListener('click', togglePlayPause);
+
+      // Fullscreen Controller
+      function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+          }
+        }
+      }
+
+      fullscreenBtn?.addEventListener('click', toggleFullscreen);
+
+      // Keyboard shortcuts: F = Fullscreen, Space = Play/Pause, Arrows = Nav
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'f' || e.key === 'F') {
+          e.preventDefault();
+          toggleFullscreen();
+        } else if (e.key === ' ' || e.code === 'Space') {
+          e.preventDefault();
+          togglePlayPause();
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          nextSlide();
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          prevSlide();
+        }
+      });
+
+      // Polling Engine: Polls every 15s for live photos
+      async function pollForNewPhotos() {
+        try {
+          const res = await fetch(`/api/live-events/${eventId}/poll`);
+          if (!res.ok) return;
+          const data = await res.json();
+          if (data && data.success && Array.isArray(data.photos)) {
+            const incomingPhotos = data.photos;
+            const newCount = incomingPhotos.length - photos.length;
+
+            if (newCount > 0) {
+              const prevLength = photos.length;
+              photos = incomingPhotos;
+              updateCounter();
+
+              // If previously empty, hide empty screen and immediately display first photo
+              if (prevLength === 0 && photos.length > 0) {
+                if (emptyStateView) emptyStateView.style.display = 'none';
+                showSlide(0);
+                startSlideshow();
+              } else {
+                // Flash notification pill and queue new photo as next immediate frame!
+                if (liveToast && toastText) {
+                  toastText.textContent = `⚡ ${newCount} new ceremony frame${newCount > 1 ? 's' : ''} just captured!`;
+                  liveToast.classList.add('new-frame-alert');
+                  setTimeout(() => {
+                    liveToast.classList.remove('new-frame-alert');
+                    if (toastText) toastText.textContent = 'Broadcasting moments live from the ceremony';
+                  }, 6000);
+                }
+
+                // If currently playing, fast-forward to the newest photo so guests see it immediately
+                currentIndex = photos.length - newCount - 1;
+                nextSlide();
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('[Screen] Poll error:', err);
+        }
+      }
+
+      // Initialize First Slide
+      if (photos.length > 0) {
+        showSlide(0);
+        startSlideshow();
+      } else {
+        updateCounter();
+      }
+
+      // Start Polling Loop
+      setInterval(pollForNewPhotos, POLL_INTERVAL_MS);
+
+      // Mouse inactivity detection: fades out header for clean cinema look
+      let mouseTimer = null;
+      window.addEventListener('mousemove', () => {
+        projectorStage?.classList.remove('cinema-mode');
+        clearTimeout(mouseTimer);
+        mouseTimer = setTimeout(() => {
+          projectorStage?.classList.add('cinema-mode');
+        }, 4000);
+      });
+    </script>
+  </body>
+</html>

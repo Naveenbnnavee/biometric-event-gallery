@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F5D77F"/>
+      <stop offset="50%" stop-color="#D4AF37"/>
+      <stop offset="100%" stop-color="#99781D"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#0B0C10"/>
+  <rect x="6" y="6" width="116" height="116" rx="24" fill="none" stroke="url(#goldGradient)" stroke-width="2" stroke-opacity="0.4"/>
+  <!-- Aperture & Monogram -->
+  <circle cx="64" cy="64" r="42" fill="none" stroke="url(#goldGradient)" stroke-width="2.5" stroke-dasharray="8 4"/>
+  <path d="M42 42h44v8H52v18h28v8H52v20H42V42z" fill="url(#goldGradient)"/>
+  <circle cx="86" cy="86" r="6" fill="url(#goldGradient)"/>
+</svg>

@@ -1,0 +1,589 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  activeNav: 'dashboard' | 'portfolio' | 'categories' | 'clients' | 'inquiries' | 'settings' | 'live-events' | 'testimonials';
+}
+
+const { title, activeNav } = Astro.props;
+
+// Authentication is handled at page/middleware level
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} | Frames By Hithu Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="admin-body">
+    <div class="admin-wrapper">
+      <!-- Sidebar -->
+      <aside class="admin-sidebar" id="admin-sidebar">
+        <div class="sidebar-top">
+          <div class="sidebar-brand">
+            <a href="/admin" class="brand-link" aria-label="Frames By Hithu Admin Home">
+              <div class="brand-monogram" aria-hidden="true">
+                <svg viewBox="0 0 40 40" width="38" height="38" fill="none">
+                  <rect width="40" height="40" rx="9" fill="url(#adminGoldGrad)" />
+                  <circle cx="20" cy="20" r="14" stroke="#07080B" stroke-width="1.2" stroke-opacity="0.35" stroke-dasharray="3 2" />
+                  <text x="50%" y="55%" text-anchor="middle" dominant-baseline="middle" fill="#07080B" font-family="'Cormorant Garamond', Georgia, serif" font-weight="700" font-size="17" letter-spacing="0.5">FH</text>
+                  <defs>
+                    <linearGradient id="adminGoldGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#F7E4A8" />
+                      <stop offset="0.5" stop-color="#D4AF37" />
+                      <stop offset="1" stop-color="#9B781E" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+              <div class="brand-meta">
+                <span class="brand-title">FRAMES BY HITHU</span>
+                <span class="brand-badge">STUDIO CONCIERGE</span>
+              </div>
+            </a>
+          </div>
+
+          <nav class="sidebar-nav">
+            <a href="/admin" class:list={['nav-item', { active: activeNav === 'dashboard' }]}>
+              <span class="nav-icon">📊</span>
+              <span class="nav-text">Dashboard</span>
+            </a>
+
+            <a href="/admin/inquiries" class:list={['nav-item', { active: activeNav === 'inquiries' }]}>
+              <span class="nav-icon">📬</span>
+              <span class="nav-text">Inquiries & Leads</span>
+            </a>
+
+            <a href="/admin/portfolio" class:list={['nav-item', { active: activeNav === 'portfolio' }]}>
+              <span class="nav-icon">🖼️</span>
+              <span class="nav-text">Photo & Portfolio</span>
+            </a>
+
+            <a href="/admin/categories" class:list={['nav-item', { active: activeNav === 'categories' }]}>
+              <span class="nav-icon">🏷️</span>
+              <span class="nav-text">Categories</span>
+            </a>
+
+            <a href="/admin/clients" class:list={['nav-item', { active: activeNav === 'clients' }]}>
+              <span class="nav-icon">🔐</span>
+              <span class="nav-text">Client Galleries</span>
+            </a>
+
+            <a href="/admin/live-events" class:list={['nav-item', { active: activeNav === 'live-events' }]}>
+              <span class="nav-icon">⚡</span>
+              <span class="nav-text">Live Event Streams</span>
+            </a>
+
+            <a href="/admin/testimonials" class:list={['nav-item', { active: activeNav === 'testimonials' }]}>
+              <span class="nav-icon">⭐</span>
+              <span class="nav-text">Reviews & Feedback</span>
+            </a>
+
+            <a href="/admin/settings" class:list={['nav-item', { active: activeNav === 'settings' }]}>
+              <span class="nav-icon">⚙️</span>
+              <span class="nav-text">Studio Settings</span>
+            </a>
+          </nav>
+        </div>
+
+        <div class="sidebar-footer">
+          <div class="system-status">
+            <span class="status-dot"></span>
+            <span class="status-label">Cloudflare Edge Connected</span>
+          </div>
+
+          <a href="/" target="_blank" rel="noopener noreferrer" class="live-site-link">
+            <span>View Public Studio</span>
+            <span class="external-icon">↗</span>
+          </a>
+
+          <button id="logout-btn" class="logout-btn" title="Sign out of Admin Session">
+            <span>🚪</span>
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Main Admin Stage -->
+      <div class="admin-main-stage">
+        <!-- Top Navigation Bar -->
+        <header class="admin-topbar">
+          <div class="topbar-left">
+            <button class="mobile-toggle-btn" id="sidebar-toggle" aria-label="Toggle navigation menu">
+              ☰
+            </button>
+            <div class="breadcrumb-trail">
+              <span class="root-bc">Admin</span>
+              <span class="bc-sep">/</span>
+              <h1 class="current-bc">{title}</h1>
+            </div>
+          </div>
+
+          <div class="topbar-right">
+            <div class="admin-user-pill">
+              <span class="user-avatar">H</span>
+              <span class="user-name">Hithu (Master)</span>
+            </div>
+          </div>
+        </header>
+
+        <!-- Main Content Viewport -->
+        <main class="admin-content-viewport">
+          <slot />
+        </main>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <style>
+      :root {
+        --admin-bg: #07080A;
+        --sidebar-bg: #0D0E13;
+        --card-bg: #13141B;
+        --border-gold: rgba(212, 175, 55, 0.25);
+        --border-subtle: rgba(255, 255, 255, 0.08);
+        --text-gold: #E5C358;
+        --accent-emerald: #25D366;
+      }
+
+      body.admin-body {
+        margin: 0;
+        padding: 0;
+        background-color: var(--admin-bg);
+        color: #F3F4F6;
+        font-family: var(--font-sans);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      .admin-wrapper {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      /* Sidebar - Permanently fixed to viewport with independent scrolling */
+      .admin-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 280px;
+        height: 100vh;
+        z-index: 40;
+        background: var(--sidebar-bg);
+        border-right: 1px solid var(--border-subtle);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        overflow-y: auto;
+        overflow-x: hidden;
+        box-sizing: border-box;
+        transition: transform 0.3s ease;
+      }
+
+      .admin-sidebar::-webkit-scrollbar {
+        width: 5px;
+      }
+
+      .admin-sidebar::-webkit-scrollbar-track {
+        background: rgba(11, 12, 16, 0.5);
+      }
+
+      .admin-sidebar::-webkit-scrollbar-thumb {
+        background: rgba(212, 175, 55, 0.25);
+        border-radius: 9999px;
+      }
+
+      .admin-sidebar::-webkit-scrollbar-thumb:hover {
+        background: rgba(212, 175, 55, 0.5);
+      }
+
+      .sidebar-top {
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+      }
+
+      .sidebar-brand {
+        padding: 1.75rem 1.5rem;
+        border-bottom: 1px solid var(--border-subtle);
+      }
+
+      .brand-link {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .brand-monogram {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9px;
+        box-shadow: 0 4px 15px rgba(212, 175, 55, 0.35);
+        flex-shrink: 0;
+      }
+
+      .brand-meta {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .brand-title {
+        font-family: var(--font-serif);
+        font-size: 1.05rem;
+        letter-spacing: 0.08em;
+        font-weight: 600;
+        color: #FAFAF9;
+      }
+
+      .brand-badge {
+        font-size: 0.65rem;
+        letter-spacing: 0.15em;
+        color: var(--gold-primary);
+        font-weight: 600;
+      }
+
+      .sidebar-nav {
+        flex: 1;
+        padding: 1.5rem 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        color: #9CA3AF;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+      }
+
+      .nav-item:hover {
+        color: #FFFFFF;
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .nav-item.active {
+        background: rgba(212, 175, 55, 0.12);
+        color: var(--text-gold);
+        border: 1px solid var(--border-gold);
+        font-weight: 600;
+      }
+
+      .nav-icon {
+        font-size: 1.15rem;
+      }
+
+      .sidebar-footer {
+        padding: 1.5rem 1rem;
+        border-top: 1px solid var(--border-subtle);
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+      }
+
+      .system-status {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        color: #9CA3AF;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        background: var(--accent-emerald);
+        border-radius: 50%;
+        box-shadow: 0 0 8px var(--accent-emerald);
+      }
+
+      .live-site-link {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.6rem 0.85rem;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        color: #D1D5DB;
+        text-decoration: none;
+        font-size: 0.8rem;
+        transition: all 0.2s ease;
+      }
+
+      .live-site-link:hover {
+        border-color: var(--gold-primary);
+        color: var(--gold-light);
+      }
+
+      .logout-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+        background: rgba(239, 68, 68, 0.08);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        color: #F87171;
+        padding: 0.65rem 0.85rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .logout-btn:hover {
+        background: rgba(239, 68, 68, 0.16);
+      }
+
+      /* Main Content Area - Offset by fixed sidebar width */
+      .admin-main-stage {
+        margin-left: 280px;
+        width: calc(100% - 280px);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+
+      .admin-topbar {
+        height: 70px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: rgba(13, 14, 19, 0.7);
+        backdrop-filter: blur(12px);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 2rem;
+        position: sticky;
+        top: 0;
+        z-index: 90;
+      }
+
+      .topbar-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .mobile-toggle-btn {
+        display: none;
+        background: transparent;
+        border: 1px solid var(--border-subtle);
+        color: #FFFFFF;
+        font-size: 1.2rem;
+        border-radius: 6px;
+        padding: 4px 8px;
+        cursor: pointer;
+      }
+
+      .breadcrumb-trail {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .root-bc {
+        color: #6B7280;
+        font-size: 0.85rem;
+      }
+
+      .bc-sep {
+        color: #4B5563;
+        font-size: 0.8rem;
+      }
+
+      .current-bc {
+        font-family: var(--font-sans);
+        font-size: 1.15rem;
+        font-weight: 600;
+        margin: 0;
+        color: #F9FAFB;
+      }
+
+      .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .admin-user-pill {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border-subtle);
+        padding: 4px 12px 4px 6px;
+        border-radius: 9999px;
+      }
+
+      .user-avatar {
+        width: 28px;
+        height: 28px;
+        background: var(--gold-gradient);
+        color: #000000;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.8rem;
+      }
+
+      .user-name {
+        font-size: 0.825rem;
+        color: #E5E7EB;
+        font-weight: 500;
+      }
+
+      .admin-content-viewport {
+        flex: 1;
+        padding: 2.5rem;
+        max-width: 1300px;
+        width: 100%;
+        margin: 0 auto;
+        box-sizing: border-box;
+      }
+
+      /* Toast Notification */
+      .toast-container {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 9999;
+      }
+
+      :global(.toast-message) {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #14161F;
+        border: 1px solid var(--border-gold);
+        color: #FFFFFF;
+        padding: 12px 20px;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+        font-size: 0.9rem;
+        animation: toastIn 0.3s ease;
+      }
+
+      :global(.toast-success) {
+        border-color: rgba(37, 211, 102, 0.4);
+      }
+
+      :global(.toast-error) {
+        border-color: rgba(239, 68, 68, 0.4);
+      }
+
+      @keyframes toastIn {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 1024px) {
+        .admin-sidebar {
+          position: fixed;
+          top: 0;
+          bottom: 0;
+          left: 0;
+          width: 280px;
+          z-index: 1000;
+          transform: translateX(-100%);
+          box-shadow: 15px 0 50px rgba(0, 0, 0, 0.85);
+        }
+
+        .admin-sidebar.open {
+          transform: translateX(0);
+        }
+
+        .admin-main-stage {
+          margin-left: 0;
+          width: 100%;
+        }
+
+        .mobile-toggle-btn {
+          display: block;
+        }
+
+        .admin-content-viewport {
+          padding: 1.5rem;
+        }
+      }
+    </style>
+
+    <script>
+      // Sidebar Toggle for mobile
+      const toggle = document.getElementById('sidebar-toggle');
+      const sidebar = document.getElementById('admin-sidebar');
+      toggle?.addEventListener('click', () => {
+        sidebar?.classList.toggle('open');
+      });
+
+      // Logout handler
+      const logoutBtn = document.getElementById('logout-btn');
+      logoutBtn?.addEventListener('click', async () => {
+        try {
+          const res = await fetch('/api/auth/logout', { method: 'POST' });
+          if (res.ok) {
+            window.location.href = '/admin/login';
+          }
+        } catch {
+          window.location.href = '/admin/login';
+        }
+      });
+
+      // Global Toast helper
+      (window as any).showToast = function (msg: string, type: 'success' | 'error' = 'success') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = `toast-message toast-${type}`;
+        toast.innerHTML = `
+          <span>${type === 'success' ? '✓' : '⚠️'}</span>
+          <span>${msg}</span>
+        `;
+        container.appendChild(toast);
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transition = 'opacity 0.3s ease';
+          setTimeout(() => toast.remove(), 300);
+        }, 3200);
+      };
+    </script>
+  </body>
+</html>

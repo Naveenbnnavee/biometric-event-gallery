@@ -1,0 +1,347 @@
+---
+import { getPortfolioGridPhotosAsync, getCategoriesAsync } from '../lib/db';
+import Lightbox from './Lightbox.astro';
+
+interface Props {
+  initialCategory?: string;
+  limit?: number;
+  showFilters?: boolean;
+}
+
+const { initialCategory = 'all', limit, showFilters = true } = Astro.props;
+
+const dbPhotos = await getPortfolioGridPhotosAsync();
+const dbCategories = await getCategoriesAsync();
+
+const categoriesToDisplay = [
+  { id: 'all', label: 'All Celebrations', kannadaLabel: 'ಎಲ್ಲಾ', count: dbPhotos.length },
+  ...dbCategories.map(c => ({
+    id: c.id,
+    label: c.label,
+    kannadaLabel: c.kannadaLabel,
+    count: dbPhotos.filter(p => p.category === c.id).length
+  }))
+];
+
+const allPhotos = dbPhotos.map(p => ({
+  id: p.id,
+  title: p.title,
+  category: p.category,
+  categoryLabel: p.categoryLabel || p.category,
+  image: p.image,
+  venue: p.venue || 'Heritage Venue',
+  location: p.location || 'Karnataka, India',
+  aspect: p.aspectRatio || p.aspect || 'portrait',
+  caption: p.subline || p.headline || p.title,
+  altText: p.altText || p.title
+}));
+
+const itemsToDisplay = limit ? allPhotos.slice(0, limit) : allPhotos;
+const portfolioItems = itemsToDisplay;
+---
+
+<div class="portfolio-section" id="portfolio-section">
+  {showFilters && (
+    <div class="filter-bar">
+      <div class="filter-track">
+        {categoriesToDisplay.map((cat) => (
+          <button
+            class:list={['filter-btn', { active: initialCategory === cat.id }]}
+            data-filter={cat.id}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )}
+
+  <!-- Fluid Masonry Grid -->
+  <div class="portfolio-grid" id="portfolio-grid">
+    {itemsToDisplay.map((item, index) => (
+      <article
+        class="portfolio-card glass-card"
+        data-category={item.category}
+        data-index={index}
+      >
+        <div class="card-media-wrapper protected-media">
+          <img
+            src={item.image}
+            alt={`${item.title} - ${item.categoryLabel} by Frames By Hithu`}
+            loading="lazy"
+            decoding="async"
+            class="portfolio-img"
+          />
+          <div class="protected-overlay"></div>
+          <div class="watermark-subtle">FRAMES BY HITHU</div>
+
+          <!-- Hover Overlay -->
+          <div class="card-hover-overlay">
+            <div class="hover-top">
+              <span class="gold-pill">{item.categoryLabel}</span>
+              <span class="location-tag">📍 {item.location}</span>
+            </div>
+            <div class="hover-bottom">
+              <h3 class="card-title">{item.title}</h3>
+              <p class="card-venue">{item.venue}</p>
+              <button class="view-frame-btn" aria-label={`View ${item.title} in full screen`}>
+                <span>View Full-Res Frame</span>
+                <span class="arrow-icon">↗</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </article>
+    ))}
+  </div>
+
+  <!-- Lightbox Mount -->
+  <Lightbox />
+</div>
+
+<style>
+  .portfolio-section {
+    width: 100%;
+  }
+
+  /* Filter Navigation */
+  .filter-bar {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 3rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .filter-track {
+    display: inline-flex;
+    gap: 0.5rem;
+    background: rgba(20, 22, 29, 0.7);
+    padding: 6px;
+    border-radius: 9999px;
+    border: 1px solid var(--border-subtle);
+    backdrop-filter: blur(12px);
+  }
+
+  .filter-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 0.825rem;
+    font-weight: 500;
+    padding: 0.6rem 1.25rem;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    white-space: nowrap;
+  }
+
+  .filter-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .filter-btn.active {
+    background: var(--gold-gradient);
+    color: #0B0C10;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+  }
+
+  /* Responsive Columns Grid */
+  .portfolio-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+  }
+
+  @media (min-width: 640px) {
+    .portfolio-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .portfolio-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+  }
+
+  .portfolio-card {
+    cursor: pointer;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    transition: var(--transition-smooth);
+  }
+
+  .portfolio-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--gold-border);
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .card-media-wrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    background: #000;
+  }
+
+  .portfolio-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.8s var(--ease-luxury);
+  }
+
+  .portfolio-card:hover .portfolio-img {
+    transform: scale(1.06);
+  }
+
+  /* Card Hover Overlay */
+  .card-hover-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgba(11, 12, 16, 0.95) 0%,
+      rgba(11, 12, 16, 0.5) 40%,
+      rgba(11, 12, 16, 0.2) 100%
+    );
+    opacity: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1.5rem;
+    z-index: 4;
+    transition: opacity 0.4s var(--ease-luxury);
+  }
+
+  .portfolio-card:hover .card-hover-overlay {
+    opacity: 1;
+  }
+
+  .hover-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transform: translateY(-8px);
+    transition: transform 0.4s var(--ease-luxury);
+  }
+
+  .portfolio-card:hover .hover-top {
+    transform: translateY(0);
+  }
+
+  .location-tag {
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    background: rgba(0, 0, 0, 0.6);
+    padding: 3px 8px;
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
+  }
+
+  .hover-bottom {
+    transform: translateY(8px);
+    transition: transform 0.4s var(--ease-luxury);
+  }
+
+  .portfolio-card:hover .hover-bottom {
+    transform: translateY(0);
+  }
+
+  .card-title {
+    font-size: 1.35rem;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .card-venue {
+    font-size: 0.825rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+  }
+
+  .view-frame-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(212, 175, 55, 0.2);
+    border: 1px solid var(--gold-border);
+    color: var(--gold-light);
+    font-size: 0.775rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+  }
+
+  .view-frame-btn:hover {
+    background: var(--gold-primary);
+    color: #0B0C10;
+  }
+
+  .arrow-icon {
+    font-size: 0.95rem;
+    transition: transform 0.2s ease;
+  }
+
+  .view-frame-btn:hover .arrow-icon {
+    transform: translate(2px, -2px);
+  }
+</style>
+
+<script define:vars={{ portfolioItems }}>
+  function initPortfolio() {
+    // Register catalog with global Lightbox
+    if (typeof window.registerLightboxCatalog === 'function') {
+      window.registerLightboxCatalog(portfolioItems);
+    }
+
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const cards = document.querySelectorAll('.portfolio-card');
+
+    // Filtering logic
+    filterButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        filterButtons.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const filterVal = btn.getAttribute('data-filter');
+
+        cards.forEach((card) => {
+          if (!(card instanceof HTMLElement)) return;
+          const cardCat = card.getAttribute('data-category');
+          if (filterVal === 'all' || cardCat === filterVal) {
+            card.style.display = 'block';
+            card.classList.add('animate-fade-in');
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // Card click opens Lightbox
+    cards.forEach((card) => {
+      card.addEventListener('click', () => {
+        const indexStr = card.getAttribute('data-index');
+        const index = indexStr ? parseInt(indexStr, 10) : 0;
+        if (typeof window.openLightboxAt === 'function') {
+          window.openLightboxAt(index);
+        }
+      });
+    });
+  }
+
+  initPortfolio();
+  document.addEventListener('astro:page-load', initPortfolio);
+</script>

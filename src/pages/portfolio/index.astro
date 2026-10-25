@@ -1,0 +1,139 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import InstantCardStack from '../../components/InstantCardStack.astro';
+import PortfolioGrid from '../../components/PortfolioGrid.astro';
+import { getStudioSettingsAsync } from '../../lib/db';
+
+export const prerender = false;
+
+const settings = await getStudioSettingsAsync();
+const whatsappClean = (settings.whatsappConcierge || '917892706982').replace(/[^0-9]/g, '');
+const whatsappUrl = `https://wa.me/${whatsappClean}?text=${encodeURIComponent('Hello Frames By Hithu, I am exploring your ceremony decks and would like to discuss our celebration.')}`;
+
+const portfolioSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'ImageGallery',
+  'name': 'Frames By Hithu - Fine-Art Photography Archive & Ceremony Instants',
+  'description': 'Curated fine-art portfolio covering South Indian Weddings, Muhurthams, Vedic Gruhapravesham ceremonies, Pre-Weddings, and Traditional Poojas across Karnataka.',
+  'url': 'https://framesbyhithu.com/portfolio'
+};
+---
+
+<Layout
+  title="Fine-Art Portfolio & Instants Decks | Frames By Hithu"
+  description="Explore our tactile celebration card stacks and fine-art galleries covering Weddings, Gruhapravesham, Pre-Weddings, and Traditional Poojas across Karnataka."
+  schema={portfolioSchema}
+>
+  <div class="page-header section-py text-center">
+    <div class="container">
+      <div class="gold-pill">TACTILE CEREMONY DECKS & GALLERIES</div>
+      <h1 class="page-title">The Fine-Art Archive</h1>
+      <div class="gold-divider"></div>
+      <p class="page-subtitle">
+        Documenting Karnataka’s heritage celebrations with artistic restraint, natural lighting, and our signature warm golden grading. Tap any photo in the deck below to cycle moments to the back of the stack.
+      </p>
+    </div>
+  </div>
+
+  <!-- Meta Instants Tactile Card Stack Showcase -->
+  <section class="instants-stack-section">
+    <div class="container">
+      <InstantCardStack />
+    </div>
+  </section>
+
+  <!-- Complete Fine-Art Gallery Archive Grid -->
+  <section class="portfolio-container-section section-py">
+    <div class="container">
+      <div class="section-header text-center" style="margin-bottom: 2.5rem;">
+        <div class="gold-pill">EXPANDED GALLERY ARCHIVE</div>
+        <h2 style="font-size: clamp(1.8rem, 3.5vw, 2.8rem); margin-top: 0.5rem;">All Curated Works</h2>
+        <div class="gold-divider"></div>
+      </div>
+      <PortfolioGrid />
+    </div>
+  </section>
+
+
+  <!-- Bespoke Quote CTA Banner -->
+  <section class="portfolio-cta-banner section-py">
+    <div class="container">
+      <div class="cta-box glass-card text-center">
+        <div class="gold-pill">CUSTOM CONSULTATION</div>
+        <h2 class="cta-title">Envisioning Similar Fine-Art Memories?</h2>
+        <p class="cta-desc">
+          We accept a strictly limited number of commissions each season across Karnataka to give each family our undivided artistic attention.
+        </p>
+        <div class="cta-buttons">
+          <a href="/contact#inquiry-form" class="btn-gold">Check Date Availability</a>
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
+            Discuss on WhatsApp
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .text-center {
+    text-align: center;
+  }
+
+  .page-header {
+    background: radial-gradient(ellipse at top, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
+    padding-bottom: 2rem;
+  }
+
+  .page-title {
+    font-size: clamp(2.5rem, 5.5vw, 4.2rem);
+    margin-top: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .page-subtitle {
+    max-width: 720px;
+    margin: 0 auto;
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  .instants-stack-section {
+    padding-bottom: 3rem;
+  }
+
+  .portfolio-container-section {
+    padding-bottom: 5rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+
+  .cta-box {
+    padding: clamp(2.5rem, 6vw, 4rem);
+    max-width: 900px;
+    margin: 0 auto;
+    border: 1px solid var(--gold-border);
+  }
+
+  .cta-title {
+    font-size: clamp(2rem, 4vw, 3rem);
+    color: var(--gold-light);
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .cta-desc {
+    max-width: 640px;
+    margin: 0 auto 2.5rem auto;
+    font-size: 1rem;
+    color: var(--text-muted);
+  }
+
+  .cta-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+  }
+</style>

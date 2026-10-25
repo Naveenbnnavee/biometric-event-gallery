@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment and sensitive files
+.env
+.env.local
+.env.*.local
+cookies.txt
+
+# Astro and build outputs
+dist/
+.astro/
+build/
+.wrangler/
+
+# System and logs
+.DS_Store
+Thumbs.db
+*.log
+.vscode/

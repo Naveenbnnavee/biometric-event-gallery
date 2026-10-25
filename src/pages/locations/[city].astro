@@ -1,0 +1,1001 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { locations } from '../../data/locations';
+import { getStudioSettings } from '../../lib/db';
+import BespokeInquiryModal from '../../components/BespokeInquiryModal.astro';
+import FaqAccordion from '../../components/FaqAccordion.astro';
+import PortfolioGrid from '../../components/PortfolioGrid.astro';
+
+export function getStaticPaths() {
+  return locations.map((loc) => ({
+    params: { city: loc.slug },
+    props: { loc }
+  }));
+}
+
+const { loc } = Astro.props;
+const settings = getStudioSettings();
+const primaryPhone = settings.primaryPhone || '+91-7892706982';
+const whatsappClean = (settings.whatsappConcierge || '917892706982').replace(/[^0-9]/g, '');
+
+// Localized Structured Schema
+const localBusinessSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'PhotographyBusiness',
+  'name': `Frames By Hithu | ${loc.cityName}`,
+  'image': 'https://framesbyhithu.com/images/og-hero.jpg',
+  'url': `https://framesbyhithu.com/locations/${loc.slug}`,
+  'telephone': '+917892706982',
+  'priceRange': '₹₹₹₹',
+  'address': {
+    '@type': 'PostalAddress',
+    'addressLocality': loc.cityName,
+    'addressRegion': 'Karnataka',
+    'addressCountry': 'IN'
+  },
+  'geo': {
+    '@type': 'GeoCoordinates',
+    'latitude': loc.geo.lat,
+    'longitude': loc.geo.lng
+  },
+  'areaServed': [
+    { '@type': 'City', 'name': loc.cityName },
+    { '@type': 'City', 'name': 'Bengaluru' },
+    { '@type': 'City', 'name': 'Mysuru' },
+    { '@type': 'City', 'name': 'Mangaluru' },
+    { '@type': 'City', 'name': 'Udupi' },
+    { '@type': 'City', 'name': 'Hubballi' },
+    { '@type': 'State', 'name': 'Karnataka' }
+  ],
+  'description': loc.overview
+};
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  'mainEntity': loc.faqs.map((f) => ({
+    '@type': 'Question',
+    'name': f.question,
+    'acceptedAnswer': {
+      '@type': 'Answer',
+      'text': f.answer
+    }
+  }))
+};
+---
+
+<Layout
+  title={loc.metaTitle}
+  description={loc.metaDescription}
+  schema={[localBusinessSchema, faqSchema]}
+>
+  <!-- City Hero (H1) -->
+  <header class="city-hero-section section-py text-center">
+    <div class="container">
+      <div class="city-badge-wrap">
+        <span class="gold-pill">KARNATAKA LOCAL SEO ENGINE</span>
+        <span class="city-kannada-large">{loc.kannadaName}</span>
+      </div>
+
+      <h1 class="city-hero-title">{loc.heroHeadline}</h1>
+      <div class="gold-divider"></div>
+      <p class="city-hero-subtitle">{loc.overview}</p>
+
+      <div class="hero-city-actions">
+        <a href="#inquire-form" class="btn-gold">
+          Check {loc.cityName} Availability
+        </a>
+        <a href={`https://wa.me/${whatsappClean}?text=Hello%20Frames%20By%20Hithu,%20I%20would%20like%20to%20inquire%20about%20photography%20in%20${encodeURIComponent(loc.cityName)}.`} target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
+          WhatsApp {loc.cityName} Concierge
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Neighborhood Coverage Section (H2 Local Signal) -->
+  <section class="neighborhoods-section">
+    <div class="container">
+      <div class="neighborhoods-card glass-card">
+        <div class="neighborhoods-header text-center">
+          <span class="gold-pill">LOCAL KARNATAKA FOOTPRINT</span>
+          <h2 class="neighborhoods-title">{loc.neighborhoodCoverageHeadline}</h2>
+          <div class="gold-divider"></div>
+          <p class="neighborhoods-sub">Dedicated on-site cinematography, dual camera crews, and rapid lighting setups across key residential enclaves and heritage corridors:</p>
+        </div>
+        <div class="neighborhoods-chips">
+          {loc.neighborhoods.map((area) => (
+            <span class="neighborhood-chip">
+              <span class="chip-pin">📍</span>
+              <span>{area}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Popular Venues Directory with Tactile Instant Card Stacks (H2 Venue Mastery) -->
+  <section class="venues-section section-py">
+    <div class="container">
+      <div class="section-header">
+        <div class="gold-pill">AUTHENTIC VENUES & PHOTOSHOOT SPOTS</div>
+        <h2>{loc.venueMasteryHeadline || `Iconic Venues & Heritage Grounds in ${loc.cityName}`}</h2>
+        <div class="gold-divider"></div>
+        <p>Explore verified authentic photoshoot spots across {loc.cityName}. Tap or click any card stack to cycle through real photographs of that venue's signature spaces:</p>
+      </div>
+
+      <div class="venues-grid">
+        {loc.popularVenues.map((v, vIdx) => {
+          const venueImages = (v.images && v.images.length > 0) ? v.images : [v.image];
+          return (
+            <div class="venue-card glass-card" data-venue-card={vIdx}>
+              <!-- Mini Instant Card Stack -->
+              <div class="venue-deck-wrapper">
+                <div
+                  class="venue-stack-viewport"
+                  data-venue-deck={vIdx}
+                  data-total-photos={venueImages.length}
+                  role="button"
+                  tabindex="0"
+                  aria-label={`Cycle through photos of ${v.name}`}
+                >
+                  {venueImages.map((imgSrc, imgIdx) => {
+                    const spotName = v.photoshootSpots?.[imgIdx] || `Signature Angle ${imgIdx + 1}`;
+                    return (
+                      <div
+                        class:list={['venue-instant-card', `vpos-${imgIdx}`]}
+                        data-card-idx={imgIdx}
+                        data-spot-name={spotName}
+                      >
+                        <div class="card-media-box protected-media">
+                          <img
+                            src={imgSrc}
+                            alt={`${v.name} - ${spotName}`}
+                            class="venue-instant-photo"
+                            loading={imgIdx === 0 ? "eager" : "lazy"}
+                            onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Bangalore_Palace.jpg/1280px-Bangalore_Palace.jpg'"
+                          />
+                          <div class="card-glass-rim"></div>
+                          <div class="protected-overlay"></div>
+                          <div class="watermark-subtle">FRAMES BY HITHU</div>
+
+                          <!-- Top badge with real spot label -->
+                          <div class="card-spot-badge">
+                            <span class="spot-badge-icon">📍</span>
+                            <span class="spot-badge-text">{spotName}</span>
+                          </div>
+
+                          <!-- Flip hint on active card -->
+                          <div class="cycle-hint-pill">
+                            <span>Tap to cycle ↻</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <!-- Active Spot Tracker Bar -->
+                <div class="deck-spot-tracker" id={`deck-tracker-${vIdx}`}>
+                  <div class="tracker-left">
+                    <span class="tracker-pulse"></span>
+                    <span class="tracker-text" id={`tracker-text-${vIdx}`}>
+                      Spot 1 of {venueImages.length}: {v.photoshootSpots?.[0] || 'Signature View'}
+                    </span>
+                  </div>
+                  <span class="tracker-counter-badge" id={`tracker-count-${vIdx}`}>
+                    1/{venueImages.length}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Venue Details & Interactive Spot Buttons -->
+              <div class="venue-content">
+                <div class="venue-meta-header">
+                  <span class="venue-type-pill">{v.type}</span>
+                  <span class="venue-area">📍 {v.area}, {loc.cityName}</span>
+                </div>
+
+                <h3 class="venue-title">{v.name}</h3>
+                <p class="venue-note">{v.highlight}</p>
+
+                {v.photoshootSpots && v.photoshootSpots.length > 0 && (
+                  <div class="photoshoot-spots-container">
+                    <span class="spots-label">✨ Featured Photoshoot Spots:</span>
+                    <div class="spots-tags">
+                      {v.photoshootSpots.map((spot, sIdx) => (
+                        <button
+                          type="button"
+                          class:list={['spot-pill-btn', { active: sIdx === 0 }]}
+                          data-venue-idx={vIdx}
+                          data-target-card={sIdx}
+                          aria-label={`Show ${spot} photo`}
+                        >
+                          <span class="spot-btn-dot"></span>
+                          <span>{spot}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div class="venue-card-footer">
+                  <a
+                    href={`https://wa.me/${whatsappClean}?text=Hello%20Frames%20By%20Hithu,%20I%20would%20like%20to%20plan%20a%20photoshoot%20at%20${encodeURIComponent(v.name)}%20in%20${encodeURIComponent(loc.cityName)}.`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="venue-inquire-link"
+                  >
+                    <span>Inquire for {v.name.split(' ')[0]}</span>
+                    <span class="inquire-arrow">→</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+
+  <!-- Local Ritual Specialties -->
+  <section class="specialties-section section-py">
+    <div class="container">
+      <div class="glass-card specialties-inner-card">
+        <div class="section-header" style="margin-bottom: 2rem;">
+          <div class="gold-pill">CEREMONY SPECIALIZATION</div>
+          <h2>{loc.ceremonySpecializationHeadline || `Specialized Ceremonies in ${loc.cityName}`}</h2>
+          <div class="gold-divider"></div>
+          <p>Tailored documentation for the sacred traditions and high-ticket ceremonies of {loc.cityName}:</p>
+        </div>
+
+        <div class="specialties-two-col">
+          {loc.localSpecialties.map((item) => (
+            <div class="specialty-item">
+              <span class="specialty-icon">🪔</span>
+              <div>
+                <strong class="specialty-text">{item}</strong>
+                <p class="specialty-sub">Preserving heritage chants, traditional dress codes, and non-intrusive documentation.</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filterable Portfolio in City Context -->
+  <section class="section-py">
+    <div class="container">
+      <div class="section-header">
+        <div class="gold-pill">FINE-ART ARCHIVE</div>
+        <h2>Recent Frames Across Karnataka</h2>
+        <div class="gold-divider"></div>
+        <p>Click any frame to inspect the fine-art color grading and emotional depth.</p>
+      </div>
+
+      <PortfolioGrid showFilters={true} limit={6} />
+    </div>
+  </section>
+
+  <!-- City FAQs with Schema -->
+  <FaqAccordion
+    faqs={loc.faqs}
+    title={`Frequently Asked Questions: ${loc.cityName}`}
+    subtitle={`LOCAL PROTOCOL & TRAVEL`}
+  />
+
+  <!-- Embedded City Inquiry Funnel -->
+  <section class="section-py" id="inquire-form">
+    <div class="container">
+      <BespokeInquiryModal initialCity={loc.cityName} />
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .text-center {
+    text-align: center;
+  }
+
+  .city-hero-section {
+    background: radial-gradient(ellipse at top, rgba(212, 175, 55, 0.1) 0%, transparent 70%);
+  }
+
+  .city-badge-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .city-kannada-large {
+    font-size: 1.75rem;
+    color: var(--gold-primary);
+    font-weight: 700;
+  }
+
+  .city-hero-title {
+    font-size: clamp(2.4rem, 5vw, 4rem);
+    line-height: 1.15;
+    max-width: 900px;
+    margin: 0.5rem auto 1rem auto;
+  }
+
+  .city-hero-subtitle {
+    max-width: 760px;
+    margin: 0 auto 2.5rem auto;
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    line-height: 1.75;
+  }
+
+  .hero-city-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  /* Neighborhood & Regional Footprint */
+  .neighborhoods-section {
+    padding-top: 1rem;
+    padding-bottom: 2rem;
+  }
+
+  .neighborhoods-card {
+    padding: 2.25rem 2rem;
+    border-radius: var(--radius-lg, 16px);
+    background: rgba(18, 18, 20, 0.65);
+    border: 1px solid rgba(212, 175, 55, 0.22);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+  }
+
+  .neighborhoods-title {
+    font-size: clamp(1.4rem, 3vw, 2.1rem);
+    line-height: 1.25;
+    margin: 0.75rem auto 0.5rem auto;
+    max-width: 850px;
+    color: var(--text-main, #ffffff);
+  }
+
+  .neighborhoods-sub {
+    max-width: 720px;
+    margin: 0 auto 1.5rem auto;
+    font-size: 0.95rem;
+    color: var(--text-muted, #a0a0a0);
+    line-height: 1.6;
+  }
+
+  .neighborhoods-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .neighborhood-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 1rem;
+    border-radius: 9999px;
+    background: rgba(212, 175, 55, 0.08);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: #e6dfc8;
+    letter-spacing: 0.01em;
+    transition: all 0.25s ease;
+  }
+
+  .neighborhood-chip:hover {
+    background: rgba(212, 175, 55, 0.16);
+    border-color: rgba(212, 175, 55, 0.45);
+    transform: translateY(-1px);
+    color: #ffffff;
+  }
+
+  .chip-pin {
+    font-size: 0.9rem;
+  }
+
+  /* Venues Grid */
+  .venues-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  @media (min-width: 768px) {
+    .venues-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .venues-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2.5rem;
+    }
+  }
+
+  .venue-card {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    border-radius: 20px;
+    background: rgba(14, 16, 22, 0.7);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+  }
+
+  .venue-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.75);
+    border-color: rgba(212, 175, 55, 0.4);
+  }
+
+  /* Tactile Instant Mini-Deck */
+  .venue-deck-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin-bottom: 1.25rem;
+  }
+
+  .venue-stack-viewport {
+    position: relative;
+    width: 100%;
+    height: 310px;
+    perspective: 1100px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+    padding-bottom: 24px;
+  }
+
+  .venue-stack-viewport:focus-visible {
+    box-shadow: 0 0 0 3px var(--gold-primary);
+    border-radius: 18px;
+  }
+
+  .venue-instant-card {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: calc(100% - 24px);
+    transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.45s ease, filter 0.45s ease;
+    will-change: transform, opacity;
+  }
+
+  /* 3D Stack positions for venue cards */
+  .venue-instant-card.vpos-0 {
+    z-index: 10;
+    transform: translateY(0) scale(1) rotate(0deg);
+    opacity: 1;
+    filter: brightness(1);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.7);
+    pointer-events: auto;
+  }
+
+  .venue-instant-card.vpos-1 {
+    z-index: 6;
+    transform: translateY(14px) scale(0.95) rotate(-2.5deg);
+    opacity: 0.88;
+    filter: brightness(0.82);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+  }
+
+  .venue-instant-card.vpos-2 {
+    z-index: 3;
+    transform: translateY(26px) scale(0.90) rotate(2deg);
+    opacity: 0.72;
+    filter: brightness(0.68);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+  }
+
+  .venue-instant-card.vpos-hidden {
+    z-index: 1;
+    transform: translateY(36px) scale(0.85) rotate(0deg);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Smooth Glide to Back Animation */
+  .venue-instant-card.flipping-to-back {
+    animation: sendVenueCardToBack 0.45s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  }
+
+  @keyframes sendVenueCardToBack {
+    0% {
+      transform: translateY(0) scale(1) rotate(0deg);
+      z-index: 12;
+      box-shadow: 0 24px 50px rgba(212, 175, 55, 0.35);
+    }
+    45% {
+      transform: translateY(-60px) translateX(20px) scale(1.05) rotate(8deg);
+      z-index: 12;
+      opacity: 0.95;
+    }
+    50% {
+      z-index: 2;
+    }
+    100% {
+      transform: translateY(26px) scale(0.90) rotate(2deg);
+      z-index: 2;
+      opacity: 0.72;
+      filter: brightness(0.68);
+    }
+  }
+
+  /* Card Media Box */
+  .card-media-box {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 2px solid rgba(212, 175, 55, 0.35);
+  }
+
+  .venue-instant-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
+    transition: transform 0.4s ease;
+  }
+
+  .venue-stack-viewport:hover .vpos-0 .venue-instant-photo {
+    transform: scale(1.03);
+  }
+
+  .card-glass-rim {
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.45);
+    pointer-events: none;
+  }
+
+  .watermark-subtle {
+    position: absolute;
+    bottom: 12px;
+    right: 14px;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.3);
+    pointer-events: none;
+    user-select: none;
+    z-index: 4;
+  }
+
+  .card-spot-badge {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: rgba(11, 12, 16, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--gold-border);
+    padding: 5px 12px;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--gold-light);
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    z-index: 5;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+
+  .spot-badge-icon {
+    font-size: 0.8rem;
+  }
+
+  .cycle-hint-pill {
+    position: absolute;
+    bottom: 14px;
+    left: 14px;
+    background: rgba(20, 22, 29, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    padding: 4px 11px;
+    border-radius: 9999px;
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: #F3F4F6;
+    letter-spacing: 0.02em;
+    z-index: 5;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .venue-stack-viewport:hover .cycle-hint-pill {
+    background: rgba(212, 175, 55, 0.2);
+    border-color: var(--gold-primary);
+    color: var(--gold-light);
+  }
+
+  /* Active Spot Tracker Bar */
+  .deck-spot-tracker {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(20, 22, 29, 0.7);
+    border: 1px solid rgba(212, 175, 55, 0.15);
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    margin-top: 4px;
+  }
+
+  .tracker-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tracker-pulse {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gold-primary);
+    box-shadow: 0 0 8px var(--gold-primary);
+    flex-shrink: 0;
+  }
+
+  .tracker-text {
+    color: var(--gold-light);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tracker-counter-badge {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 7px;
+    border-radius: 9999px;
+    flex-shrink: 0;
+    margin-left: 8px;
+  }
+
+  /* Venue Content */
+  .venue-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    flex: 1;
+  }
+
+  .venue-meta-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .venue-type-pill {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 10px;
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid var(--gold-border);
+    color: var(--gold-light);
+    border-radius: 9999px;
+    font-weight: 600;
+  }
+
+  .venue-area {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .venue-title {
+    font-size: 1.35rem;
+    color: var(--text-primary);
+    line-height: 1.25;
+    margin: 0;
+    font-family: var(--font-serif);
+  }
+
+  .venue-note {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* Photoshoot Spot Clickable Buttons */
+  .photoshoot-spots-container {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .spots-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--gold-primary);
+    font-weight: 600;
+  }
+
+  .spots-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  .spot-pill-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    color: #F3F4F6;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    padding: 4px 10px;
+    border-radius: 9999px;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-sans);
+  }
+
+  .spot-btn-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(212, 175, 55, 0.5);
+    transition: background 0.2s ease;
+  }
+
+  .spot-pill-btn:hover {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: var(--gold-primary);
+    color: #FFFFFF;
+  }
+
+  .spot-pill-btn.active {
+    background: var(--gold-gradient);
+    color: #0B0C10;
+    font-weight: 600;
+    border-color: var(--gold-primary);
+    box-shadow: 0 2px 10px rgba(212, 175, 55, 0.35);
+  }
+
+  .spot-pill-btn.active .spot-btn-dot {
+    background: #0B0C10;
+  }
+
+  /* Venue Card Footer */
+  .venue-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-top: 0.75rem;
+  }
+
+  .venue-inquire-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--gold-primary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .venue-inquire-link:hover {
+    color: var(--gold-light);
+  }
+
+  .inquire-arrow {
+    transition: transform 0.2s ease;
+  }
+
+  .venue-inquire-link:hover .inquire-arrow {
+    transform: translateX(3px);
+  }
+
+  /* Specialties Card */
+  .specialties-inner-card {
+    padding: clamp(2rem, 5vw, 3.5rem);
+    border: 1px solid var(--gold-border);
+  }
+
+  .specialties-two-col {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+  }
+
+  @media (min-width: 768px) {
+    .specialties-two-col {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .specialty-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .specialty-icon {
+    font-size: 1.75rem;
+    flex-shrink: 0;
+  }
+
+  .specialty-text {
+    font-size: 1rem;
+    color: var(--text-primary);
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  .specialty-sub {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+</style>
+
+<script>
+  // Venue Mini Instant Card Stack Controller
+  function initVenueCardStacks() {
+    const viewports = document.querySelectorAll<HTMLElement>('.venue-stack-viewport');
+    if (!viewports || viewports.length === 0) return;
+
+    viewports.forEach((viewport) => {
+      const vIdx = viewport.getAttribute('data-venue-deck');
+      if (!vIdx) return;
+
+      const cards = viewport.querySelectorAll<HTMLElement>('.venue-instant-card');
+      const totalCards = cards.length;
+      if (totalCards <= 1) return;
+
+      // Track order of card indices: [0, 1, 2]
+      let cardOrder = Array.from({ length: totalCards }, (_, i) => i);
+      let isFlipping = false;
+
+      const trackerText = document.getElementById(`tracker-text-${vIdx}`);
+      const trackerCount = document.getElementById(`tracker-count-${vIdx}`);
+      const spotButtons = document.querySelectorAll<HTMLButtonElement>(`button[data-venue-idx="${vIdx}"]`);
+
+      function updatePositions() {
+        cardOrder.forEach((originalCardIdx, positionIdx) => {
+          const card = cards[originalCardIdx];
+          if (!card) return;
+
+          card.classList.remove('vpos-0', 'vpos-1', 'vpos-2', 'vpos-hidden', 'flipping-to-back');
+
+          if (positionIdx === 0) {
+            card.classList.add('vpos-0');
+          } else if (positionIdx === 1) {
+            card.classList.add('vpos-1');
+          } else if (positionIdx === 2) {
+            card.classList.add('vpos-2');
+          } else {
+            card.classList.add('vpos-hidden');
+          }
+        });
+
+        // Update active tracker metadata
+        const activeCardIdx = cardOrder[0];
+        const activeCard = cards[activeCardIdx];
+        if (activeCard && trackerText) {
+          const spotName = activeCard.getAttribute('data-spot-name') || 'Photoshoot Spot';
+          trackerText.textContent = `Spot ${activeCardIdx + 1} of ${totalCards}: ${spotName}`;
+        }
+        if (trackerCount) {
+          trackerCount.textContent = `${activeCardIdx + 1}/${totalCards}`;
+        }
+
+        // Highlight matching spot button
+        spotButtons.forEach((btn) => {
+          const targetCard = parseInt(btn.getAttribute('data-target-card') || '0', 10);
+          if (targetCard === activeCardIdx) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        });
+      }
+
+      function cycleToNext() {
+        if (isFlipping) return;
+        isFlipping = true;
+
+        const topCardIdx = cardOrder[0];
+        const topCard = cards[topCardIdx];
+
+        if (topCard) {
+          topCard.classList.add('flipping-to-back');
+        }
+
+        setTimeout(() => {
+          const front = cardOrder.shift();
+          if (typeof front === 'number') {
+            cardOrder.push(front);
+          }
+          updatePositions();
+          isFlipping = false;
+        }, 420);
+      }
+
+      function jumpToCard(targetIdx: number) {
+        if (isFlipping) return;
+        if (cardOrder[0] === targetIdx) return;
+
+        // Reorder cardOrder array so targetIdx is at front [0]
+        const currentPos = cardOrder.indexOf(targetIdx);
+        if (currentPos > 0) {
+          const topCard = cards[cardOrder[0]];
+          if (topCard) topCard.classList.add('flipping-to-back');
+          isFlipping = true;
+
+          setTimeout(() => {
+            const rotated = cardOrder.slice(currentPos).concat(cardOrder.slice(0, currentPos));
+            cardOrder = rotated;
+            updatePositions();
+            isFlipping = false;
+          }, 350);
+        }
+      }
+
+      // Viewport Click and Keypress handlers
+      viewport.addEventListener('click', () => {
+        cycleToNext();
+      });
+
+      viewport.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          cycleToNext();
+        }
+      });
+
+      // Spot buttons click handler
+      spotButtons.forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const targetCard = parseInt(btn.getAttribute('data-target-card') || '0', 10);
+          jumpToCard(targetCard);
+        });
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initVenueCardStacks);
+  } else {
+    initVenueCardStacks();
+  }
+</script>

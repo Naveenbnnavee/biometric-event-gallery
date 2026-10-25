@@ -1,0 +1,135 @@
+---
+interface FAQItem {
+  question: string;
+  answer: string;
+}
+
+interface Props {
+  faqs?: FAQItem[];
+  title?: string;
+  subtitle?: string;
+}
+
+const defaultFaqs: FAQItem[] = [
+  {
+    question: 'How do you formulate a bespoke quote without set public pricing tables?',
+    answer: 'Every ceremony in Karnataka is completely unique—ranging from single-day intimate Gruhapravesham rituals to 4-day royal palace weddings with multi-camera cinematographers and aerial drone operators. By scheduling a bespoke consultation or reviewing your dates and ritual itinerary, we tailor a transparent proposal that matches your exact requirements without charging for unnecessary extras.'
+  },
+  {
+    question: 'How far in advance must we secure our wedding or Gruhapravesham date?',
+    answer: 'Auspicious Muhurtham days in Karnataka (such as peak wedding dates in November–February and May–June) are heavily in demand across Bengaluru and Mysuru. We accept a strictly capped number of clients per calendar month to preserve our fine-art quality. We recommend reaching out 4 to 9 months ahead of your date.'
+  },
+  {
+    question: 'What is your team’s etiquette during sacred Vedic ceremonies?',
+    answer: 'We treat the temple mantapa or homa kunda with utmost sanctity. Our photographers wear traditional ethnic Indian attire (dhoti/kurta when required), never step across the sacred agni fire or obstruct the priest’s chants, and use silent electronic shutters and ultra-fast prime cinema lenses rather than jarring, continuous flash bursts.'
+  },
+  {
+    question: 'Do you travel across all districts of Karnataka and outside the state?',
+    answer: 'Yes! While our central studio and post-production hub is in Bengaluru, we regularly travel across Mysuru, Mangaluru, Udupi, Hubballi, Hassan, Coorg, Chikmagalur, Belagavi, and destination properties across South India.'
+  },
+  {
+    question: 'What are your deliverables and turnaround timelines?',
+    answer: 'Within 72 hours of your ceremony, you receive an express curated "Sneak Peek" digital collection for instant family and social sharing. The complete master color-graded high-resolution gallery is delivered within 4–6 weeks, followed by our handcrafted Italian leatherette heirloom albums.'
+  }
+];
+
+const {
+  faqs = defaultFaqs,
+  title = 'Frequently Asked Questions',
+  subtitle = 'BESPOKE COMMISSIONS & KARNATAKA COVERAGE'
+} = Astro.props;
+---
+
+<section class="faq-section section-py" id="faq-section">
+  <div class="container">
+    <div class="section-header">
+      <div class="gold-pill">{subtitle}</div>
+      <h2>{title}</h2>
+      <div class="gold-divider"></div>
+      <p>Clear, transparent answers about our artistic philosophy, booking protocol, and wedding day coverage.</p>
+    </div>
+
+    <div class="faq-container">
+      {faqs.map((faq, idx) => (
+        <details class="faq-card glass-card" open={idx === 0}>
+          <summary class="faq-question">
+            <span>{faq.question}</span>
+            <span class="faq-icon">+</span>
+          </summary>
+          <div class="faq-answer">
+            <p>{faq.answer}</p>
+          </div>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .faq-container {
+    max-width: 860px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .faq-card {
+    border-radius: 6px;
+    padding: 0;
+    overflow: hidden;
+    transition: var(--transition-smooth);
+  }
+
+  .faq-card[open] {
+    border-color: var(--gold-border);
+    box-shadow: var(--shadow-card);
+  }
+
+  .faq-question {
+    padding: 1.4rem 1.75rem;
+    font-family: var(--font-serif);
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    transition: var(--transition-smooth);
+    user-select: none;
+  }
+
+  .faq-question::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq-question:hover {
+    color: var(--gold-light);
+  }
+
+  .faq-icon {
+    font-size: 1.5rem;
+    color: var(--gold-primary);
+    transition: transform 0.3s ease;
+    line-height: 1;
+    font-family: var(--font-sans);
+  }
+
+  .faq-card[open] .faq-icon {
+    transform: rotate(45deg);
+  }
+
+  .faq-answer {
+    padding: 0 1.75rem 1.6rem 1.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 1rem;
+  }
+
+  .faq-answer p {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+</style>

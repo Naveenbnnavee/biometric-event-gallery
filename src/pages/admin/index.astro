@@ -1,0 +1,585 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { isAuthenticated } from '../../lib/auth';
+import { getStudioSettingsAsync, getPortfolioItemsAsync, getCategoriesAsync, getClientGalleriesAsync, getTestimonialsAsync } from '../../lib/db';
+
+export const prerender = false;
+
+const authed = await isAuthenticated(Astro.request);
+if (!authed) {
+  return Astro.redirect('/admin/login');
+}
+
+const settings = await getStudioSettingsAsync();
+const portfolio = await getPortfolioItemsAsync();
+const categories = await getCategoriesAsync();
+const clients = await getClientGalleriesAsync();
+const testimonials = await getTestimonialsAsync();
+
+const instantDeckCount = portfolio.filter(p => p.featuredInInstantDeck).length;
+const activeClientsCount = clients.filter(c => c.status === 'active').length;
+const pendingReviewsCount = testimonials.filter(t => t.status === 'pending').length;
+---
+
+<AdminLayout title="Studio Dashboard" activeNav="dashboard">
+  <div class="dashboard-hero">
+    <div class="welcome-banner glass-card">
+      <div class="welcome-text">
+        <span class="gold-pill">MASTER CONTROL SUITE</span>
+        <h2 class="welcome-heading">Welcome back to {settings.studioName}</h2>
+        <p class="welcome-desc">
+          Managing luxury celebrations across Karnataka. Synchronize your fine-art portfolio, update venue geotags, configure Meta Instants card stacks, and grant private proofing PINs to distinguished families.
+        </p>
+      </div>
+
+      <div class="quick-concierge-pill">
+        <span class="concierge-icon">📞</span>
+        <div class="concierge-meta">
+          <span class="concierge-label">Active WhatsApp Concierge</span>
+          <strong class="concierge-val">{settings.whatsappConcierge}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Metrics Row -->
+  <div class="metrics-grid">
+    <div class="metric-card glass-card">
+      <div class="metric-header">
+        <span class="metric-icon">🖼️</span>
+        <span class="metric-tag">Master Works</span>
+      </div>
+      <div class="metric-body">
+        <span class="metric-num">{portfolio.length}</span>
+        <span class="metric-label">Archived Fine-Art Photos</span>
+      </div>
+      <div class="metric-footer">
+        <a href="/admin/portfolio" class="metric-link">Manage Portfolio →</a>
+      </div>
+    </div>
+
+    <div class="metric-card glass-card">
+      <div class="metric-header">
+        <span class="metric-icon">✨</span>
+        <span class="metric-tag gold">Instant Decks</span>
+      </div>
+      <div class="metric-body">
+        <span class="metric-num">{instantDeckCount}</span>
+        <span class="metric-label">Frames in Tactile Card Stack</span>
+      </div>
+      <div class="metric-footer">
+        <a href="/admin/portfolio?filter=featured" class="metric-link">View Instant Frames →</a>
+      </div>
+    </div>
+
+    <div class="metric-card glass-card">
+      <div class="metric-header">
+        <span class="metric-icon">🏷️</span>
+        <span class="metric-tag">Ceremonies</span>
+      </div>
+      <div class="metric-body">
+        <span class="metric-num">{categories.length}</span>
+        <span class="metric-label">Curated Karnataka Categories</span>
+      </div>
+      <div class="metric-footer">
+        <a href="/admin/categories" class="metric-link">Edit Categories →</a>
+      </div>
+    </div>
+
+    <div class="metric-card glass-card">
+      <div class="metric-header">
+        <span class="metric-icon">🔐</span>
+        <span class="metric-tag emerald">PIN Suites</span>
+      </div>
+      <div class="metric-body">
+        <span class="metric-num">{activeClientsCount}</span>
+        <span class="metric-label">Active Client Proofing Portals</span>
+      </div>
+      <div class="metric-footer">
+        <a href="/admin/clients" class="metric-link">Review Client Galleries →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Split: Recent Clients & Quick Navigation -->
+  <div class="dashboard-split-grid">
+    <!-- Active Client Galleries Table -->
+    <div class="panel-box glass-card">
+      <div class="panel-header">
+        <div class="panel-title-wrap">
+          <h3 class="panel-title">Active Client Proofing Galleries</h3>
+          <span class="panel-subtitle">Private PIN-gated portals for heirloom album selections</span>
+        </div>
+        <a href="/admin/clients" class="btn-outline-gold sm">All Clients ({clients.length})</a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Client / Ceremony</th>
+              <th>Date</th>
+              <th>Access PIN</th>
+              <th>Target Album</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {clients.slice(0, 4).map(client => (
+              <tr>
+                <td>
+                  <div class="client-cell">
+                    <img src={client.coverImage} alt={client.clientName} class="client-thumb" />
+                    <div>
+                      <strong>{client.clientName}</strong>
+                      <span class="client-sub">{client.eventTitle}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-muted">{client.ceremonyDate}</td>
+                <td>
+                  <span class="pin-badge">🔑 {client.pin}</span>
+                </td>
+                <td>
+                  <span class="target-badge">{client.targetAlbumCount} Frames</span>
+                </td>
+                <td>
+                  <a href={`/client-portal`} target="_blank" class="table-action-link" title="Open Client Proofing Portal">
+                    Open Portal ↗
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Quick Shortcuts & System Overview -->
+    <div class="panel-box glass-card">
+      <div class="panel-header">
+        <h3 class="panel-title">Studio Shortcuts</h3>
+        <span class="panel-subtitle">Instant administrative actions</span>
+      </div>
+
+      <div class="shortcuts-list">
+        <a href="/admin/portfolio" class="shortcut-item">
+          <div class="sc-icon">➕</div>
+          <div class="sc-info">
+            <strong>Add New Master Photograph</strong>
+            <span>Upload image URL, tag venue, set ceremony category</span>
+          </div>
+          <span class="sc-arrow">→</span>
+        </a>
+
+        <a href="/admin/clients" class="shortcut-item">
+          <div class="sc-icon">🔐</div>
+          <div class="sc-info">
+            <strong>Issue New Client Access PIN</strong>
+            <span>Generate secure 4-digit PIN for upcoming wedding or Gruhapravesham</span>
+          </div>
+          <span class="sc-arrow">→</span>
+        </a>
+
+        <a href="/admin/settings" class="shortcut-item">
+          <div class="sc-icon">📍</div>
+          <div class="sc-info">
+            <strong>Update Location & SEO Schema</strong>
+            <span>Modify Sadashivanagar coordinates, phone, or WhatsApp concierge</span>
+          </div>
+          <span class="sc-arrow">→</span>
+        </a>
+
+        <a href="/admin/testimonials" class="shortcut-item">
+          <div class="sc-icon">⭐</div>
+          <div class="sc-info">
+            <strong>Client Reviews & Testimonials</strong>
+            <span>{pendingReviewsCount > 0 ? `⚠️ ${pendingReviewsCount} reviews pending moderation` : 'Moderate client feedback & toggle homepage visibility'}</span>
+          </div>
+          <span class="sc-arrow">→</span>
+        </a>
+
+        <a href="/admin/categories" class="shortcut-item">
+          <div class="sc-icon">🏷️</div>
+          <div class="sc-info">
+            <strong>Reorder Ceremony Decks</strong>
+            <span>Customize Kannada labels and ceremony arrangement</span>
+          </div>
+          <span class="sc-arrow">→</span>
+        </a>
+      </div>
+
+      <!-- Edge Details -->
+      <div class="edge-info-card">
+        <div class="edge-item">
+          <span class="edge-label">Architecture</span>
+          <span class="edge-val">Astro Hybrid • Cloudflare Pages</span>
+        </div>
+        <div class="edge-item">
+          <span class="edge-label">Data Store</span>
+          <span class="edge-val">Edge KV / Local Storage</span>
+        </div>
+        <div class="edge-item">
+          <span class="edge-label">Public Pricing</span>
+          <span class="edge-val text-gold">Zero Public Rates (Bespoke)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  .dashboard-hero {
+    margin-bottom: 2rem;
+  }
+
+  .welcome-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+    padding: 2.25rem;
+    border: 1px solid var(--border-gold);
+    background: linear-gradient(135deg, rgba(20, 22, 29, 0.9) 0%, rgba(11, 12, 16, 0.95) 100%);
+  }
+
+  .welcome-heading {
+    font-family: var(--font-serif);
+    font-size: 2.2rem;
+    color: #FFFFFF;
+    margin: 0.6rem 0;
+  }
+
+  .welcome-desc {
+    color: #9CA3AF;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    max-width: 680px;
+    margin: 0;
+  }
+
+  .quick-concierge-pill {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: rgba(37, 211, 102, 0.08);
+    border: 1px solid rgba(37, 211, 102, 0.3);
+    padding: 1rem 1.4rem;
+    border-radius: 12px;
+    flex-shrink: 0;
+  }
+
+  .concierge-icon {
+    font-size: 1.8rem;
+  }
+
+  .concierge-meta {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .concierge-label {
+    font-size: 0.75rem;
+    color: #9CA3AF;
+  }
+
+  .concierge-val {
+    color: #25D366;
+    font-size: 1.1rem;
+    font-family: var(--font-sans);
+  }
+
+  /* Metrics Grid */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .metric-card {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .metric-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--gold-primary);
+  }
+
+  .metric-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .metric-icon {
+    font-size: 1.6rem;
+  }
+
+  .metric-tag {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 3px 8px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #D1D5DB;
+  }
+
+  .metric-tag.gold {
+    background: rgba(212, 175, 55, 0.15);
+    color: var(--text-gold);
+    border: 1px solid var(--border-gold);
+  }
+
+  .metric-tag.emerald {
+    background: rgba(37, 211, 102, 0.15);
+    color: #25D366;
+    border: 1px solid rgba(37, 211, 102, 0.3);
+  }
+
+  .metric-body {
+    margin: 1.25rem 0 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .metric-num {
+    font-family: var(--font-serif);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #FAFAF9;
+    line-height: 1;
+  }
+
+  .metric-label {
+    font-size: 0.825rem;
+    color: #9CA3AF;
+  }
+
+  .metric-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 0.85rem;
+  }
+
+  .metric-link {
+    font-size: 0.825rem;
+    color: var(--text-gold);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .metric-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Split Grid */
+  .dashboard-split-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 1.75rem;
+  }
+
+  .panel-box {
+    padding: 1.75rem;
+  }
+
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .panel-title {
+    font-family: var(--font-serif);
+    font-size: 1.4rem;
+    margin: 0;
+    color: #FFFFFF;
+  }
+
+  .panel-subtitle {
+    font-size: 0.8rem;
+    color: #9CA3AF;
+    display: block;
+    margin-top: 2px;
+  }
+
+  .btn-outline-gold.sm {
+    padding: 0.45rem 0.9rem;
+    font-size: 0.775rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-gold);
+    color: var(--text-gold);
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .btn-outline-gold.sm:hover {
+    background: rgba(212, 175, 55, 0.15);
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+  }
+
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+
+  .admin-table th {
+    text-align: left;
+    padding: 0.75rem 0.6rem;
+    color: #9CA3AF;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-weight: 500;
+  }
+
+  .admin-table td {
+    padding: 0.85rem 0.6rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    vertical-align: middle;
+  }
+
+  .client-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .client-thumb {
+    width: 38px;
+    height: 38px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid var(--border-gold);
+  }
+
+  .client-sub {
+    display: block;
+    font-size: 0.75rem;
+    color: #9CA3AF;
+  }
+
+  .pin-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px dashed var(--border-gold);
+    border-radius: 6px;
+    font-weight: 600;
+    color: var(--text-gold);
+  }
+
+  .target-badge {
+    color: #9CA3AF;
+  }
+
+  .table-action-link {
+    color: var(--text-gold);
+    text-decoration: none;
+    font-size: 0.8rem;
+  }
+
+  .table-action-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Shortcuts */
+  .shortcuts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .shortcut-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+  }
+
+  .shortcut-item:hover {
+    background: rgba(212, 175, 55, 0.08);
+    border-color: var(--border-gold);
+    transform: translateX(4px);
+  }
+
+  .sc-icon {
+    font-size: 1.3rem;
+  }
+
+  .sc-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sc-info strong {
+    font-size: 0.875rem;
+    color: #FFFFFF;
+  }
+
+  .sc-info span {
+    font-size: 0.75rem;
+    color: #9CA3AF;
+  }
+
+  .sc-arrow {
+    color: var(--text-gold);
+  }
+
+  .edge-info-card {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 1rem;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-size: 0.775rem;
+  }
+
+  .edge-item {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .edge-label {
+    color: #9CA3AF;
+  }
+
+  .edge-val {
+    color: #FFFFFF;
+    font-weight: 500;
+  }
+
+  .text-gold {
+    color: var(--text-gold);
+  }
+
+  @media (max-width: 1024px) {
+    .dashboard-split-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .welcome-banner {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>

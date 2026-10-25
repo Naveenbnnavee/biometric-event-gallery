@@ -1,0 +1,134 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import StoryCard from '../../components/StoryCard.astro';
+import { stories } from '../../data/stories';
+import { getStudioSettings } from '../../lib/db';
+
+const settings = getStudioSettings();
+const whatsappClean = (settings.whatsappConcierge || '917892706982').replace(/[^0-9]/g, '');
+const whatsappUrl = `https://wa.me/${whatsappClean}?text=${encodeURIComponent('Hello Frames By Hithu, I would like to discuss our upcoming story.')}`;
+
+const storiesSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  'name': 'Editorial Client Stories & Photo Essays | Frames By Hithu',
+  'description': 'Read narrative photo essays documenting real weddings, Vedic Gruhapraveshams, and dawn Muhurthams across Karnataka.',
+  'url': 'https://framesbyhithu.com/stories'
+};
+---
+
+<Layout
+  title="Editorial Client Stories & Photo Essays | Frames By Hithu"
+  description="Read narrative photo essays documenting real weddings, Vedic Gruhapraveshams, and dawn Muhurthams across Bengaluru, Mysuru, and Karnataka."
+  schema={storiesSchema}
+>
+  <div class="page-header section-py text-center">
+    <div class="container">
+      <div class="gold-pill">EDITORIAL ESSAYS</div>
+      <h1 class="page-title">Client Stories & Photo Essays</h1>
+      <div class="gold-divider"></div>
+      <p class="page-subtitle">
+        Every commission is an enduring human story. Explore behind-the-scenes narrative accounts of heritage celebrations, sacred Vedic chants, and multi-generational joy.
+      </p>
+    </div>
+  </div>
+
+  <section class="stories-archive-section section-py">
+    <div class="container">
+      <div class="stories-grid">
+        {stories.map((story) => (
+          <StoryCard story={story} />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Banner -->
+  <section class="section-py text-center">
+    <div class="container">
+      <div class="glass-card cta-box">
+        <div class="gold-pill">YOUR STORY NEXT</div>
+        <h2>Ready to Chronicle Your Family’s Milestone?</h2>
+        <p>
+          Let’s discuss your venue, Muhurtham timings, and bespoke coverage scope.
+        </p>
+        <div class="cta-actions">
+          <a href="/contact#inquiry-form" class="btn-gold">Check Date Availability</a>
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
+            Chat on WhatsApp
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .text-center {
+    text-align: center;
+  }
+
+  .page-header {
+    background: radial-gradient(ellipse at top, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
+    padding-bottom: 2rem;
+  }
+
+  .page-title {
+    font-size: clamp(2.4rem, 5vw, 4rem);
+    margin-top: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .page-subtitle {
+    max-width: 680px;
+    margin: 0 auto;
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  .stories-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.25rem;
+  }
+
+  @media (min-width: 768px) {
+    .stories-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .stories-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .cta-box {
+    padding: 3.5rem 2rem;
+    max-width: 840px;
+    margin: 0 auto;
+    border: 1px solid var(--gold-border);
+  }
+
+  .cta-box h2 {
+    font-size: 2.2rem;
+    color: var(--gold-light);
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .cta-box p {
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+    font-size: 1rem;
+  }
+
+  .cta-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+</style>

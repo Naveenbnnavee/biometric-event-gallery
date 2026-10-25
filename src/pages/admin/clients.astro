@@ -1,0 +1,2268 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { isAuthenticated } from '../../lib/auth';
+import { getClientGalleriesAsync, getStudioSettingsAsync } from '../../lib/db';
+
+export const prerender = false;
+
+const authed = await isAuthenticated(Astro.request);
+if (!authed) {
+  return Astro.redirect('/admin/login');
+}
+
+const clients = await getClientGalleriesAsync();
+const settings = await getStudioSettingsAsync();
+const portalVisible = settings.clientPortalVisible !== false;
+---
+
+<AdminLayout title="Client Proofing Suites" activeNav="clients">
+  <div class="clients-page">
+    <div class="page-header-row">
+      <div>
+        <h2 class="section-title">Private Client Proofing Portals & Security Passcodes</h2>
+        <p class="section-desc">
+          Issue private high-security access keys to clients. Upload proofing photographs from your computer, organize heirloom album selections, and dispatch credentials via WhatsApp.
+        </p>
+      </div>
+
+      <div class="header-actions-group">
+        <div class="portal-quick-toggle-wrap">
+          <span class="quick-toggle-hint">Portal Visibility:</span>
+          <button
+            type="button"
+            id="quick-portal-toggle-btn"
+            class={`portal-quick-btn ${portalVisible ? 'active' : 'hidden'}`}
+            data-visible={portalVisible ? 'true' : 'false'}
+            title="Click to toggle whether Client Portal is visible in public website menus"
+          >
+            <span class="status-indicator-dot"></span>
+            <span id="quick-portal-label">{portalVisible ? 'Public: Visible' : 'Public: Hidden'}</span>
+          </button>
+        </div>
+
+        <button id="add-client-btn" class="btn-gold">
+          <span>➕ Issue New Client Gallery & Key</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Client Cards Grid -->
+    <div class="clients-grid">
+      {clients.map(client => (
+        <div class="client-card glass-card" data-id={client.id}>
+          <div class="client-media-header">
+            <img src={client.coverImage} alt={client.clientName} class="client-cover" />
+            <div class="client-status-badge-wrap">
+              <span class:list={['status-pill', client.status]}>
+                {client.status === 'active' ? '● Active Proofing' : '○ Archived'}
+              </span>
+            </div>
+            <div class="pin-highlight-box">
+              <span class="pin-label">ACCESS KEY</span>
+              <strong class="pin-code">{client.pin}</strong>
+            </div>
+          </div>
+
+          <div class="client-card-body">
+            <div class="client-header-info">
+              <h3 class="client-name">{client.clientName}</h3>
+              <span class="client-event">{client.eventTitle}</span>
+              <span class="client-date">🗓️ Ceremony Date: {client.ceremonyDate}</span>
+              {client.clientEmail && <span class="client-contact-tag">✉️ {client.clientEmail}</span>}
+              {client.clientPhone && <span class="client-contact-tag">📱 {client.clientPhone}</span>}
+              {client.requireTwoFactor && <span class="badge-2fa">🛡️ 2-Factor Auth Required</span>}
+            </div>
+
+            <div class="stats-strip">
+              <div class="strip-item">
+                <span class="strip-val">{(client.photos && client.photos.length > 0) ? client.photos.length : client.photosCount}</span>
+                <span class="strip-label">Proof Frames</span>
+              </div>
+              <div class="strip-divider"></div>
+              <div class="strip-item">
+                <span class="strip-val text-gold">{client.targetAlbumCount}</span>
+                <span class="strip-label">Target Album</span>
+              </div>
+            </div>
+
+            <!-- Direct Photos Manager Action -->
+            <button
+              type="button"
+              class="manage-photos-btn"
+              data-id={client.id}
+              data-name={client.clientName}
+              data-cover={client.coverImage}
+              data-photos={JSON.stringify(client.photos || [])}
+            >
+              <span>🖼️ Upload & Manage Gallery Photos ({(client.photos && client.photos.length > 0) ? client.photos.length : client.photosCount} Frames)</span>
+            </button>
+
+            <!-- Client Proofing Album Inspection Action -->
+            <button
+              type="button"
+              class="inspect-selections-btn"
+              data-id={client.id}
+              data-name={client.clientName}
+              data-title={client.eventTitle}
+              data-date={client.ceremonyDate}
+              data-phone={client.clientPhone || ''}
+              data-target={client.targetAlbumCount}
+              data-total={(client.photos && client.photos.length > 0) ? client.photos.length : client.photosCount}
+              data-selected-photos={JSON.stringify(client.selectedPhotos || [])}
+              data-notes={client.clientSelectionNotes || ''}
+              data-submitted={client.selectionSubmittedAt || ''}
+            >
+              <div class="inspect-btn-title-row">
+                <span class="inspect-btn-icon">🔍</span>
+                <span class="inspect-btn-title">Inspect Album Selections</span>
+              </div>
+              <div class="inspect-btn-meta-row">
+                <span class="inspect-btn-count">{(client.selectedPhotos || []).length} / {client.targetAlbumCount} Frames Chosen</span>
+                {(client.selectedPhotos && client.selectedPhotos.length > 0) ? (
+                  <span class="selection-pill active">● Ready to Review</span>
+                ) : (
+                  <span class="selection-pill pending">○ Awaiting Picks</span>
+                )}
+              </div>
+            </button>
+
+            {client.notes && (
+              <p class="client-notes">“{client.notes}”</p>
+            )}
+
+            <!-- Client Action Buttons -->
+            <div class="client-actions-row">
+              <button
+                class="copy-link-btn"
+                data-pin={client.pin}
+                title="Copy client portal link with Passcode"
+              >
+                📋 Copy Link
+              </button>
+
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`Hello ${client.clientName}! Your private fine-art gallery from Frames By Hithu is ready for review: https://framesbyhithu.com/client-portal\n\nYour Private Access Passcode is: ${client.pin}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="whatsapp-send-btn"
+                title="Dispatch credentials via WhatsApp"
+              >
+                💬 WhatsApp Key
+              </a>
+
+              <a
+                href={`/client-portal`}
+                target="_blank"
+                class="portal-open-btn"
+                title="Test Client Proofing Portal"
+              >
+                Open Portal ↗
+              </a>
+            </div>
+
+            <div class="client-manage-footer">
+              <button
+                class="edit-client-btn"
+                data-id={client.id}
+                data-name={client.clientName}
+                data-title={client.eventTitle}
+                data-date={client.ceremonyDate}
+                data-pin={client.pin}
+                data-email={client.clientEmail || ''}
+                data-phone={client.clientPhone || ''}
+                data-2fa={client.requireTwoFactor ? 'true' : 'false'}
+                data-target={client.targetAlbumCount}
+                data-photos={client.photosCount}
+                data-status={client.status}
+                data-cover={client.coverImage}
+                data-photos-list={JSON.stringify(client.photos || [])}
+                data-notes={client.notes || ''}
+              >
+                ✏️ Edit Settings
+              </button>
+
+              <button class="delete-client-btn" data-id={client.id} data-name={client.clientName}>
+                🗑️ Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <!-- Client Add / Edit Modal -->
+  <div id="client-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card glass-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="client-modal-title">Issue Private Client Gallery & Key</h3>
+        <button id="close-client-modal" class="close-btn" aria-label="Close modal">✕</button>
+      </div>
+
+      <form id="client-form" class="modal-form">
+        <input type="hidden" id="edit-client-id" name="id" />
+
+        <div class="form-grid">
+          <div class="form-group col-2">
+            <label class="form-label" for="client-name-input">Client / Couple Name</label>
+            <input
+              type="text"
+              id="client-name-input"
+              name="clientName"
+              class="form-input"
+              placeholder="e.g. Ananya & Rohit or Sharma Family"
+              required
+            />
+          </div>
+
+          <div class="form-group col-2">
+            <label class="form-label" for="client-event-input">Ceremony Event Title</label>
+            <input
+              type="text"
+              id="client-event-input"
+              name="eventTitle"
+              class="form-input"
+              placeholder="e.g. Royal Bangalore Palace Wedding"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="client-date-input">Ceremony Date</label>
+            <input
+              type="date"
+              id="client-date-input"
+              name="ceremonyDate"
+              class="form-input"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="client-pin-input">Secure Access Passcode / Key</label>
+            <div class="pin-gen-wrap">
+              <input
+                type="text"
+                id="client-pin-input"
+                name="pin"
+                class="form-input"
+                placeholder="FBH-9460 or ANANYA-2026"
+                maxlength="32"
+                required
+              />
+              <button type="button" id="random-pin-btn" class="gen-pin-btn" title="Generate High-Security Key">
+                🎲 Auto Key
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="client-email-input">Client Email (Optional Verification)</label>
+            <input
+              type="email"
+              id="client-email-input"
+              name="clientEmail"
+              class="form-input"
+              placeholder="ananya.rohit@gmail.com"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="client-phone-input">Client Phone / WhatsApp</label>
+            <input
+              type="tel"
+              id="client-phone-input"
+              name="clientPhone"
+              class="form-input"
+              placeholder="+91 98450 XXXXX"
+            />
+          </div>
+
+          <div class="form-group col-2 checkbox-group-box">
+            <label class="checkbox-label">
+              <input type="checkbox" id="client-2fa-input" name="requireTwoFactor" />
+              <span>Require Client Email/Phone check in addition to Passcode (2-Factor Protection)</span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="client-target-input">Target Album Selections</label>
+            <input
+              type="number"
+              id="client-target-input"
+              name="targetAlbumCount"
+              class="form-input"
+              value="40"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="client-status-select">Gallery Status</label>
+            <select id="client-status-select" name="status" class="form-select">
+              <option value="active">Active (Client can review)</option>
+              <option value="archived">Archived (Closed)</option>
+            </select>
+          </div>
+
+          <div class="form-group col-2">
+            <div class="cover-label-row">
+              <label class="form-label" for="client-cover-input">Cover Photo</label>
+              <button type="button" id="upload-cover-btn" class="btn-source-toggle">📁 Pick from Device</button>
+              <input type="file" id="cover-file-input" accept="image/*" style="display: none;" />
+            </div>
+            <input
+              type="url"
+              id="client-cover-input"
+              name="coverImage"
+              class="form-input"
+              placeholder="https://images.unsplash.com/... or uploaded URL"
+              value="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1080&q=85"
+            />
+          </div>
+
+          <div class="form-group col-2">
+            <label class="form-label" for="client-notes-input">Internal Studio Notes</label>
+            <textarea
+              id="client-notes-input"
+              name="notes"
+              class="form-textarea"
+              rows="2"
+              placeholder="e.g. Italian Leatherette Album, client requested focus on candids."
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="cancel-client-btn" class="btn-cancel">Cancel</button>
+          <button type="submit" id="save-client-btn" class="btn-gold">Save Client Suite</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Standalone Gallery Photos Manager Modal -->
+  <div id="photos-manager-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card glass-card pm-card">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" id="pm-modal-title">Manage Proofing Gallery Photos</h3>
+          <p class="modal-subtitle" id="pm-modal-subtitle">Upload and arrange photographs for client review</p>
+        </div>
+        <button id="close-pm-modal" class="close-btn" aria-label="Close modal">✕</button>
+      </div>
+
+      <div class="pm-body">
+        <!-- Direct File Upload Dropzone -->
+        <div class="upload-dropzone" id="pm-dropzone">
+          <input type="file" id="pm-file-input" multiple accept="image/*" class="file-hidden-input" />
+          <div class="dropzone-content" id="pm-dropzone-content">
+            <span class="dropzone-icon">📸</span>
+            <span class="dropzone-text">Click or drag & drop proofing photos from computer</span>
+            <span class="dropzone-sub">Select multiple photos at once (JPG, PNG, WEBP)</span>
+          </div>
+          <div id="pm-upload-spinner" class="upload-spinner" style="display: none;">
+            <span class="spinner-icon">⏳</span>
+            <span id="pm-spinner-text">Uploading photos to gallery...</span>
+          </div>
+        </div>
+
+        <!-- Bulk URL Paste Tool -->
+        <div class="pm-url-box">
+          <textarea id="pm-bulk-urls" class="form-textarea" rows="2" placeholder="Paste multiple image URLs (one per line) from CDN, Drive, or R2..."></textarea>
+          <button type="button" id="pm-add-urls-btn" class="btn-outline-sm">+ Add Pasted URLs</button>
+        </div>
+
+        <!-- Photos Toolbar -->
+        <div class="pm-toolbar">
+          <span class="pm-count">Total Proofing Frames: <strong id="pm-count-badge">0</strong></span>
+          <button type="button" id="pm-clear-btn" class="btn-clear-sm">Clear All Frames</button>
+        </div>
+
+        <!-- Thumbnails Grid -->
+        <div id="pm-photos-grid" class="pm-grid">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="cancel-pm-btn" class="btn-cancel">Close</button>
+        <button type="button" id="save-pm-btn" class="btn-gold">Save Gallery Photos</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client Proofing Album Inspection Modal -->
+  <div id="inspect-selections-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card glass-card inspect-modal-card">
+      <div class="modal-header">
+        <div>
+          <div class="inspect-kicker">ALBUM PROOFING INSPECTION</div>
+          <h3 class="modal-title" id="inspect-modal-title">Client Heirloom Album Selections</h3>
+          <p class="modal-subtitle" id="inspect-modal-subtitle">Review favorites chosen by client in portal</p>
+        </div>
+        <button id="close-inspect-modal" class="close-btn" aria-label="Close modal">✕</button>
+      </div>
+
+      <div class="inspect-body">
+        <!-- Progress & Count Bar -->
+        <div class="inspect-banner glass-card">
+          <div class="inspect-stat-col">
+            <span class="inspect-stat-label">SELECTED / TARGET</span>
+            <div class="inspect-stat-numbers">
+              <span class="inspect-stat-curr" id="inspect-selected-curr">0</span>
+              <span class="inspect-stat-sep">/</span>
+              <span class="inspect-stat-target" id="inspect-selected-target">40</span>
+              <span class="inspect-stat-unit">Frames Chosen</span>
+            </div>
+            <div class="inspect-progress-track">
+              <div class="inspect-progress-bar" id="inspect-progress-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <div class="inspect-timestamp-col" id="inspect-submission-time-wrap">
+            <span class="inspect-stat-label">CLIENT FINALIZED STATUS</span>
+            <span class="inspect-stat-val text-gold" id="inspect-submitted-time">Pending Submission</span>
+          </div>
+        </div>
+
+        <!-- Client Notes Section -->
+        <div class="inspect-notes-box" id="inspect-notes-container">
+          <div class="inspect-notes-header">
+            <span class="inspect-notes-icon">📝</span>
+            <span class="inspect-notes-label">Client Retouching & Spreads Instructions:</span>
+          </div>
+          <p class="inspect-notes-text" id="inspect-notes-content">“No notes left by client.”</p>
+        </div>
+
+        <!-- Selections Actions Toolbar -->
+        <div class="inspect-toolbar">
+          <div class="inspect-toolbar-left">
+            <span class="inspect-count-tag" id="inspect-photos-count-tag">0 Photographs Selected</span>
+          </div>
+          <div class="inspect-toolbar-actions">
+            <button type="button" id="copy-selection-filenames-btn" class="btn-gold-sm" title="Copy photo filenames to paste directly into Lightroom or Capture One">
+              <span>📋 Copy Filenames / Export Selection List</span>
+            </button>
+            <button type="button" id="download-selection-txt-btn" class="btn-outline-sm" title="Download text list for editing archive">
+              <span>💾 Download TXT List</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Copy Format Radio -->
+        <div class="copy-format-row">
+          <span class="format-label">Clipboard Format:</span>
+          <label class="radio-label">
+            <input type="radio" name="export-format" value="comma" checked />
+            <span>Comma-Separated (Lightroom Search: <code>img1.jpg, img2.jpg</code>)</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="export-format" value="newline" />
+            <span>Newline List (Spreadsheet / TXT)</span>
+          </label>
+        </div>
+
+        <!-- Selections Photos Grid -->
+        <div id="inspect-photos-grid" class="inspect-grid">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="close-inspect-btn" class="btn-cancel">Close</button>
+        <a id="inspect-wa-discuss-btn" href="#" target="_blank" rel="noopener noreferrer" class="btn-whatsapp-sm">
+          <span>💬 Discuss Selections on WhatsApp</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  .clients-page {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .page-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .header-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .portal-quick-toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.4rem 0.85rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .quick-toggle-hint {
+    font-size: 0.75rem;
+    color: #9CA3AF;
+    font-weight: 500;
+  }
+
+  .portal-quick-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.25s ease;
+  }
+
+  .portal-quick-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.1);
+  }
+
+  .portal-quick-btn.active {
+    background: rgba(37, 211, 102, 0.15);
+    color: #25D366;
+    border-color: rgba(37, 211, 102, 0.35);
+  }
+
+  .portal-quick-btn.hidden {
+    background: rgba(245, 158, 11, 0.15);
+    color: #F59E0B;
+    border-color: rgba(245, 158, 11, 0.35);
+  }
+
+  .portal-quick-btn .status-indicator-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 6px currentColor;
+  }
+
+  .section-title {
+    font-family: var(--font-serif);
+    font-size: 1.8rem;
+    color: #FFFFFF;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .section-desc {
+    color: #9CA3AF;
+    font-size: 0.9rem;
+    max-width: 780px;
+    margin: 0;
+  }
+
+  /* Grid */
+  .clients-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 1.75rem;
+  }
+
+  .client-card {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .client-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(212, 175, 55, 0.4);
+  }
+
+  .client-media-header {
+    height: 180px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .client-cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .client-status-badge-wrap {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+  }
+
+  .status-pill {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.3rem 0.65rem;
+    border-radius: 9999px;
+    letter-spacing: 0.04em;
+  }
+
+  .status-pill.active {
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.5);
+    color: #34D399;
+  }
+
+  .status-pill.archived {
+    background: rgba(107, 114, 128, 0.2);
+    border: 1px solid rgba(107, 114, 128, 0.4);
+    color: #9CA3AF;
+  }
+
+  .pin-highlight-box {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: rgba(11, 12, 16, 0.9);
+    border: 1px solid var(--gold-border);
+    backdrop-filter: blur(8px);
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .pin-label {
+    font-size: 0.6rem;
+    color: var(--text-gold);
+    letter-spacing: 0.08em;
+  }
+
+  .pin-code {
+    font-family: monospace;
+    font-size: 1.15rem;
+    color: #FFFFFF;
+    letter-spacing: 0.1em;
+  }
+
+  .client-card-body {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    gap: 1rem;
+  }
+
+  .client-name {
+    font-family: var(--font-serif);
+    font-size: 1.35rem;
+    color: #FFFFFF;
+    margin: 0 0 0.35rem 0;
+  }
+
+  .client-event {
+    display: block;
+    color: var(--gold-light);
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .client-date {
+    display: block;
+    color: #9CA3AF;
+    font-size: 0.8rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .client-contact-tag {
+    display: block;
+    font-size: 0.78rem;
+    color: #D1D5DB;
+    margin-top: 0.15rem;
+  }
+
+  .badge-2fa {
+    display: inline-block;
+    font-size: 0.7rem;
+    color: #60A5FA;
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    margin-top: 0.35rem;
+  }
+
+  .stats-strip {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+  }
+
+  .strip-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .strip-val {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #FFFFFF;
+  }
+
+  .strip-val.text-gold {
+    color: var(--text-gold);
+  }
+
+  .strip-label {
+    font-size: 0.72rem;
+    color: #9CA3AF;
+  }
+
+  .strip-divider {
+    width: 1px;
+    height: 32px;
+    background: var(--border-subtle);
+  }
+
+  .manage-photos-btn {
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid var(--gold-border);
+    color: var(--gold-light);
+    padding: 0.65rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+  }
+
+  .manage-photos-btn:hover {
+    background: rgba(212, 175, 55, 0.2);
+    border-color: var(--gold-primary);
+    color: #FFFFFF;
+  }
+
+  .client-notes {
+    font-style: italic;
+    font-size: 0.82rem;
+    color: #9CA3AF;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.6rem 0.8rem;
+    border-left: 2px solid var(--gold-primary);
+    border-radius: 0 4px 4px 0;
+    margin: 0;
+  }
+
+  .client-actions-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: auto;
+  }
+
+  .copy-link-btn, .whatsapp-send-btn, .portal-open-btn {
+    flex: 1;
+    padding: 0.55rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .copy-link-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    color: #E5E7EB;
+  }
+
+  .copy-link-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .whatsapp-send-btn {
+    background: rgba(37, 211, 102, 0.15);
+    border: 1px solid rgba(37, 211, 102, 0.4);
+    color: #25D366;
+  }
+
+  .whatsapp-send-btn:hover {
+    background: #25D366;
+    color: #000000;
+  }
+
+  .portal-open-btn {
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid var(--gold-border);
+    color: var(--gold-light);
+  }
+
+  .portal-open-btn:hover {
+    background: var(--gold-primary);
+    color: #000000;
+  }
+
+  .client-manage-footer {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .edit-client-btn {
+    background: transparent;
+    border: none;
+    color: #9CA3AF;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  .edit-client-btn:hover {
+    color: var(--gold-light);
+  }
+
+  .delete-client-btn {
+    background: transparent;
+    border: none;
+    color: #EF4444;
+    font-size: 0.8rem;
+    cursor: pointer;
+    opacity: 0.75;
+  }
+
+  .delete-client-btn:hover {
+    opacity: 1;
+  }
+
+  /* Modal Styling */
+  .modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    overflow-y: auto;
+  }
+
+  .modal-card {
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid var(--gold-border);
+    padding: 2rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  }
+
+  .pm-card {
+    max-width: 840px;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 1.5rem;
+  }
+
+  .modal-title {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    color: #FFFFFF;
+    margin: 0;
+  }
+
+  .modal-subtitle {
+    font-size: 0.85rem;
+    color: #9CA3AF;
+    margin: 0.25rem 0 0 0;
+  }
+
+  .close-btn {
+    background: transparent;
+    border: none;
+    color: #9CA3AF;
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .close-btn:hover {
+    color: #FFFFFF;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+
+  .col-2 {
+    grid-column: span 2;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .form-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #D1D5DB;
+  }
+
+  .cover-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .btn-source-toggle {
+    background: rgba(212, 175, 55, 0.15);
+    border: 1px solid var(--gold-border);
+    color: var(--gold-light);
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .form-input, .form-select, .form-textarea {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: #FFFFFF;
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    outline: none;
+  }
+
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--gold-primary);
+  }
+
+  .pin-gen-wrap {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .gen-pin-btn {
+    background: rgba(212, 175, 55, 0.15);
+    border: 1px solid var(--gold-border);
+    color: var(--gold-light);
+    padding: 0 0.85rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .gen-pin-btn:hover {
+    background: var(--gold-primary);
+    color: #000000;
+  }
+
+  .checkbox-group-box {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+    color: #D1D5DB;
+    cursor: pointer;
+  }
+
+  .checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--gold-primary);
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  .btn-cancel {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: #9CA3AF;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  /* Photos Manager Styling */
+  .pm-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .upload-dropzone {
+    border: 2px dashed rgba(212, 175, 55, 0.35);
+    border-radius: 8px;
+    padding: 1.75rem 1rem;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+  }
+
+  .upload-dropzone:hover, .upload-dropzone.dragover {
+    border-color: var(--gold-primary);
+    background: rgba(212, 175, 55, 0.06);
+  }
+
+  .dropzone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .dropzone-icon {
+    font-size: 1.8rem;
+  }
+
+  .dropzone-text {
+    font-size: 0.88rem;
+    color: #FFFFFF;
+    font-weight: 500;
+  }
+
+  .dropzone-sub {
+    font-size: 0.75rem;
+    color: #9CA3AF;
+  }
+
+  .file-hidden-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .upload-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    color: var(--gold-light);
+    font-size: 0.85rem;
+    padding: 1rem 0;
+  }
+
+  .pm-url-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 0.75rem;
+  }
+
+  .btn-outline-sm {
+    align-self: flex-start;
+    background: transparent;
+    border: 1px solid var(--gold-border);
+    color: var(--gold-light);
+    padding: 0.35rem 0.8rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    cursor: pointer;
+  }
+
+  .btn-outline-sm:hover {
+    background: var(--gold-primary);
+    color: #000000;
+  }
+
+  .pm-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .pm-count {
+    font-size: 0.85rem;
+    color: #D1D5DB;
+  }
+
+  .pm-count strong {
+    color: var(--gold-light);
+  }
+
+  .btn-clear-sm {
+    background: transparent;
+    border: none;
+    color: #EF4444;
+    font-size: 0.78rem;
+    cursor: pointer;
+  }
+
+  .pm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.75rem;
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+  }
+
+  .pm-thumb-item {
+    position: relative;
+    height: 110px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+    background: #000;
+  }
+
+  .pm-thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .pm-thumb-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 4px;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .pm-frame-idx {
+    font-size: 0.65rem;
+    color: var(--gold-light);
+    font-family: monospace;
+  }
+
+  .pm-del-btn {
+    background: rgba(239, 68, 68, 0.8);
+    border: none;
+    color: #FFFFFF;
+    font-size: 0.65rem;
+    border-radius: 3px;
+    padding: 1px 4px;
+    cursor: pointer;
+  }
+
+  .pm-cover-btn {
+    background: rgba(212, 175, 55, 0.8);
+    border: none;
+    color: #000;
+    font-size: 0.65rem;
+    font-weight: 600;
+    border-radius: 3px;
+    padding: 1px 4px;
+    cursor: pointer;
+  }
+
+  /* Album Selections Inspector Styles */
+  .inspect-selections-btn {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    width: 100%;
+    background: rgba(212, 175, 55, 0.08);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    color: var(--gold-light);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+    margin-top: 0.5rem;
+  }
+
+  .inspect-selections-btn:hover {
+    background: rgba(212, 175, 55, 0.16);
+    border-color: rgba(212, 175, 55, 0.6);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.15);
+  }
+
+  .inspect-btn-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #FAFAF9;
+  }
+
+  .inspect-btn-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: #D1D5DB;
+  }
+
+  .selection-pill {
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+
+  .selection-pill.active {
+    background: rgba(37, 211, 102, 0.15);
+    color: #4ADE80;
+    border: 1px solid rgba(37, 211, 102, 0.3);
+  }
+
+  .selection-pill.pending {
+    background: rgba(107, 114, 128, 0.15);
+    color: #9CA3AF;
+    border: 1px solid rgba(107, 114, 128, 0.3);
+  }
+
+  .inspect-modal-card {
+    max-width: 900px;
+    width: 95%;
+  }
+
+  .inspect-kicker {
+    font-size: 0.68rem;
+    letter-spacing: 0.15em;
+    color: var(--gold-primary);
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+  }
+
+  .inspect-body {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    max-height: 75vh;
+    overflow-y: auto;
+  }
+
+  .inspect-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem;
+    border-radius: 8px;
+    background: rgba(7, 8, 10, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .inspect-stat-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 220px;
+  }
+
+  .inspect-stat-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #9CA3AF;
+  }
+
+  .inspect-stat-numbers {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+  }
+
+  .inspect-stat-curr {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--gold-light);
+  }
+
+  .inspect-stat-sep {
+    font-size: 1.2rem;
+    color: #6B7280;
+  }
+
+  .inspect-stat-target {
+    font-size: 1.2rem;
+    color: #E5E7EB;
+  }
+
+  .inspect-stat-unit {
+    font-size: 0.8rem;
+    color: #9CA3AF;
+    margin-left: 0.25rem;
+  }
+
+  .inspect-progress-track {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    overflow: hidden;
+    margin-top: 0.25rem;
+  }
+
+  .inspect-progress-bar {
+    height: 100%;
+    background: var(--gold-gradient);
+    border-radius: 9999px;
+    transition: width 0.3s ease;
+  }
+
+  .inspect-timestamp-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    text-align: right;
+  }
+
+  .inspect-notes-box {
+    background: rgba(212, 175, 55, 0.05);
+    border-left: 3px solid var(--gold-primary);
+    border-radius: 0 8px 8px 0;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .inspect-notes-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .inspect-notes-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--gold-light);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .inspect-notes-text {
+    font-size: 0.9rem;
+    color: #E5E7EB;
+    line-height: 1.5;
+    font-style: italic;
+    margin: 0;
+  }
+
+  .inspect-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .inspect-count-tag {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #FAFAF9;
+  }
+
+  .inspect-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-gold-sm {
+    background: var(--gold-gradient);
+    color: #0B0C10;
+    padding: 0.45rem 0.9rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .btn-gold-sm:hover {
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .btn-whatsapp-sm {
+    background: rgba(37, 211, 102, 0.15);
+    border: 1px solid rgba(37, 211, 102, 0.35);
+    color: #4ADE80;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn-whatsapp-sm:hover {
+    background: #25D366;
+    color: #07080A;
+  }
+
+  .copy-format-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.8rem;
+    color: #9CA3AF;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.5rem 0.85rem;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .copy-format-row code {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: var(--gold-light);
+  }
+
+  .radio-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    color: #D1D5DB;
+  }
+
+  .radio-label input[type="radio"] {
+    accent-color: var(--gold-primary);
+  }
+
+  .inspect-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+    max-height: 380px;
+    overflow-y: auto;
+    padding-right: 0.35rem;
+  }
+
+  .inspect-photo-card {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #0B0C10;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .inspect-photo-card:hover {
+    border-color: rgba(212, 175, 55, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  }
+
+  .inspect-photo-media {
+    position: relative;
+    aspect-ratio: 4/3;
+    overflow: hidden;
+  }
+
+  .inspect-photo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+
+  .inspect-photo-card:hover .inspect-photo-img {
+    transform: scale(1.05);
+  }
+
+  .inspect-photo-num {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    background: rgba(0, 0, 0, 0.75);
+    color: #FFFFFF;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .inspect-fav-heart {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(212, 175, 55, 0.9);
+    color: #07080A;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+
+  .inspect-photo-info {
+    padding: 0.5rem 0.65rem;
+    background: rgba(19, 20, 27, 0.95);
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .inspect-filename {
+    font-size: 0.72rem;
+    color: #FAFAF9;
+    font-family: monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .inspect-photo-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .inspect-view-link {
+    font-size: 0.7rem;
+    color: var(--gold-light);
+    text-decoration: none;
+  }
+
+  .inspect-copy-single {
+    background: none;
+    border: none;
+    color: #9CA3AF;
+    font-size: 0.7rem;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .inspect-copy-single:hover {
+    color: #FAFAF9;
+  }
+
+  .inspect-empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: #9CA3AF;
+  }
+
+  .inspect-empty-icon {
+    font-size: 2.5rem;
+  }
+</style>
+
+<script>
+  // Elements for client Add/Edit modal
+  const clientModal = document.getElementById('client-modal');
+  const addClientBtn = document.getElementById('add-client-btn');
+  const closeClientModal = document.getElementById('close-client-modal');
+  const cancelClientBtn = document.getElementById('cancel-client-btn');
+  const clientForm = document.getElementById('client-form') as HTMLFormElement;
+  const modalTitle = document.getElementById('client-modal-title');
+  const randomPinBtn = document.getElementById('random-pin-btn');
+
+  const editIdInput = document.getElementById('edit-client-id') as HTMLInputElement;
+  const nameInput = document.getElementById('client-name-input') as HTMLInputElement;
+  const eventInput = document.getElementById('client-event-input') as HTMLInputElement;
+  const dateInput = document.getElementById('client-date-input') as HTMLInputElement;
+  const pinInput = document.getElementById('client-pin-input') as HTMLInputElement;
+  const emailInput = document.getElementById('client-email-input') as HTMLInputElement;
+  const phoneInput = document.getElementById('client-phone-input') as HTMLInputElement;
+  const twoFaInput = document.getElementById('client-2fa-input') as HTMLInputElement;
+  const targetInput = document.getElementById('client-target-input') as HTMLInputElement;
+  const statusSelect = document.getElementById('client-status-select') as HTMLSelectElement;
+  const coverInput = document.getElementById('client-cover-input') as HTMLInputElement;
+  const notesInput = document.getElementById('client-notes-input') as HTMLTextAreaElement;
+  const uploadCoverBtn = document.getElementById('upload-cover-btn');
+  const coverFileInput = document.getElementById('cover-file-input') as HTMLInputElement;
+
+  // Cover photo file upload
+  uploadCoverBtn?.addEventListener('click', () => coverFileInput?.click());
+  coverFileInput?.addEventListener('change', async (e: any) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (res.ok && data.success && data.url) {
+        if (coverInput) coverInput.value = data.url;
+        (window as any).showToast('Cover photo uploaded!', 'success');
+      }
+    } catch {
+      (window as any).showToast('Cover upload failed', 'error');
+    }
+  });
+
+  // Random Passcode generator (high-entropy format)
+  function generateSecureKey() {
+    const prefixes = ['FBH', 'GOLD', 'HERITAGE', 'SACRED', 'ROYAL'];
+    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const num = Math.floor(1000 + Math.random() * 9000);
+    return `${prefix}-${num}`;
+  }
+
+  function openAddModal() {
+    if (modalTitle) modalTitle.textContent = 'Issue Private Client Gallery & Key';
+    if (clientForm) clientForm.reset();
+    if (editIdInput) editIdInput.value = '';
+    if (pinInput) pinInput.value = generateSecureKey();
+    if (clientModal) clientModal.style.display = 'flex';
+  }
+
+  function closeModal() {
+    if (clientModal) clientModal.style.display = 'none';
+  }
+
+  addClientBtn?.addEventListener('click', openAddModal);
+  closeClientModal?.addEventListener('click', closeModal);
+  cancelClientBtn?.addEventListener('click', closeModal);
+
+  randomPinBtn?.addEventListener('click', () => {
+    if (pinInput) pinInput.value = generateSecureKey();
+  });
+
+  // Copy portal link
+  const copyButtons = document.querySelectorAll('.copy-link-btn');
+  copyButtons.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const pin = btn.getAttribute('data-pin');
+      const url = `${window.location.origin}/client-portal?pin=${encodeURIComponent(pin || '')}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        (window as any).showToast(`Copied Client Portal URL with Passcode ${pin}!`, 'success');
+      } catch {
+        (window as any).showToast(`Passcode: ${pin}`, 'success');
+      }
+    });
+  });
+
+  // Edit client
+  const editButtons = document.querySelectorAll('.edit-client-btn');
+  editButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id') || '';
+      const name = btn.getAttribute('data-name') || '';
+      const title = btn.getAttribute('data-title') || '';
+      const date = btn.getAttribute('data-date') || '';
+      const pin = btn.getAttribute('data-pin') || '';
+      const email = btn.getAttribute('data-email') || '';
+      const phone = btn.getAttribute('data-phone') || '';
+      const is2fa = btn.getAttribute('data-2fa') === 'true';
+      const target = btn.getAttribute('data-target') || '40';
+      const status = btn.getAttribute('data-status') || 'active';
+      const cover = btn.getAttribute('data-cover') || '';
+      const notes = btn.getAttribute('data-notes') || '';
+
+      if (modalTitle) modalTitle.textContent = `Edit Client Suite: ${name}`;
+      if (editIdInput) editIdInput.value = id;
+      if (nameInput) nameInput.value = name;
+      if (eventInput) eventInput.value = title;
+      if (dateInput) dateInput.value = date;
+      if (pinInput) pinInput.value = pin;
+      if (emailInput) emailInput.value = email;
+      if (phoneInput) phoneInput.value = phone;
+      if (twoFaInput) twoFaInput.checked = is2fa;
+      if (targetInput) targetInput.value = target;
+      if (statusSelect) statusSelect.value = status;
+      if (coverInput) coverInput.value = cover;
+      if (notesInput) notesInput.value = notes;
+
+      if (clientModal) clientModal.style.display = 'flex';
+    });
+  });
+
+  // Submit client Add/Edit
+  clientForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const saveBtn = document.getElementById('save-client-btn') as HTMLButtonElement;
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+    }
+
+    const editId = editIdInput.value;
+    const isEdit = Boolean(editId);
+
+    const payload = {
+      clientName: nameInput.value,
+      eventTitle: eventInput.value,
+      ceremonyDate: dateInput.value,
+      pin: pinInput.value,
+      clientEmail: emailInput.value,
+      clientPhone: phoneInput.value,
+      requireTwoFactor: twoFaInput.checked,
+      targetAlbumCount: parseInt(targetInput.value, 10),
+      status: statusSelect.value,
+      coverImage: coverInput.value,
+      notes: notesInput.value
+    };
+
+    try {
+      const url = isEdit ? `/api/clients/${editId}` : '/api/clients';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        (window as any).showToast(isEdit ? 'Client suite updated!' : 'Client gallery issued successfully!', 'success');
+        closeModal();
+        setTimeout(() => window.location.reload(), 300);
+      } else {
+        (window as any).showToast(data.error || 'Failed to save client', 'error');
+      }
+    } catch {
+      (window as any).showToast('Network error saving client', 'error');
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Client Suite';
+      }
+    }
+  });
+
+  // Delete client
+  const deleteButtons = document.querySelectorAll('.delete-client-btn');
+  deleteButtons.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-id');
+      const name = btn.getAttribute('data-name');
+      if (!confirm(`Are you sure you want to delete the proofing gallery for "${name}"?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/clients/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          (window as any).showToast('Client gallery removed', 'success');
+          const card = (btn as HTMLElement).closest('.client-card');
+          card?.remove();
+        } else {
+          (window as any).showToast(data.error || 'Failed to delete client', 'error');
+        }
+      } catch {
+        (window as any).showToast('Network error deleting client', 'error');
+      }
+    });
+  });
+
+  // ==========================================
+  // STANDALONE GALLERY PHOTOS MANAGER
+  // ==========================================
+  const pmModal = document.getElementById('photos-manager-modal');
+  const closePmModal = document.getElementById('close-pm-modal');
+  const cancelPmBtn = document.getElementById('cancel-pm-btn');
+  const savePmBtn = document.getElementById('save-pm-btn');
+  const pmTitle = document.getElementById('pm-modal-title');
+  const pmSubtitle = document.getElementById('pm-modal-subtitle');
+  const pmDropzone = document.getElementById('pm-dropzone');
+  const pmDropContent = document.getElementById('pm-dropzone-content');
+  const pmFileInput = document.getElementById('pm-file-input') as HTMLInputElement;
+  const pmSpinner = document.getElementById('pm-upload-spinner');
+  const pmSpinnerText = document.getElementById('pm-spinner-text');
+  const pmBulkUrls = document.getElementById('pm-bulk-urls') as HTMLTextAreaElement;
+  const pmAddUrlsBtn = document.getElementById('pm-add-urls-btn');
+  const pmCountBadge = document.getElementById('pm-count-badge');
+  const pmClearBtn = document.getElementById('pm-clear-btn');
+  const pmPhotosGrid = document.getElementById('pm-photos-grid');
+
+  let activeClientId: string | null = null;
+  let activeClientCover = '';
+  let activePhotos: string[] = [];
+
+  function renderPmGrid() {
+    if (!pmPhotosGrid) return;
+    pmPhotosGrid.innerHTML = '';
+    if (pmCountBadge) pmCountBadge.textContent = activePhotos.length.toString();
+
+    activePhotos.forEach((url, idx) => {
+      const item = document.createElement('div');
+      item.className = 'pm-thumb-item';
+      item.innerHTML = `
+        <img src="${url}" alt="Frame #${idx + 1}" class="pm-thumb-img" loading="lazy" />
+        <div class="pm-thumb-overlay">
+          <span class="pm-frame-idx">#${String(idx + 1).padStart(3, '0')}</span>
+          <div style="display: flex; gap: 3px;">
+            <button type="button" class="pm-cover-btn" title="Set as Cover">Cover</button>
+            <button type="button" class="pm-del-btn" title="Delete Frame">✕</button>
+          </div>
+        </div>
+      `;
+
+      item.querySelector('.pm-del-btn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        activePhotos.splice(idx, 1);
+        renderPmGrid();
+      });
+
+      item.querySelector('.pm-cover-btn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        activeClientCover = url;
+        (window as any).showToast(`Frame #${idx + 1} set as gallery cover!`, 'success');
+      });
+
+      pmPhotosGrid.appendChild(item);
+    });
+  }
+
+  // Open PM Modal from any client card
+  const managePhotoBtns = document.querySelectorAll('.manage-photos-btn');
+  managePhotoBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeClientId = btn.getAttribute('data-id');
+      const name = btn.getAttribute('data-name') || 'Client';
+      activeClientCover = btn.getAttribute('data-cover') || '';
+      try {
+        activePhotos = JSON.parse(btn.getAttribute('data-photos') || '[]');
+      } catch {
+        activePhotos = [];
+      }
+
+      if (pmTitle) pmTitle.textContent = `Proofing Gallery Photos — ${name}`;
+      if (pmSubtitle) pmSubtitle.textContent = `Upload and manage proof frames for ${name}`;
+      renderPmGrid();
+      if (pmModal) pmModal.style.display = 'flex';
+    });
+  });
+
+  function closePm() {
+    if (pmModal) pmModal.style.display = 'none';
+    activeClientId = null;
+    activePhotos = [];
+  }
+
+  closePmModal?.addEventListener('click', closePm);
+  cancelPmBtn?.addEventListener('click', closePm);
+
+  // Bulk URL Addition
+  pmAddUrlsBtn?.addEventListener('click', () => {
+    const text = pmBulkUrls?.value || '';
+    const urls = text.split('\n').map(u => u.trim()).filter(u => u.startsWith('http') || u.startsWith('/uploads'));
+    if (urls.length === 0) {
+      (window as any).showToast('No valid URLs found', 'error');
+      return;
+    }
+    activePhotos.push(...urls);
+    if (pmBulkUrls) pmBulkUrls.value = '';
+    renderPmGrid();
+    (window as any).showToast(`Added ${urls.length} photo URLs!`, 'success');
+  });
+
+  // Clear All
+  pmClearBtn?.addEventListener('click', () => {
+    if (confirm('Clear all photos in this gallery?')) {
+      activePhotos = [];
+      renderPmGrid();
+    }
+  });
+
+  // Multi-File Upload to Gallery
+  async function uploadGalleryFiles(files: FileList | File[]) {
+    if (!files || files.length === 0) return;
+    if (pmDropContent) pmDropContent.style.display = 'none';
+    if (pmSpinner) pmSpinner.style.display = 'flex';
+    if (pmSpinnerText) pmSpinnerText.textContent = `Uploading ${files.length} high-res photographs...`;
+
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append('files', files[i]);
+    }
+
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok && data.success && Array.isArray(data.urls)) {
+        activePhotos.push(...data.urls);
+        renderPmGrid();
+        (window as any).showToast(`Uploaded ${data.urls.length} photographs!`, 'success');
+      } else {
+        (window as any).showToast(data.error || 'Failed to upload photos', 'error');
+      }
+    } catch {
+      (window as any).showToast('Upload network error', 'error');
+    } finally {
+      if (pmSpinner) pmSpinner.style.display = 'none';
+      if (pmDropContent) pmDropContent.style.display = 'flex';
+    }
+  }
+
+  pmFileInput?.addEventListener('change', (e: any) => {
+    if (e.target.files) uploadGalleryFiles(e.target.files);
+  });
+
+  pmDropzone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    pmDropzone.classList.add('dragover');
+  });
+  pmDropzone?.addEventListener('dragleave', () => {
+    pmDropzone.classList.remove('dragover');
+  });
+  pmDropzone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    pmDropzone.classList.remove('dragover');
+    if (e.dataTransfer?.files) uploadGalleryFiles(e.dataTransfer.files);
+  });
+
+  // Save gallery photos to DB
+  savePmBtn?.addEventListener('click', async () => {
+    if (!activeClientId) return;
+    if (savePmBtn) {
+      savePmBtn.setAttribute('disabled', 'true');
+      savePmBtn.textContent = 'Saving...';
+    }
+
+    try {
+      const payload: any = {
+        photos: activePhotos,
+        photosCount: activePhotos.length
+      };
+      if (activeClientCover) {
+        payload.coverImage = activeClientCover;
+      }
+
+      const res = await fetch(`/api/clients/${activeClientId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        (window as any).showToast('Gallery proofing frames updated!', 'success');
+        closePm();
+        setTimeout(() => window.location.reload(), 300);
+      } else {
+        (window as any).showToast(data.error || 'Failed to save photos', 'error');
+      }
+    } catch {
+      (window as any).showToast('Network error saving gallery', 'error');
+    } finally {
+      if (savePmBtn) {
+        savePmBtn.removeAttribute('disabled');
+        savePmBtn.textContent = 'Save Gallery Photos';
+      }
+    }
+  });
+
+  // Quick Client Portal Visibility Toggle
+  const quickToggleBtn = document.getElementById('quick-portal-toggle-btn') as HTMLButtonElement | null;
+  const quickLabel = document.getElementById('quick-portal-label');
+
+  quickToggleBtn?.addEventListener('click', async () => {
+    const isCurrentlyVisible = quickToggleBtn.getAttribute('data-visible') === 'true';
+    const nextState = !isCurrentlyVisible;
+
+    quickToggleBtn.disabled = true;
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientPortalVisible: nextState })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        quickToggleBtn.setAttribute('data-visible', String(nextState));
+        quickToggleBtn.className = `portal-quick-btn ${nextState ? 'active' : 'hidden'}`;
+        if (quickLabel) {
+          quickLabel.textContent = nextState ? 'Public: Visible' : 'Public: Hidden';
+        }
+        (window as any).showToast(
+          nextState ? 'Client Portal is now PUBLICLY VISIBLE in site navigation.' : 'Client Portal is now HIDDEN from public navigation.',
+          'success'
+        );
+      } else {
+        (window as any).showToast(data.error || 'Failed to update visibility', 'error');
+      }
+    } catch {
+      (window as any).showToast('Network error updating portal visibility', 'error');
+    } finally {
+      quickToggleBtn.disabled = false;
+    }
+  });
+
+  // =========================================================================
+  // Album Selections Inspector Logic
+  // =========================================================================
+  const inspectModal = document.getElementById('inspect-selections-modal');
+  const closeInspectModalBtn = document.getElementById('close-inspect-modal');
+  const closeInspectBtn = document.getElementById('close-inspect-btn');
+  const inspectTitle = document.getElementById('inspect-modal-title');
+  const inspectSubtitle = document.getElementById('inspect-modal-subtitle');
+  const inspectCurr = document.getElementById('inspect-selected-curr');
+  const inspectTarget = document.getElementById('inspect-selected-target');
+  const inspectProgressFill = document.getElementById('inspect-progress-fill');
+  const inspectSubmittedTime = document.getElementById('inspect-submitted-time');
+  const inspectNotesContent = document.getElementById('inspect-notes-content');
+  const inspectPhotosCountTag = document.getElementById('inspect-photos-count-tag');
+  const inspectGrid = document.getElementById('inspect-photos-grid');
+  const copyFilenamesBtn = document.getElementById('copy-selection-filenames-btn');
+  const downloadTxtBtn = document.getElementById('download-selection-txt-btn');
+  const inspectWaDiscussBtn = document.getElementById('inspect-wa-discuss-btn') as HTMLAnchorElement | null;
+
+  let activeInspectingClient: any = null;
+  let activeInspectingPhotos: string[] = [];
+
+  function getPhotoFilename(url: string, index: number): string {
+    try {
+      const clean = url.split('?')[0].split('#')[0];
+      const filename = clean.substring(clean.lastIndexOf('/') + 1);
+      if (filename && filename.includes('.')) {
+        return decodeURIComponent(filename);
+      }
+    } catch {}
+    return `Frame_${String(index + 1).padStart(3, '0')}.jpg`;
+  }
+
+  function renderInspectGrid() {
+    if (!inspectGrid) return;
+    inspectGrid.innerHTML = '';
+
+    if (activeInspectingPhotos.length === 0) {
+      inspectGrid.innerHTML = `
+        <div class="inspect-empty-state">
+          <span class="inspect-empty-icon">📭</span>
+          <h4>No Photos Selected Yet</h4>
+          <p>The client has not yet favorited photos in their private proofing suite (/client-portal).</p>
+        </div>
+      `;
+      return;
+    }
+
+    activeInspectingPhotos.forEach((url, idx) => {
+      const filename = getPhotoFilename(url, idx);
+      const card = document.createElement('div');
+      card.className = 'inspect-photo-card';
+      card.innerHTML = `
+        <div class="inspect-photo-media">
+          <img src="${url}" alt="${filename}" loading="lazy" class="inspect-photo-img" />
+          <span class="inspect-photo-num">#${String(idx + 1).padStart(2, '0')}</span>
+          <span class="inspect-fav-heart">♥</span>
+        </div>
+        <div class="inspect-photo-info">
+          <span class="inspect-filename" title="${filename}">${filename}</span>
+          <div class="inspect-photo-actions">
+            <a href="${url}" target="_blank" rel="noopener noreferrer" class="inspect-view-link">View Full ↗</a>
+            <button type="button" class="inspect-copy-single" data-name="${filename}" title="Copy single filename">📋</button>
+          </div>
+        </div>
+      `;
+      inspectGrid.appendChild(card);
+    });
+
+    // Single copy button listeners
+    inspectGrid.querySelectorAll('.inspect-copy-single').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const name = btn.getAttribute('data-name') || '';
+        navigator.clipboard.writeText(name);
+        (window as any).showToast(`Copied "${name}"`, 'success');
+      });
+    });
+  }
+
+  document.querySelectorAll('.inspect-selections-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id') || '';
+      const name = btn.getAttribute('data-name') || 'Client';
+      const title = btn.getAttribute('data-title') || 'Ceremony';
+      const date = btn.getAttribute('data-date') || '';
+      const phone = btn.getAttribute('data-phone') || '';
+      const target = parseInt(btn.getAttribute('data-target') || '40', 10);
+      const notes = btn.getAttribute('data-notes') || '';
+      const submitted = btn.getAttribute('data-submitted') || '';
+
+      let selectedList: string[] = [];
+      try {
+        const raw = btn.getAttribute('data-selected-photos') || '[]';
+        selectedList = JSON.parse(raw);
+      } catch {
+        selectedList = [];
+      }
+
+      activeInspectingClient = { id, name, title, date, phone, target, notes, submitted };
+      activeInspectingPhotos = selectedList;
+
+      if (inspectTitle) inspectTitle.textContent = `${name} — Heirloom Selections`;
+      if (inspectSubtitle) inspectSubtitle.textContent = `${title} • Ceremony Date: ${date}`;
+      if (inspectCurr) inspectCurr.textContent = selectedList.length.toString();
+      if (inspectTarget) inspectTarget.textContent = target.toString();
+      if (inspectPhotosCountTag) inspectPhotosCountTag.textContent = `${selectedList.length} Photographs Selected`;
+
+      if (inspectProgressFill) {
+        const pct = Math.min(100, Math.round((selectedList.length / (target || 1)) * 100));
+        inspectProgressFill.style.width = `${pct}%`;
+      }
+
+      if (inspectSubmittedTime) {
+        if (submitted) {
+          const d = new Date(submitted);
+          inspectSubmittedTime.textContent = `Submitted ${d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })} at ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+          inspectSubmittedTime.className = 'inspect-stat-val text-emerald';
+        } else {
+          inspectSubmittedTime.textContent = 'In Progress (Client Portal Draft)';
+          inspectSubmittedTime.className = 'inspect-stat-val text-gold';
+        }
+      }
+
+      if (inspectNotesContent) {
+        inspectNotesContent.textContent = notes ? `“${notes}”` : '“No specific retouching notes submitted by client.”';
+      }
+
+      if (inspectWaDiscussBtn) {
+        const cleanPhone = phone.replace(/[^0-9]/g, '');
+        const waNumber = cleanPhone.startsWith('91') ? cleanPhone : (cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone);
+        const waMsg = `Hello ${name}! We have received and reviewed your ${selectedList.length} photo selections for your ${title} heirloom album spread! Our design team is currently preparing the layout drafts.`;
+        inspectWaDiscussBtn.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(waMsg)}`;
+      }
+
+      renderInspectGrid();
+      if (inspectModal) inspectModal.style.display = 'flex';
+    });
+  });
+
+  function closeInspect() {
+    if (inspectModal) inspectModal.style.display = 'none';
+  }
+
+  closeInspectModalBtn?.addEventListener('click', closeInspect);
+  closeInspectBtn?.addEventListener('click', closeInspect);
+  inspectModal?.addEventListener('click', (e) => {
+    if (e.target === inspectModal) closeInspect();
+  });
+
+  // Copy Filenames / Export Selection List handler
+  copyFilenamesBtn?.addEventListener('click', () => {
+    if (activeInspectingPhotos.length === 0) {
+      (window as any).showToast('No photos to export.', 'info');
+      return;
+    }
+
+    const formatRadio = document.querySelector('input[name="export-format"]:checked') as HTMLInputElement | null;
+    const isNewline = formatRadio?.value === 'newline';
+
+    const filenames = activeInspectingPhotos.map((url, idx) => getPhotoFilename(url, idx));
+    const resultText = isNewline ? filenames.join('\n') : filenames.join(', ');
+
+    navigator.clipboard.writeText(resultText).then(() => {
+      (window as any).showToast(
+        `Copied ${filenames.length} filenames to clipboard! (${isNewline ? 'Newline list' : 'Comma-separated for Lightroom'})`,
+        'success'
+      );
+    }).catch(() => {
+      (window as any).showToast('Failed to copy to clipboard', 'error');
+    });
+  });
+
+  // Download TXT selection list handler
+  downloadTxtBtn?.addEventListener('click', () => {
+    if (activeInspectingPhotos.length === 0) {
+      (window as any).showToast('No photos to export.', 'info');
+      return;
+    }
+
+    const filenames = activeInspectingPhotos.map((url, idx) => getPhotoFilename(url, idx));
+    const content = `FRAMES BY HITHU - CLIENT ALBUM SELECTION LIST\n` +
+      `Client: ${activeInspectingClient?.name || 'Client'}\n` +
+      `Event: ${activeInspectingClient?.title || 'Ceremony'}\n` +
+      `Date: ${activeInspectingClient?.date || ''}\n` +
+      `Target Count: ${activeInspectingClient?.target || 40}\n` +
+      `Total Selected: ${activeInspectingPhotos.length}\n` +
+      (activeInspectingClient?.notes ? `Client Notes: ${activeInspectingClient.notes}\n` : '') +
+      `\n========================================\n` +
+      `FILENAMES FOR LIGHTROOM / CAPTURE ONE:\n` +
+      `========================================\n\n` +
+      filenames.join('\n') +
+      `\n\nCOMMA-SEPARATED FILTER STRING:\n` +
+      filenames.join(', ');
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const safeClientName = (activeInspectingClient?.name || 'Client').replace(/[^a-zA-Z0-9]/g, '_');
+    a.download = `${safeClientName}_Album_Selections.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    (window as any).showToast('Downloaded selections TXT list!', 'success');
+  });
+</script>

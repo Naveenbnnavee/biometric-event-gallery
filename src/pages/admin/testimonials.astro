@@ -1,0 +1,1071 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { isAuthenticated } from '../../lib/auth';
+import { getTestimonialsAsync } from '../../lib/db';
+
+export const prerender = false;
+
+const authed = await isAuthenticated(Astro.request);
+if (!authed) {
+  return Astro.redirect('/admin/login');
+}
+
+const testimonials = await getTestimonialsAsync();
+
+// Metrics calculations
+const totalReviews = testimonials.length;
+const activeOnWebsite = testimonials.filter(t => t.showOnHomepage && t.status === 'approved').length;
+const pendingReviews = testimonials.filter(t => t.status === 'pending').length;
+const fiveStarReviews = testimonials.filter(t => t.rating === 5).length;
+const averageRating = totalReviews > 0
+  ? (testimonials.reduce((sum, t) => sum + (t.rating || 5), 0) / totalReviews).toFixed(1)
+  : '5.0';
+---
+
+<AdminLayout title="Reviews & Testimonials Moderation" activeNav="testimonials">
+  <div class="testimonials-admin-page">
+    <!-- Header Row -->
+    <div class="page-header-row">
+      <div>
+        <h2 class="section-title">Client Reviews & Testimonials Moderation</h2>
+        <p class="section-desc">
+          Review authentic feedback from couples and families across Karnataka. Approve new submissions, toggle visibility on the main website homepage, or manually add reviews received via Google or WhatsApp.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <a href="/feedback" target="_blank" rel="noopener noreferrer" class="btn-outline-gold">
+          <span>🔗 Public Feedback Link</span>
+        </a>
+        <button id="add-manual-review-btn" class="btn-gold">
+          <span>➕ Add Review Manually</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Metrics Cards -->
+    <div class="metrics-grid">
+      <div class="metric-card glass-card">
+        <div class="metric-icon-wrap gold">
+          <span>⭐</span>
+        </div>
+        <div class="metric-meta">
+          <span class="metric-val">{totalReviews}</span>
+          <span class="metric-label">Total Reviews</span>
+        </div>
+      </div>
+
+      <div class="metric-card glass-card">
+        <div class="metric-icon-wrap emerald">
+          <span>🌐</span>
+        </div>
+        <div class="metric-meta">
+          <span class="metric-val text-emerald">{activeOnWebsite}</span>
+          <span class="metric-label">Live on Main Website</span>
+        </div>
+      </div>
+
+      <div class="metric-card glass-card">
+        <div class="metric-icon-wrap amber">
+          <span>⏳</span>
+        </div>
+        <div class="metric-meta">
+          <span class="metric-val text-amber">{pendingReviews}</span>
+          <span class="metric-label">Pending Approval</span>
+        </div>
+      </div>
+
+      <div class="metric-card glass-card">
+        <div class="metric-icon-wrap gold">
+          <span>👑</span>
+        </div>
+        <div class="metric-meta">
+          <span class="metric-val text-gold">{averageRating} ★</span>
+          <span class="metric-label">Average Client Rating</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="toolbar-box glass-card">
+      <div class="filter-tabs" id="filter-tabs">
+        <button class="tab-btn active" data-filter="all">All Reviews ({totalReviews})</button>
+        <button class="tab-btn" data-filter="website">Live on Website ({activeOnWebsite})</button>
+        <button class="tab-btn" data-filter="pending">
+          Pending Approval {pendingReviews > 0 ? `(${pendingReviews})` : ''}
+        </button>
+        <button class="tab-btn" data-filter="5star">5-Star Only ({fiveStarReviews})</button>
+      </div>
+
+      <div class="search-box">
+        <input
+          type="text"
+          id="search-input"
+          class="search-input"
+          placeholder="Search by client name, ceremony, or quote..."
+        />
+      </div>
+    </div>
+
+    <!-- Testimonials List Grid -->
+    <div class="reviews-list-grid" id="reviews-container">
+      {testimonials.map((item) => {
+        const isLive = item.showOnHomepage && item.status === 'approved';
+        return (
+          <div
+            class="review-admin-card glass-card"
+            data-id={item.id}
+            data-status={item.status}
+            data-website={isLive ? 'true' : 'false'}
+            data-rating={item.rating}
+            data-search={`${item.clientName} ${item.eventType} ${item.venue || ''} ${item.location || ''} ${item.highlight || ''} ${item.comment}`.toLowerCase()}
+          >
+            <!-- Card Top Bar -->
+            <div class="card-top-bar">
+              <div class="stars-display">
+                {Array.from({ length: item.rating || 5 }).map(() => (
+                  <span class="star-gold">★</span>
+                ))}
+                <span class="rating-num">({item.rating}.0)</span>
+              </div>
+
+              <div class="status-badges">
+                {isLive ? (
+                  <span class="badge badge-live" title="Currently displayed on homepage client testimonials section">
+                    🟢 Live on Website
+                  </span>
+                ) : (
+                  <span class="badge badge-hidden" title="Not visible on the main website">
+                    ⚪ Hidden from Website
+                  </span>
+                )}
+
+                {item.status === 'pending' && (
+                  <span class="badge badge-pending">⏳ Needs Moderation</span>
+                )}
+                {item.status === 'rejected' && (
+                  <span class="badge badge-rejected">❌ Rejected</span>
+                )}
+              </div>
+            </div>
+
+            <!-- Client & Event Info -->
+            <div class="client-header-meta">
+              <h3 class="client-title">{item.clientName}</h3>
+              <div class="event-meta-line">
+                <span class="event-badge">{item.eventType}</span>
+                {(item.venue || item.location) && (
+                  <span class="loc-text">
+                    📍 {[item.venue, item.location].filter(Boolean).join(', ')}
+                  </span>
+                )}
+                {item.date && <span class="date-text">📅 {item.date}</span>}
+              </div>
+            </div>
+
+            <!-- Private contact if present -->
+            {(item.email || item.phone) && (
+              <div class="private-contact-bar">
+                <span class="private-tag">PRIVATE CONTACT:</span>
+                {item.email && <a href={`mailto:${item.email}`} class="contact-pill">✉️ {item.email}</a>}
+                {item.phone && <a href={`https://wa.me/${item.phone.replace(/[^0-9]/g, '')}`} target="_blank" class="contact-pill">💬 {item.phone}</a>}
+              </div>
+            )}
+
+            <!-- Highlight Quote -->
+            {item.highlight && (
+              <div class="highlight-quote">
+                “{item.highlight}”
+              </div>
+            )}
+
+            <!-- Full Review Body -->
+            <p class="review-comment-text">
+              {item.comment}
+            </p>
+
+            <!-- Action Controls Toolbar -->
+            <div class="card-actions-bar">
+              <div class="left-actions">
+                <!-- Website Toggle Button -->
+                <button
+                  type="button"
+                  class={`btn-action toggle-website-btn ${item.showOnHomepage ? 'btn-remove-website' : 'btn-add-website'}`}
+                  data-action="toggle-website"
+                  data-current={item.showOnHomepage ? 'true' : 'false'}
+                >
+                  {item.showOnHomepage ? '👁️ Remove from Website' : '🌟 Publish to Website'}
+                </button>
+
+                {item.status === 'pending' && (
+                  <button
+                    type="button"
+                    class="btn-action btn-approve"
+                    data-action="approve"
+                  >
+                    ✅ Approve Review
+                  </button>
+                )}
+
+                {item.status !== 'rejected' && (
+                  <button
+                    type="button"
+                    class="btn-action btn-reject"
+                    data-action="reject"
+                  >
+                    🚫 Reject
+                  </button>
+                )}
+              </div>
+
+              <div class="right-actions">
+                <button
+                  type="button"
+                  class="btn-action btn-delete"
+                  data-action="delete"
+                  title="Permanently Delete Review"
+                >
+                  🗑️ Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+
+    <!-- Empty State -->
+    <div id="no-reviews-msg" class="empty-state glass-card" style="display: none;">
+      <span class="empty-icon">🔍</span>
+      <h3>No Testimonials Match Your Filter</h3>
+      <p>Try clearing your search query or switching tabs above.</p>
+    </div>
+  </div>
+
+  <!-- Modal: Add Review Manually -->
+  <div id="manual-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-dialog glass-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Add Client Review Manually</h3>
+        <button type="button" class="modal-close-btn" id="close-modal-btn">✕</button>
+      </div>
+
+      <form id="manual-review-form" class="modal-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Client / Couple Name <span class="required">*</span></label>
+            <input type="text" name="clientName" class="form-input" placeholder="e.g. Ananya & Rohit Hegde" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Star Rating <span class="required">*</span></label>
+            <select name="rating" class="form-input" required>
+              <option value="5" selected>5 Stars (★★★★★)</option>
+              <option value="4">4 Stars (★★★★☆)</option>
+              <option value="3">3 Stars (★★★☆☆)</option>
+              <option value="2">2 Stars (★★☆☆☆)</option>
+              <option value="1">1 Star (★☆☆☆☆)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Ceremony Type <span class="required">*</span></label>
+            <input type="text" name="eventType" class="form-input" placeholder="e.g. Traditional South Indian Wedding" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input type="text" name="date" class="form-input" placeholder="e.g. February 2026" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Venue</label>
+            <input type="text" name="venue" class="form-input" placeholder="e.g. Palace Grounds, Bengaluru" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">City / Region</label>
+            <input type="text" name="location" class="form-input" placeholder="e.g. Bengaluru, Karnataka" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Highlight Quote / Headline</label>
+          <input type="text" name="highlight" class="form-input" placeholder="e.g. Captured our rituals with zero artificial interruptions" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Review Comment <span class="required">*</span></label>
+          <textarea name="comment" rows="4" class="form-input" placeholder="Paste the client's review here..." required></textarea>
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" name="showOnHomepage" value="true" checked />
+            <span>🌟 Publish directly to Main Website Homepage</span>
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" id="cancel-modal-btn">Cancel</button>
+          <button type="submit" class="btn-gold" id="save-manual-btn">
+            <span>Save Testimonial</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  .testimonials-admin-page {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .page-header-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .section-title {
+    font-family: var(--font-serif);
+    font-size: 2rem;
+    color: var(--gold-light);
+    margin-bottom: 0.5rem;
+  }
+
+  .section-desc {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    max-width: 720px;
+    line-height: 1.6;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .btn-gold {
+    background: linear-gradient(135deg, #d4af37 0%, #aa820a 100%);
+    color: #07080b;
+    border: none;
+    padding: 0.75rem 1.4rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .btn-gold:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.35);
+  }
+
+  .btn-outline-gold {
+    border: 1px solid var(--gold-primary);
+    color: var(--gold-light);
+    background: transparent;
+    padding: 0.75rem 1.25rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .btn-outline-gold:hover {
+    background: rgba(212, 175, 55, 0.1);
+  }
+
+  /* Metrics Grid */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .metric-card {
+    padding: 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .metric-icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+  }
+
+  .metric-icon-wrap.gold {
+    background: rgba(212, 175, 55, 0.15);
+    color: var(--gold-primary);
+  }
+
+  .metric-icon-wrap.emerald {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+  }
+
+  .metric-icon-wrap.amber {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+  }
+
+  .metric-meta {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .metric-val {
+    font-family: var(--font-serif);
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .text-emerald { color: #4ade80; }
+  .text-amber { color: #fbbf24; }
+  .text-gold { color: var(--gold-primary); }
+
+  .metric-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Toolbar */
+  .toolbar-box {
+    padding: 1rem 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .filter-tabs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .tab-btn.active, .tab-btn:hover {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: var(--gold-primary);
+    color: var(--gold-light);
+  }
+
+  .search-input {
+    background: rgba(10, 12, 16, 0.8);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    padding: 0.55rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    width: 280px;
+  }
+
+  .search-input:focus {
+    outline: none;
+    border-color: var(--gold-primary);
+  }
+
+  /* Review Cards */
+  .reviews-list-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 900px) {
+    .reviews-list-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .review-admin-card {
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .review-admin-card:hover {
+    border-color: rgba(212, 175, 55, 0.4);
+  }
+
+  .card-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .stars-display {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .star-gold {
+    color: var(--gold-primary);
+    font-size: 1.1rem;
+  }
+
+  .rating-num {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-left: 4px;
+  }
+
+  .status-badges {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .badge {
+    font-size: 0.72rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .badge-live {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+  }
+
+  .badge-hidden {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-dim);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .badge-pending {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+
+  .badge-rejected {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .client-header-meta {
+    margin-bottom: 0.75rem;
+  }
+
+  .client-title {
+    font-family: var(--font-serif);
+    font-size: 1.35rem;
+    color: var(--gold-light);
+    margin-bottom: 0.35rem;
+  }
+
+  .event-meta-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .event-badge {
+    background: rgba(212, 175, 55, 0.1);
+    color: var(--gold-light);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+
+  .private-contact-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 0.4rem 0.75rem;
+    border-radius: 5px;
+    margin-bottom: 1rem;
+    font-size: 0.75rem;
+  }
+
+  .private-tag {
+    color: var(--gold-primary);
+    font-weight: 700;
+    font-size: 0.65rem;
+  }
+
+  .contact-pill {
+    color: var(--text-muted);
+    text-decoration: none;
+  }
+
+  .contact-pill:hover {
+    color: var(--gold-light);
+  }
+
+  .highlight-quote {
+    font-family: var(--font-serif);
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    font-style: italic;
+    border-left: 2px solid var(--gold-primary);
+    padding-left: 0.75rem;
+  }
+
+  .review-comment-text {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Actions Bar */
+  .card-actions-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-subtle);
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .left-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-action {
+    padding: 0.45rem 0.85rem;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: none;
+  }
+
+  .btn-add-website {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+  }
+
+  .btn-add-website:hover {
+    background: rgba(34, 197, 94, 0.3);
+  }
+
+  .btn-remove-website {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+
+  .btn-remove-website:hover {
+    background: rgba(245, 158, 11, 0.3);
+  }
+
+  .btn-approve {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+  }
+
+  .btn-approve:hover {
+    background: rgba(59, 130, 246, 0.3);
+  }
+
+  .btn-reject {
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+  }
+
+  .btn-reject:hover {
+    background: rgba(239, 68, 68, 0.25);
+  }
+
+  .btn-delete {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .btn-delete:hover {
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.1);
+  }
+
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    display: block;
+  }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1.5rem;
+  }
+
+  .modal-dialog {
+    width: 100%;
+    max-width: 650px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 2rem;
+    background: #0f1218;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 12px;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 1rem;
+  }
+
+  .modal-title {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    color: var(--gold-light);
+  }
+
+  .modal-close-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.25rem;
+    cursor: pointer;
+  }
+
+  .modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  @media (min-width: 550px) {
+    .form-row {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .form-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-primary);
+  }
+
+  .required {
+    color: var(--gold-primary);
+  }
+
+  .form-input {
+    background: rgba(10, 12, 16, 0.8);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-family: inherit;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--gold-primary);
+  }
+
+  .checkbox-group {
+    padding: 0.75rem 1rem;
+    background: rgba(212, 175, 55, 0.08);
+    border-radius: 6px;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.9rem;
+    color: var(--gold-light);
+    cursor: pointer;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 1.25rem;
+  }
+
+  .btn-cancel {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    padding: 0.65rem 1.25rem;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+</style>
+
+<script>
+  // Filter tabs & search functionality
+  const tabs = document.querySelectorAll('.tab-btn');
+  const searchInput = document.getElementById('search-input') as HTMLInputElement;
+  const cards = document.querySelectorAll('.review-admin-card') as NodeListOf<HTMLElement>;
+  const emptyMsg = document.getElementById('no-reviews-msg');
+
+  let activeFilter = 'all';
+  let searchQuery = '';
+
+  function applyFilters() {
+    let visibleCount = 0;
+    cards.forEach(card => {
+      const status = card.getAttribute('data-status');
+      const isWebsite = card.getAttribute('data-website') === 'true';
+      const rating = card.getAttribute('data-rating');
+      const searchContent = card.getAttribute('data-search') || '';
+
+      let matchesTab = true;
+      if (activeFilter === 'website') {
+        matchesTab = isWebsite;
+      } else if (activeFilter === 'pending') {
+        matchesTab = (status === 'pending');
+      } else if (activeFilter === '5star') {
+        matchesTab = (rating === '5');
+      }
+
+      const matchesSearch = !searchQuery || searchContent.includes(searchQuery);
+
+      if (matchesTab && matchesSearch) {
+        card.style.display = 'flex';
+        visibleCount++;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    if (emptyMsg) {
+      emptyMsg.style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+  }
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      activeFilter = tab.getAttribute('data-filter') || 'all';
+      applyFilters();
+    });
+  });
+
+  searchInput?.addEventListener('input', (e) => {
+    searchQuery = (e.target as HTMLInputElement).value.toLowerCase().trim();
+    applyFilters();
+  });
+
+  // Action Buttons Handler (Toggle Website, Approve, Reject, Delete)
+  document.addEventListener('click', async (e) => {
+    const target = (e.target as HTMLElement).closest('.btn-action') as HTMLButtonElement;
+    if (!target) return;
+
+    const card = target.closest('.review-admin-card') as HTMLElement;
+    if (!card) return;
+
+    const id = card.getAttribute('data-id');
+    const action = target.getAttribute('data-action');
+    if (!id || !action) return;
+
+    target.disabled = true;
+
+    try {
+      if (action === 'toggle-website') {
+        const currentlyOn = target.getAttribute('data-current') === 'true';
+        const newShow = !currentlyOn;
+
+        const res = await fetch(`/api/testimonials/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ showOnHomepage: newShow, status: newShow ? 'approved' : undefined })
+        });
+        if (!res.ok) throw new Error('Failed to update website visibility');
+        window.location.reload();
+      } else if (action === 'approve') {
+        const res = await fetch(`/api/testimonials/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'approved', showOnHomepage: true })
+        });
+        if (!res.ok) throw new Error('Failed to approve review');
+        window.location.reload();
+      } else if (action === 'reject') {
+        const res = await fetch(`/api/testimonials/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'rejected', showOnHomepage: false })
+        });
+        if (!res.ok) throw new Error('Failed to reject review');
+        window.location.reload();
+      } else if (action === 'delete') {
+        if (!confirm('Are you sure you want to permanently delete this testimonial?')) {
+          target.disabled = false;
+          return;
+        }
+        const res = await fetch(`/api/testimonials/${id}`, {
+          method: 'DELETE'
+        });
+        if (!res.ok) throw new Error('Failed to delete review');
+        card.remove();
+        applyFilters();
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error updating testimonial');
+      target.disabled = false;
+    }
+  });
+
+  // Manual Review Modal
+  const modal = document.getElementById('manual-modal');
+  const openModalBtn = document.getElementById('add-manual-review-btn');
+  const closeModalBtn = document.getElementById('close-modal-btn');
+  const cancelModalBtn = document.getElementById('cancel-modal-btn');
+  const manualForm = document.getElementById('manual-review-form') as HTMLFormElement;
+
+  function openModal() {
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function closeModal() {
+    if (modal) modal.style.display = 'none';
+    manualForm?.reset();
+  }
+
+  openModalBtn?.addEventListener('click', openModal);
+  closeModalBtn?.addEventListener('click', closeModal);
+  cancelModalBtn?.addEventListener('click', closeModal);
+
+  manualForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(manualForm);
+    const showOnHomepage = formData.get('showOnHomepage') === 'true';
+
+    const data = {
+      clientName: formData.get('clientName'),
+      eventType: formData.get('eventType'),
+      rating: parseInt(formData.get('rating') as string, 10),
+      venue: formData.get('venue'),
+      location: formData.get('location'),
+      date: formData.get('date'),
+      highlight: formData.get('highlight'),
+      comment: formData.get('comment')
+    };
+
+    const saveBtn = document.getElementById('save-manual-btn') as HTMLButtonElement;
+    if (saveBtn) saveBtn.disabled = true;
+
+    try {
+      const res = await fetch('/api/testimonials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed to create review');
+
+      // If immediate publish requested, approve it right away
+      if (showOnHomepage && result.testimonial?.id) {
+        await fetch(`/api/testimonials/${result.testimonial.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'approved', showOnHomepage: true })
+        });
+      }
+
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.message || 'Error saving review');
+      if (saveBtn) saveBtn.disabled = false;
+    }
+  });
+</script>

@@ -1,0 +1,497 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Hero from '../components/Hero.astro';
+import InstantCardStack from '../components/InstantCardStack.astro';
+import StoryCard from '../components/StoryCard.astro';
+import Testimonials from '../components/Testimonials.astro';
+import FaqAccordion from '../components/FaqAccordion.astro';
+import BespokeInquiryModal from '../components/BespokeInquiryModal.astro';
+import { stories } from '../data/stories';
+import { services } from '../data/services';
+import { locations } from '../data/locations';
+import { getStudioSettingsAsync } from '../lib/db';
+
+export const prerender = false;
+
+const settings = await getStudioSettingsAsync();
+
+const homeSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'PhotographyBusiness',
+  'name': settings.studioName || 'Frames By Hithu',
+  'url': 'https://framesbyhithu.com',
+  'image': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Bangalore_Palace.jpg/1280px-Bangalore_Palace.jpg',
+  'description': 'Premier Karnataka fine-art photography studio for luxury South Indian weddings, sacred Gruhapravesham rituals, and heritage couple portraits across Bengaluru, Mysuru, Mangaluru, and Udupi.',
+  'address': {
+    '@type': 'PostalAddress',
+    'streetAddress': settings.streetAddress || 'Studio & Operations Hub, Sadashivanagar',
+    'addressLocality': settings.city || 'Bengaluru',
+    'addressRegion': settings.state || 'Karnataka',
+    'postalCode': settings.postalCode || '560080',
+    'addressCountry': settings.country || 'IN'
+  },
+  'telephone': settings.primaryPhone || '+91-7892706982'
+};
+---
+
+<Layout
+  title="Frames By Hithu | Luxury Wedding & Fine-Art Photography Karnataka"
+  description="Karnataka’s premier fine-art photography studio for Luxury Weddings, Sacred Gruhapravesham (Housewarming), Pre-Weddings, and Traditional Vedic Poojas across Bengaluru, Mysuru, Mangaluru & statewide."
+  schema={homeSchema}
+>
+  <!-- Floating Canvas Hero Section (Versace Photography Aesthetic) -->
+  <Hero />
+
+  <!-- Studio Philosophy Statement -->
+  <section class="philosophy-section section-py">
+    <div class="container text-center">
+      <div class="gold-pill">ARTISTIC PHILOSOPHY & REVERENCE</div>
+      <h2 class="editorial-heading">
+        “We do not manufacture moments. We witness the sacred traditions of your ancestors with timeless grace.”
+      </h2>
+      <div class="gold-divider"></div>
+      <p class="philosophy-body">
+        Karnataka is a land of profound heritage—from the rhythmic Carnatic Nadaswaram at a dawn Mysuru Muhurtham to the auspicious milk boiling in a Bengaluru Gruhapravesham. At <strong>Frames By Hithu</strong>, we honor the sanctity of your celebrations with quiet discretion, master prime lenses, and our signature warm golden fine-art grade.
+      </p>
+
+      <div class="pillars-grid">
+        <div class="pillar-card glass-card">
+          <span class="pillar-icon">🪔</span>
+          <h3 class="pillar-title">Vedic Sanctity</h3>
+          <p class="pillar-desc">
+            Deep cultural reverence. We never interrupt the priest, step over the sacred fire, or break the emotional flow of the mantras.
+          </p>
+        </div>
+
+        <div class="pillar-card glass-card">
+          <span class="pillar-icon">👑</span>
+          <h3 class="pillar-title">Signature Warm Grade</h3>
+          <p class="pillar-desc">
+            Bespoke color science crafted for pure Kanjeevaram silks, glowing temple gold jewelry, and authentic natural Indian skin tones.
+          </p>
+        </div>
+
+        <div class="pillar-card glass-card">
+          <span class="pillar-icon">🗺️</span>
+          <h3 class="pillar-title">Statewide Karnataka</h3>
+          <p class="pillar-desc">
+            Extensive coverage across Bengaluru, Mysuru, Mangaluru, Udupi, Hubballi, Coorg, and heritage temple venues with zero travel friction.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Meta Instants Tactile Card Stack Showcase -->
+  <section class="portfolio-showcase section-py" id="portfolio">
+    <div class="container">
+      <div class="section-header text-center">
+        <div class="gold-pill">META INSTANTS • TACTILE MOMENTS</div>
+        <h2>Curated Karnataka Ceremony Decks</h2>
+        <div class="gold-divider"></div>
+        <p>
+          Experience our portfolio like tactile photographic instants. Tap any photo to glide it smoothly to the back of the deck, cycle through ceremonies, or react with sacred blessings.
+        </p>
+      </div>
+
+      <!-- Interactive 3D Perspective Instant Card Stack -->
+      <InstantCardStack />
+
+      <div class="text-center showcase-cta" style="margin-top: 3.5rem;">
+        <a href="/portfolio" class="btn-outline">
+          <span>Explore Full Ceremony Archive & Galleries</span>
+          <span>→</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- Bespoke Services Overview (NO PRICING - Bespoke Consultations) -->
+  <section class="services-overview section-py" id="services">
+    <div class="container">
+      <div class="section-header">
+        <div class="gold-pill">BESPOKE COMMISSIONS</div>
+        <h2>Mastery Across Sacred Occasions</h2>
+        <div class="gold-divider"></div>
+        <p>
+          Every quote is custom-tailored to your ceremony’s rituals, venue lighting, and multi-day schedule. No generic packages.
+        </p>
+      </div>
+
+      <div class="services-grid">
+        {services.map((svc) => (
+          <article class="service-card glass-card">
+            <div class="service-media protected-media">
+              <img src={svc.coverImage} alt={svc.title} loading="lazy" class="service-img" />
+              <div class="protected-overlay"></div>
+              <div class="watermark-subtle">FRAMES BY HITHU</div>
+            </div>
+            <div class="service-body">
+              <h3 class="service-title">{svc.title}</h3>
+              <p class="service-desc">{svc.shortDescription}</p>
+
+              <div class="service-rituals-list">
+                <span class="rituals-label">Key Highlights:</span>
+                <ul>
+                  {svc.ritualsCovered.slice(0, 3).map((r) => (
+                    <li>• {r}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <div class="service-footer">
+                <a href={`/services/${svc.slug}`} class="service-link">
+                  <span>Explore Deliverables</span>
+                  <span class="arrow">→</span>
+                </a>
+                <a href="#inquire" class="btn-outline service-quote-btn">
+                  Check Dates
+                </a>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Narrative Client Stories Photo Essays -->
+  <section class="stories-section section-py" id="stories">
+    <div class="container">
+      <div class="section-header">
+        <div class="gold-pill">EDITORIAL ESSAYS</div>
+        <h2>Narrative Client Stories</h2>
+        <div class="gold-divider"></div>
+        <p>
+          Deep dives into real celebrations—from royal Bangalore Palace weddings to sacred Vedic Gruhapraveshams.
+        </p>
+      </div>
+
+      <div class="stories-grid">
+        {stories.map((story) => (
+          <StoryCard story={story} />
+        ))}
+      </div>
+
+      <div class="text-center showcase-cta">
+        <a href="/stories" class="btn-outline">
+          <span>Read All Editorial Photo Essays →</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials Section -->
+  <Testimonials />
+
+  <!-- Statewide Karnataka SEO Location Hub Preview -->
+  <section class="locations-preview section-py">
+    <div class="container">
+      <div class="section-header">
+        <div class="gold-pill">STATEWIDE LOCAL EXPERTISE</div>
+        <h2>Serving Discerning Clients Across Karnataka</h2>
+        <div class="gold-divider"></div>
+        <p>
+          Explore dedicated landing guides, venue recommendations, and cultural nuances across key Karnataka cities:
+        </p>
+      </div>
+
+      <div class="cities-grid">
+        {locations.map((loc) => (
+          <a href={`/locations/${loc.slug}`} class="city-card glass-card">
+            <div class="city-card-header">
+              <span class="city-kannada">{loc.kannadaName}</span>
+              <h3 class="city-name">{loc.cityName}</h3>
+            </div>
+            <p class="city-tagline">{loc.tagline}</p>
+            <div class="city-card-footer">
+              <span class="explore-city">Explore {loc.cityName} Guide →</span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Smart Date Availability Checker & Bespoke Quote Funnel -->
+  <section class="inquiry-section section-py" id="inquire">
+    <div class="container">
+      <BespokeInquiryModal />
+    </div>
+  </section>
+
+  <!-- FAQ Section with Schema -->
+  <FaqAccordion />
+</Layout>
+
+<style>
+  .text-center {
+    text-align: center;
+  }
+
+  .editorial-heading {
+    max-width: 860px;
+    margin: 1.5rem auto 1rem auto;
+    font-size: clamp(1.8rem, 3.8vw, 2.75rem);
+    color: var(--gold-light);
+    line-height: 1.25;
+    font-style: italic;
+  }
+
+  .philosophy-body {
+    max-width: 740px;
+    margin: 0 auto 3.5rem auto;
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    line-height: 1.8;
+  }
+
+  .pillars-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    max-width: 1100px;
+    margin: 0 auto;
+    text-align: left;
+  }
+
+  @media (min-width: 768px) {
+    .pillars-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .pillar-card {
+    padding: 2.25rem 1.75rem;
+  }
+
+  .pillar-icon {
+    font-size: 2.2rem;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  .pillar-title {
+    font-size: 1.35rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+  }
+
+  .pillar-desc {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .showcase-cta {
+    margin-top: 3.5rem;
+  }
+
+  /* Services Grid */
+  .services-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  @media (min-width: 768px) {
+    .services-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .service-card {
+    display: flex;
+    flex-direction: column;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .service-media {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+  }
+
+  .service-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.8s var(--ease-luxury);
+  }
+
+  .service-card:hover .service-img {
+    transform: scale(1.06);
+  }
+
+  .service-body {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+
+  .service-title {
+    font-size: 1.6rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+  }
+
+  .service-desc {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+  }
+
+  .service-rituals-list {
+    margin-bottom: 1.5rem;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 0.85rem 1rem;
+    border-radius: 4px;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .rituals-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--gold-primary);
+    display: block;
+    margin-bottom: 0.35rem;
+  }
+
+  .service-rituals-list ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.825rem;
+    color: var(--text-muted);
+  }
+
+  .service-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .service-link {
+    font-size: 0.825rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--gold-light);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .service-link:hover .arrow {
+    transform: translateX(4px);
+  }
+
+  .service-quote-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.775rem;
+  }
+
+  /* Stories Grid */
+  .stories-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  @media (min-width: 1024px) {
+    .stories-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  /* Cities Grid */
+  .cities-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .cities-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .cities-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .city-card {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-decoration: none;
+    color: inherit;
+    transition: var(--transition-smooth);
+  }
+
+  .city-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--gold-border);
+    box-shadow: var(--shadow-card);
+  }
+
+  .city-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .city-kannada {
+    font-size: 1.1rem;
+    color: var(--gold-primary);
+    font-weight: 600;
+  }
+
+  .city-name {
+    font-size: 1.5rem;
+    color: var(--text-primary);
+  }
+
+  .city-tagline {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+  }
+
+  .city-card-footer {
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .explore-city {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--gold-light);
+    letter-spacing: 0.04em;
+  }
+
+  .city-card:hover .explore-city {
+    color: var(--gold-primary);
+  }
+
+  .inquiry-section {
+    scroll-margin-top: 110px;
+  }
+</style>

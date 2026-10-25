@@ -1,0 +1,244 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { services } from '../../data/services';
+import BespokeInquiryModal from '../../components/BespokeInquiryModal.astro';
+
+const servicesIndexSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Service',
+  'serviceType': 'Fine-Art Photography Services',
+  'provider': {
+    '@type': 'PhotographyBusiness',
+    'name': 'Frames By Hithu'
+  },
+  'areaServed': {
+    '@type': 'State',
+    'name': 'Karnataka'
+  },
+  'description': 'Bespoke fine-art photography commissions for South Indian Weddings, Muhurthams, Gruhapravesham (Housewarming), and Traditional Poojas across Karnataka.'
+};
+---
+
+<Layout
+  title="Bespoke Photography Services | Weddings, Gruhapravesham & Poojas | Frames By Hithu"
+  description="Explore our bespoke fine-art photography services across Karnataka. Weddings & Muhurtham, Vedic Gruhapravesham, Pre-Wedding essays, and traditional poojas."
+  schema={servicesIndexSchema}
+>
+  <div class="page-header section-py text-center">
+    <div class="container">
+      <div class="gold-pill">BESPOKE COMMISSIONS ONLY</div>
+      <h1 class="page-title">Artistic Services & Masteries</h1>
+      <div class="gold-divider"></div>
+      <p class="page-subtitle">
+        Every milestone in Karnataka has its own sacred soul. We do not offer cookie-cutter packages; every commission is individually structured around your specific rituals, venues, and multi-day celebrations.
+      </p>
+    </div>
+  </div>
+
+  <section class="services-list-section section-py">
+    <div class="container">
+      <div class="services-vertical-list">
+        {services.map((svc, index) => (
+          <article class:list={['service-feature-card glass-card', { reverse: index % 2 !== 0 }]}>
+            <div class="feature-media protected-media">
+              <img src={svc.coverImage} alt={svc.title} loading="lazy" class="feature-img" />
+              <div class="protected-overlay"></div>
+              <div class="watermark-subtle">FRAMES BY HITHU</div>
+            </div>
+
+            <div class="feature-content">
+              <div class="gold-pill">BESPOKE SERVICE</div>
+              <h2 class="feature-title">{svc.title}</h2>
+              <h3 class="feature-headline">{svc.heroHeadline}</h3>
+              <p class="feature-overview">{svc.overview}</p>
+
+              <div class="rituals-box">
+                <strong class="box-title">Key Sacred Rites Covered:</strong>
+                <ul class="rituals-grid">
+                  {svc.ritualsCovered.map((ritual) => (
+                    <li>• {ritual}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <div class="deliverables-box">
+                <strong class="box-title">Signature Deliverables:</strong>
+                <ul class="deliverables-list">
+                  {svc.deliverables.slice(0, 3).map((deliv) => (
+                    <li>✓ {deliv}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <div class="feature-actions">
+                <a href={`/services/${svc.slug}`} class="btn-gold">
+                  Explore Full Service Deep Dive
+                </a>
+                <a href={`/contact`} class="btn-outline">
+                  Check Date Availability
+                </a>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Custom Quote Funnel -->
+  <section class="inquiry-banner-section section-py">
+    <div class="container">
+      <BespokeInquiryModal />
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .text-center {
+    text-align: center;
+  }
+
+  .page-header {
+    background: radial-gradient(ellipse at top, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
+    padding-bottom: 2rem;
+  }
+
+  .page-title {
+    font-size: clamp(2.5rem, 5.5vw, 4.2rem);
+    margin-top: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .page-subtitle {
+    max-width: 720px;
+    margin: 0 auto;
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  .services-vertical-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3.5rem;
+  }
+
+  .service-feature-card {
+    display: grid;
+    grid-template-columns: 1fr;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  @media (min-width: 1024px) {
+    .service-feature-card {
+      grid-template-columns: 1.1fr 1fr;
+    }
+
+    .service-feature-card.reverse {
+      grid-template-columns: 1fr 1.1fr;
+    }
+
+    .service-feature-card.reverse .feature-media {
+      order: 2;
+    }
+  }
+
+  .feature-media {
+    position: relative;
+    width: 100%;
+    min-height: 380px;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+  }
+
+  .feature-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.8s var(--ease-luxury);
+  }
+
+  .service-feature-card:hover .feature-img {
+    transform: scale(1.05);
+  }
+
+  .feature-content {
+    padding: clamp(2rem, 4vw, 3.5rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .feature-title {
+    font-size: clamp(1.8rem, 3vw, 2.4rem);
+    color: var(--text-primary);
+    margin-top: 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .feature-headline {
+    font-size: 1.1rem;
+    color: var(--gold-light);
+    font-family: var(--font-sans);
+    font-weight: 500;
+    margin-bottom: 1.25rem;
+  }
+
+  .feature-overview {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin-bottom: 1.75rem;
+  }
+
+  .rituals-box, .deliverables-box {
+    margin-bottom: 1.25rem;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 1rem 1.25rem;
+    border-radius: 4px;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .box-title {
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--gold-primary);
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  .rituals-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+    list-style: none;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  @media (min-width: 640px) {
+    .rituals-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .deliverables-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  .feature-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+</style>

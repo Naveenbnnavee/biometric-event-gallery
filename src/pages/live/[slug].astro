@@ -1,0 +1,1775 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getLiveEventBySlugAsync, getStudioSettingsAsync } from '../../lib/db';
+import { getCloudflareEnv } from '../../lib/cloudflare';
+
+export const prerender = false;
+
+const env = await getCloudflareEnv();
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect('/');
+}
+
+const event = await getLiveEventBySlugAsync(slug, env);
+if (!event) {
+  return Astro.redirect('/404');
+}
+
+const settings = await getStudioSettingsAsync();
+const whatsappClean = (settings.whatsappConcierge || settings.primaryPhone || '917892706982').replace(/[^0-9]/g, '');
+
+const inquiryMessage = encodeURIComponent(
+  `Hello Frames By Hithu, I am at the "${event.title}" live gallery and was captivated by your photography. I would love to check availability for our family's upcoming ceremony!`
+);
+const whatsappInquiryUrl = `https://wa.me/${whatsappClean}?text=${inquiryMessage}`;
+
+const livePhotos = event.photos || [];
+
+const isFaceOnly = event.accessMode === 'face_only';
+const isFaceAndAll = event.accessMode === 'face_and_all' || event.accessMode === 'face_match';
+const isFaceMatchMode = isFaceOnly || isFaceAndAll;
+const isOpenGallery = event.accessMode === 'open_gallery';
+---
+
+<Layout
+  title={`${event.title} • Live Guest Gallery | Frames By Hithu`}
+  description={`Live real-time ceremony photo stream from ${event.title} at ${event.venue}. Discovered live with Frames By Hithu Fine-Art Photography.`}
+  image={livePhotos[0]?.url || 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Lalitha_Mahal_Palace_Hotel.jpg/1280px-Lalitha_Mahal_Palace_Hotel.jpg'}
+>
+  <div
+    class="live-gallery-wrapper"
+    id="live-gallery-wrapper"
+    data-event-id={event.id}
+    data-event-slug={event.slug}
+    data-access-mode={event.accessMode}
+    data-allow-download={event.allowDownload ? 'true' : 'false'}
+    data-watermark={event.watermarkPreview ? 'true' : 'false'}
+  >
+    <!-- Live Header Section -->
+    <header class="live-header text-center">
+      <div class="container">
+        <div class="header-brand-line">
+          <div class="studio-emblem" aria-hidden="true">
+            <svg viewBox="0 0 32 32" width="26" height="26" fill="none">
+              <rect width="32" height="32" rx="7" fill="url(#streamGoldGrad)" />
+              <circle cx="16" cy="16" r="11" stroke="#07080B" stroke-width="1" stroke-opacity="0.35" stroke-dasharray="2.5 2" />
+              <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" fill="#07080B" font-family="'Cormorant Garamond', Georgia, serif" font-weight="700" font-size="13" letter-spacing="0.5">FH</text>
+              <defs>
+                <linearGradient id="streamGoldGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#F7E4A8" />
+                  <stop offset="0.5" stop-color="#D4AF37" />
+                  <stop offset="1" stop-color="#9B781E" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <span class="studio-name">FRAMES BY HITHU</span>
+        </div>
+
+        <div class="live-status-pill">
+          <span class="live-status-dot"></span>
+          <span class="live-status-text">LIVE EVENT STREAM</span>
+          <span class="live-time-ago" id="live-time-ago">• Updated moments ago</span>
+        </div>
+
+        <h1 class="live-event-title">{event.title}</h1>
+        <div class="gold-divider"></div>
+        <p class="live-event-sub">
+          <span>📍 {event.venue}</span>
+          <span class="divider-dot">•</span>
+          <span>📅 {event.date}</span>
+        </p>
+
+        <!-- Mode 1: AI Face-Match Onboarding Hero Card -->
+        {isFaceMatchMode && (
+          <div class="face-onboarding-card glass-card" id="face-onboarding-card">
+            <div class="onboard-icon">✨</div>
+            <h2 class="onboard-title">Find Your Moments in Seconds</h2>
+            <p class="onboard-desc">
+              Take a quick selfie to instantly discover every photograph you appear in across the ceremony.
+            </p>
+
+            <div class="onboard-actions">
+              <button type="button" class="btn-gold selfie-btn" id="take-selfie-btn">
+                <span class="cam-icon">📸</span>
+                <span>Take Quick Selfie</span>
+              </button>
+              <!-- Hidden fallback file input for mobile Safari/Android camera -->
+              <input
+                type="file"
+                id="camera-fallback-input"
+                accept="image/*"
+                capture="user"
+                style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; opacity: 0; pointer-events: none;"
+              />
+            </div>
+
+            <!-- Face Match Status Banner (shown after selfie) -->
+            <div id="face-match-status-banner" class="match-status-banner" style="display: none;">
+              <div class="selfie-avatar-wrap">
+                <img id="guest-selfie-preview" src="" alt="Guest Selfie" class="selfie-avatar" />
+                <span class="match-check">✓</span>
+              </div>
+              <div class="match-text-info">
+                <strong id="match-headline">AI Face Matching Active</strong>
+                <p id="match-subline">Scanning ceremony frames...</p>
+                <div id="match-progress-wrap" class="match-progress-container" style="display: none;">
+                  <div class="match-progress-bar">
+                    <div id="match-progress-fill" class="match-progress-fill"></div>
+                  </div>
+                  <span id="match-progress-label" class="match-progress-label">0%</span>
+                </div>
+              </div>
+              <button type="button" class="retake-selfie-btn" id="retake-selfie-btn" title="Retake Selfie">
+                🔄 Retake
+              </button>
+            </div>
+          </div>
+        )}
+
+        <!-- Filter & View Switcher (Only For Face + All Hybrid Mode) -->
+        {isFaceAndAll && (
+          <div class="view-switcher-bar" id="view-switcher-bar" style="display: none;">
+            <button type="button" class="switcher-btn active" id="btn-show-matched">
+              <span>✨ My Matched Frames</span>
+              <span class="badge" id="matched-count-badge">0</span>
+            </button>
+            <button type="button" class="switcher-btn" id="btn-show-all">
+              <span>🌐 All Ceremony Frames</span>
+              <span class="badge" id="all-count-badge">{livePhotos.length}</span>
+            </button>
+          </div>
+        )}
+
+        <!-- Real-Time Incoming Notification Banner -->
+        <div id="incoming-photos-banner" class="incoming-alert" style="display: none;">
+          <span class="incoming-dot"></span>
+          <span id="incoming-text">New ceremony photos just beamed live!</span>
+          <button type="button" id="incoming-view-btn" class="incoming-btn">View Latest ↑</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Live Masonry Gallery Stream -->
+    <main class="gallery-main-container">
+      <div class="container">
+        <!-- Empty State (No Photos In Stream) -->
+        <div id="no-photos-found" class="empty-gallery-state text-center" style={livePhotos.length === 0 ? "display: block;" : "display: none;"}>
+          <div class="empty-art">📷</div>
+          <h3>Sacred Rituals Commencing</h3>
+          <p>The photographer is framing live ceremonies. As photos are captured, they will stream automatically onto this screen.</p>
+        </div>
+
+        <!-- Face Match Empty State (Strict 0-matches State) -->
+        <div id="no-match-found" class="empty-gallery-state text-center" style="display: none;">
+          <div class="empty-art">✨</div>
+          <h3 class="no-match-title">No matching frames found yet</h3>
+          <p class="no-match-desc">
+            As the photographer captures more moments of you, they will appear here automatically.
+          </p>
+          {isFaceAndAll && (
+            <div class="no-match-actions">
+              <button type="button" class="empty-switch-all-btn" id="empty-show-all-btn">
+                <span>View All Ceremony Frames ({livePhotos.length})</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        <!-- Face Match Initial Gate (Before selfie is taken) -->
+        {isFaceMatchMode && (
+          <div id="face-match-gate" class="empty-gallery-state text-center" style={livePhotos.length > 0 ? "display: block;" : "display: none;"}>
+            <div class="empty-art">🔐</div>
+            <h3 class="gate-title">Private AI Face-Match Stream</h3>
+            <p class="gate-desc">
+              Your personalized ceremony moments will appear here once you take a quick selfie.
+            </p>
+            <div class="gate-actions">
+              <button type="button" class="btn-gold gate-selfie-btn" id="gate-take-selfie-btn">
+                <span>📸 Take Quick Selfie</span>
+              </button>
+              {isFaceAndAll && (
+                <button type="button" class="gate-browse-all-btn" id="gate-browse-all-btn">
+                  <span>Or browse all ceremony frames ({livePhotos.length}) →</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        <!-- Masonry Grid -->
+        <div class="live-masonry-grid" id="live-masonry-grid">
+          {livePhotos.map((photo, pIdx) => (
+            <article
+              class="live-frame-card glass-card"
+              data-photo-id={photo.id}
+              data-photo-url={photo.url}
+              data-timestamp={photo.timestamp}
+              data-faces={photo.faces ? JSON.stringify(photo.faces) : undefined}
+              data-index={pIdx}
+              style={isFaceMatchMode ? 'display: none;' : undefined}
+            >
+              <div class="frame-media-box protected-media">
+                <img
+                  src={photo.url}
+                  alt={`${event.title} - Live Ceremony Frame`}
+                  class="live-frame-img"
+                  loading={pIdx < 6 ? "eager" : "lazy"}
+                  oncontextmenu="return false;"
+                  crossorigin="anonymous"
+                />
+
+                <!-- Transparent anti-theft shield overlay -->
+                <div class="protected-overlay" aria-hidden="true"></div>
+
+                <!-- Watermark Overlay (Enforced if watermarkPreview is true) -->
+                {event.watermarkPreview && (
+                  <div class="watermark-overlay-badge" aria-hidden="true">
+                    <span class="wm-studio">FRAMES BY HITHU</span>
+                    <span class="wm-type">LIVE PREVIEW</span>
+                  </div>
+                )}
+
+                <!-- Frame Time Pill -->
+                <div class="frame-time-pill">
+                  {new Date(photo.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
+
+                <!-- Actions Overlay -->
+                <div class="frame-actions-overlay">
+                  <button type="button" class="btn-inspect-frame" aria-label="Inspect Full-Screen Frame">
+                    <span>🔍 Full Screen</span>
+                  </button>
+
+                  {event.allowDownload ? (
+                    <a
+                      href={photo.url}
+                      download={`FramesByHithu_${event.slug}_${photo.id}.jpg`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="btn-gold download-frame-btn"
+                      title="Download High-Resolution Master Frame"
+                    >
+                      <span>⬇️ Download High-Res</span>
+                    </a>
+                  ) : (
+                    <span class="view-only-tag">🔒 Protected • Direct Studio Print</span>
+                  )}
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </main>
+
+    <!-- Camera / Selfie Capture Modal -->
+    <div id="selfie-camera-modal" class="selfie-modal-backdrop" style="display: none;">
+      <div class="selfie-modal-card glass-card text-center">
+        <div class="selfie-modal-header">
+          <h3>Selfie Verification</h3>
+          <button type="button" class="selfie-close-btn" id="close-camera-modal-btn">✕</button>
+        </div>
+
+        <div class="camera-viewport-wrap">
+          <video id="selfie-video" autoplay playsinline muted class="camera-video"></video>
+          <canvas id="selfie-canvas" style="display: none;"></canvas>
+          <div class="camera-oval-guide"></div>
+        </div>
+
+        <p class="camera-instructions">Center your face in the oval guide and snap your selfie.</p>
+
+        <div class="camera-controls">
+          <button type="button" class="btn-gold snap-btn" id="snap-selfie-btn">
+            <span>📸 Snap Selfie & Match</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Full-Screen Lightbox Viewport -->
+    <div id="live-lightbox" class="live-lightbox-modal" style="display: none;">
+      <div class="lb-backdrop" id="lb-backdrop"></div>
+      <div class="lb-container">
+        <div class="lb-header">
+          <span class="lb-brand">FRAMES BY HITHU • LIVE STREAM</span>
+          <button type="button" class="lb-close-btn" id="lb-close-btn">✕</button>
+        </div>
+
+        <div class="lb-stage">
+          <img id="lb-img" src="" alt="Live Photograph" class="lb-full-img" crossorigin="anonymous" />
+          {event.watermarkPreview && (
+            <div class="watermark-subtle" aria-hidden="true">FRAMES BY HITHU • LIVE EVENT ARCHIVE</div>
+          )}
+        </div>
+
+        <div class="lb-footer">
+          <div class="lb-meta">
+            <span id="lb-frame-time">Captured at ceremony</span>
+            <span class="meta-dot">•</span>
+            <span>{event.title}</span>
+          </div>
+          {event.allowDownload && (
+            <a id="lb-download-btn" href="#" download target="_blank" rel="noopener noreferrer" class="btn-gold lb-dl-btn">
+              <span>⬇️ Download Master High-Res</span>
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+
+    <!-- Persistent Viral Studio Inquiries Bottom Bar -->
+    <footer class="viral-inquiry-bar">
+      <div class="container viral-bar-inner">
+        <div class="viral-text-block">
+          <strong class="viral-title">Loving these moments?</strong>
+          <span class="viral-sub">Book Frames By Hithu for your family’s upcoming wedding, Gruhapravesham, or sacred pooja.</span>
+        </div>
+        <div class="viral-action-block">
+          <a
+            href={whatsappInquiryUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-whatsapp viral-whatsapp-btn"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/>
+            </svg>
+            <span>Inquire on WhatsApp</span>
+          </a>
+        </div>
+      </div>
+    </footer>
+  </div>
+  <script is:inline src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
+</Layout>
+
+<style>
+  .live-gallery-wrapper {
+    min-height: 100vh;
+    padding-bottom: 7rem;
+    background: #05060A;
+    color: var(--text-primary);
+  }
+
+  .text-center {
+    text-align: center;
+  }
+
+  /* Header */
+  .live-header {
+    padding: 3rem 1rem 2rem 1rem;
+    background: radial-gradient(circle at top center, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+  }
+
+  .header-brand-line {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .studio-emblem {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 7px;
+    box-shadow: 0 2px 10px rgba(212, 175, 55, 0.35);
+  }
+
+  .studio-name {
+    font-family: var(--font-serif);
+    font-size: 0.95rem;
+    letter-spacing: 0.14em;
+    color: var(--gold-light);
+  }
+
+  .live-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #10B981;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.75rem;
+  }
+
+  .live-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10B981;
+    box-shadow: 0 0 8px #10B981;
+    animation: livePulse 1.8s infinite;
+  }
+
+  @keyframes livePulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.35; transform: scale(0.85); }
+  }
+
+  .live-time-ago {
+    opacity: 0.85;
+    font-weight: 500;
+  }
+
+  .live-event-title {
+    font-family: var(--font-serif);
+    font-size: clamp(2rem, 5vw, 3.4rem);
+    color: var(--text-primary);
+    margin: 0.25rem 0 0.5rem 0;
+    line-height: 1.2;
+  }
+
+  .live-event-sub {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .divider-dot {
+    opacity: 0.4;
+  }
+
+  /* Mode 1: Face Onboarding Card */
+  .face-onboarding-card {
+    max-width: 540px;
+    margin: 2rem auto 1rem auto;
+    padding: 1.75rem 1.5rem;
+    border-radius: 16px;
+    background: rgba(14, 16, 22, 0.85);
+    border: 1px solid var(--gold-border);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+  }
+
+  .onboard-icon {
+    font-size: 2.25rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .onboard-title {
+    font-family: var(--font-serif);
+    font-size: 1.4rem;
+    color: var(--text-primary);
+    margin: 0 0 0.4rem 0;
+  }
+
+  .onboard-desc {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    max-width: 440px;
+    margin: 0 auto 1.25rem auto;
+    line-height: 1.5;
+  }
+
+  .selfie-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    padding: 0.85rem 1.75rem;
+  }
+
+  .cam-icon {
+    font-size: 1.15rem;
+  }
+
+  /* Match Status Banner */
+  .match-status-banner {
+    margin-top: 1.25rem;
+    padding: 0.85rem 1rem;
+    border-radius: 10px;
+    background: rgba(139, 92, 246, 0.12);
+    border: 1px solid rgba(139, 92, 246, 0.35);
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    text-align: left;
+  }
+
+  .selfie-avatar-wrap {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+
+  .selfie-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--gold-primary);
+  }
+
+  .match-check {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #10B981;
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .match-text-info {
+    flex: 1;
+  }
+
+  .match-text-info strong {
+    font-size: 0.85rem;
+    color: #C4B5FD;
+    display: block;
+  }
+
+  .match-text-info p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  .match-progress-container {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin-top: 0.5rem;
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .match-progress-bar {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+
+  .match-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #D4AF37, #10B981);
+    border-radius: 9999px;
+    transition: width 0.2s ease;
+  }
+
+  .match-progress-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--gold-light);
+    min-width: 32px;
+  }
+
+  .retake-selfie-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+
+  .retake-selfie-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  /* View Switcher Bar */
+  .view-switcher-bar {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 1.5rem auto 0.5rem auto;
+  }
+
+  .switcher-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(14, 16, 22, 0.8);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    padding: 0.6rem 1.25rem;
+    border-radius: 9999px;
+    font-size: 0.825rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+  }
+
+  .switcher-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .switcher-btn.active {
+    background: var(--gold-gradient);
+    color: #0B0C10;
+    border-color: var(--gold-primary);
+  }
+
+  .switcher-btn .badge {
+    background: rgba(0, 0, 0, 0.4);
+    color: #fff;
+    padding: 2px 7px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+  }
+
+  .switcher-btn.active .badge {
+    background: #0B0C10;
+    color: var(--gold-light);
+  }
+
+  /* Incoming Photos Notification */
+  .incoming-alert {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: rgba(212, 175, 55, 0.15);
+    border: 1px solid var(--gold-border);
+    color: var(--gold-light);
+    padding: 0.5rem 1.15rem;
+    border-radius: 9999px;
+    font-size: 0.825rem;
+    margin-top: 1.25rem;
+    animation: fadeInDown 0.4s ease;
+  }
+
+  .incoming-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gold-primary);
+    box-shadow: 0 0 10px var(--gold-primary);
+    animation: livePulse 1.5s infinite;
+  }
+
+  .incoming-btn {
+    background: var(--gold-gradient);
+    border: none;
+    color: #0B0C10;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Gallery Stream Masonry */
+  .gallery-main-container {
+    padding: 2.5rem 0;
+  }
+
+  .live-masonry-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 992px) {
+    .live-masonry-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+  }
+
+  @media (max-width: 540px) {
+    .live-masonry-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .live-frame-card {
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(14, 16, 22, 0.7);
+    border: 1px solid var(--border-subtle);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+
+  .live-frame-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--gold-border);
+  }
+
+  .frame-media-box {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    background: #000;
+    overflow: hidden;
+  }
+
+  .live-frame-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  .frame-time-pill {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    font-size: 0.7rem;
+    padding: 2px 7px;
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
+    z-index: 3;
+  }
+
+  .watermark-overlay-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(11, 12, 16, 0.85);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    text-align: right;
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  .wm-studio {
+    font-family: var(--font-serif);
+    font-size: 0.65rem;
+    color: var(--gold-light);
+    letter-spacing: 0.1em;
+  }
+
+  .wm-type {
+    font-size: 0.55rem;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+  }
+
+  /* Frame Actions Overlay on Hover / Mobile */
+  .frame-actions-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.2) 60%, transparent 100%);
+    opacity: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 1rem;
+    gap: 0.5rem;
+    transition: opacity 0.25s ease;
+    z-index: 4;
+  }
+
+  .live-frame-card:hover .frame-actions-overlay {
+    opacity: 1;
+  }
+
+  @media (max-width: 768px) {
+    .frame-actions-overlay {
+      opacity: 1;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, transparent 50%);
+    }
+  }
+
+  .btn-inspect-frame {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    padding: 0.4rem 0.9rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .download-frame-btn {
+    text-decoration: none;
+    font-size: 0.75rem;
+    padding: 0.45rem 1rem;
+    font-weight: 700;
+    width: 100%;
+    text-align: center;
+  }
+
+  .view-only-tag {
+    font-size: 0.7rem;
+    color: var(--gold-light);
+    background: rgba(0, 0, 0, 0.6);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  /* Empty State */
+  .empty-gallery-state {
+    padding: 5rem 1.5rem;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .empty-art {
+    font-size: 3.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .no-match-title {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin: 0.5rem 0;
+  }
+
+  .no-match-desc {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    max-width: 440px;
+    margin: 0 auto 1.5rem auto;
+    line-height: 1.5;
+  }
+
+  .empty-switch-all-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(22, 26, 36, 0.85);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    color: #F7E4A8;
+    padding: 0.65rem 1.35rem;
+    border-radius: 8px;
+    font-size: 0.825rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+
+  .empty-switch-all-btn:hover {
+    background: rgba(212, 175, 55, 0.18);
+    border-color: #D4AF37;
+    color: #FFFFFF;
+    box-shadow: 0 4px 16px rgba(212, 175, 55, 0.25);
+  }
+
+  /* Face Match Gate State (Before Selfie) */
+  .gate-title {
+    font-family: var(--font-serif);
+    font-size: 1.65rem;
+    color: var(--text-primary);
+    margin: 0.5rem 0;
+  }
+
+  .gate-desc {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    max-width: 460px;
+    margin: 0 auto 1.5rem auto;
+    line-height: 1.5;
+  }
+
+  .gate-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.85rem;
+  }
+
+  .gate-selfie-btn {
+    padding: 0.75rem 1.75rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+
+  .gate-browse-all-btn {
+    background: transparent;
+    border: none;
+    color: var(--gold-light);
+    font-family: var(--font-sans);
+    font-size: 0.825rem;
+    cursor: pointer;
+    text-decoration: underline;
+    opacity: 0.85;
+    transition: opacity 0.2s ease;
+  }
+
+  .gate-browse-all-btn:hover {
+    opacity: 1;
+    color: #FFFFFF;
+  }
+
+  /* Camera Modal */
+  .selfie-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    background: rgba(5, 6, 10, 0.9);
+    backdrop-filter: blur(16px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+
+  .selfie-modal-card {
+    width: 100%;
+    max-width: 420px;
+    background: #0E1016;
+    border: 1px solid var(--gold-border);
+    border-radius: 16px;
+    padding: 1.75rem;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.9);
+  }
+
+  .selfie-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .selfie-modal-header h3 {
+    font-family: var(--font-serif);
+    font-size: 1.35rem;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .selfie-close-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.25rem;
+    cursor: pointer;
+  }
+
+  .camera-viewport-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+    margin-bottom: 1rem;
+  }
+
+  .camera-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1); /* Mirror selfie camera */
+  }
+
+  .camera-oval-guide {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70%;
+    height: 75%;
+    border-radius: 50%;
+    border: 2px dashed rgba(212, 175, 55, 0.7);
+    pointer-events: none;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+  }
+
+  .camera-instructions {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0 0 1.25rem 0;
+  }
+
+  .snap-btn {
+    width: 100%;
+    padding: 0.85rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+
+  /* Full Screen Lightbox */
+  .live-lightbox-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .lb-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(5, 6, 10, 0.95);
+    backdrop-filter: blur(24px);
+  }
+
+  .lb-container {
+    position: relative;
+    z-index: 2;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    box-sizing: border-box;
+  }
+
+  .lb-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .lb-brand {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    letter-spacing: 0.12em;
+    color: var(--gold-light);
+  }
+
+  .lb-close-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-subtle);
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .lb-stage {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 1rem 0;
+  }
+
+  .lb-full-img {
+    max-width: 90vw;
+    max-height: 72vh;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.9);
+  }
+
+  .lb-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .lb-meta {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .lb-dl-btn {
+    text-decoration: none;
+    font-size: 0.825rem;
+    padding: 0.5rem 1.25rem;
+  }
+
+  /* Viral Bottom Bar */
+  .viral-inquiry-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: rgba(11, 12, 16, 0.94);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid var(--gold-border);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
+    padding: 0.85rem 1rem;
+  }
+
+  .viral-bar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .viral-title {
+    display: block;
+    font-size: 0.95rem;
+    color: var(--gold-light);
+  }
+
+  .viral-sub {
+    font-size: 0.775rem;
+    color: var(--text-muted);
+  }
+
+  .viral-whatsapp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.6rem 1.25rem;
+    border-radius: 9999px;
+    text-decoration: none;
+    box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+  }
+
+  @media (max-width: 640px) {
+    .viral-bar-inner {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.65rem;
+    }
+    .viral-whatsapp-btn {
+      justify-content: center;
+    }
+  }
+</style>
+
+<script>
+  function initLiveGallery() {
+    const wrapper = document.getElementById('live-gallery-wrapper');
+    if (!wrapper) return;
+
+    const slug = wrapper.getAttribute('data-event-slug') || '';
+    const allowDownload = wrapper.getAttribute('data-allow-download') === 'true';
+
+    const accessMode = wrapper.getAttribute('data-access-mode');
+    const isFaceOnly = accessMode === 'face_only';
+    const isFaceAndAll = accessMode === 'face_and_all' || accessMode === 'face_match';
+    const isFaceMatchMode = isFaceOnly || isFaceAndAll;
+    const gatePrompt = document.getElementById('face-match-gate');
+
+    // State & Engine Variables (Declared at top to prevent TDZ ReferenceError)
+    const MODEL_BASE_URL = 'https://cdn.jsdelivr.net/gh/vladmandic/face-api/model/';
+    let faceApiLoaded = false;
+    let modelsPromise: Promise<boolean> | null = null;
+    let activeGuestDescriptor: Float32Array | null = null;
+    let cameraStream: MediaStream | null = null;
+    let currentMatchedCount = 0;
+    const photoDescriptorCache = new Map<string, Float32Array[]>();
+    let pollInterval: any = null;
+
+    let knownPhotoIds = new Set<string>();
+    const grid = document.getElementById('live-masonry-grid');
+    const existingCards = document.querySelectorAll('.live-frame-card');
+    existingCards.forEach(c => {
+      const pid = c.getAttribute('data-photo-id');
+      if (pid) knownPhotoIds.add(pid);
+      // Ensure cards stay hidden in face-match mode until selfie is verified
+      if (isFaceMatchMode && !activeGuestDescriptor) {
+        (c as HTMLElement).style.display = 'none';
+      }
+    });
+
+    if (isFaceMatchMode && !activeGuestDescriptor && gatePrompt && existingCards.length > 0) {
+      gatePrompt.style.display = 'block';
+    }
+
+    // Lightbox Controls
+    const lbModal = document.getElementById('live-lightbox');
+    const lbImg = document.getElementById('lb-img') as HTMLImageElement;
+    lbImg?.addEventListener('contextmenu', (e) => e.preventDefault());
+    const lbClose = document.getElementById('lb-close-btn');
+    const lbBackdrop = document.getElementById('lb-backdrop');
+    const lbDlBtn = document.getElementById('lb-download-btn') as HTMLAnchorElement;
+    const lbTime = document.getElementById('lb-frame-time');
+
+    function openLightbox(url: string, timestamp?: string) {
+      if (!lbModal || !lbImg) return;
+      lbImg.src = url;
+      if (lbDlBtn) lbDlBtn.href = url;
+      if (lbTime && timestamp) {
+        lbTime.textContent = `Captured at ${new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      }
+      lbModal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      if (!lbModal) return;
+      lbModal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    lbClose?.addEventListener('click', closeLightbox);
+    lbBackdrop?.addEventListener('click', closeLightbox);
+
+    function bindCardClicks() {
+      const inspectButtons = document.querySelectorAll('.btn-inspect-frame');
+      inspectButtons.forEach(btn => {
+        (btn as HTMLElement).onclick = (e: MouseEvent) => {
+          e.stopPropagation();
+          const card = btn.closest('.live-frame-card');
+          const url = card?.getAttribute('data-photo-url');
+          const ts = card?.getAttribute('data-timestamp') || undefined;
+          if (url) openLightbox(url, ts);
+        };
+      });
+
+      const cards = document.querySelectorAll('.live-frame-card');
+      cards.forEach(card => {
+        (card as HTMLElement).onclick = () => {
+          const url = card.getAttribute('data-photo-url');
+          const ts = card.getAttribute('data-timestamp') || undefined;
+          if (url) openLightbox(url, ts);
+        };
+      });
+    }
+
+    bindCardClicks();
+
+    // ==========================================
+    // 15-SECOND LIVE POLLING PIPELINE
+    // ==========================================
+
+    async function pollLiveStream() {
+      try {
+        const res = await fetch(`/api/live-events/${encodeURIComponent(slug)}/poll`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        if (data.success && Array.isArray(data.photos)) {
+          const newPhotos = data.photos.filter((p: any) => !knownPhotoIds.has(p.id));
+
+          if (newPhotos.length > 0) {
+            showIncomingAlert(newPhotos.length);
+            prependNewPhotos(newPhotos);
+          }
+        }
+      } catch (err) {
+        console.warn('Poll error:', err);
+      }
+    }
+
+    function showIncomingAlert(count: number) {
+      const banner = document.getElementById('incoming-photos-banner');
+      const text = document.getElementById('incoming-text');
+      const timeAgo = document.getElementById('live-time-ago');
+
+      if (timeAgo) timeAgo.textContent = '• Updated just now';
+      if (text) text.textContent = `⚡ ${count} new photo${count > 1 ? 's' : ''} just beamed live!`;
+      if (banner) {
+        banner.style.display = 'inline-flex';
+        setTimeout(() => {
+          banner.style.display = 'none';
+        }, 8000);
+      }
+    }
+
+    function prependNewPhotos(newPhotos: any[]) {
+      if (!grid) return;
+      const noPhotos = document.getElementById('no-photos-found');
+      if (noPhotos) noPhotos.style.display = 'none';
+
+      const newlyAddedCards: HTMLElement[] = [];
+
+      newPhotos.forEach((photo: any) => {
+        knownPhotoIds.add(photo.id);
+
+        const card = document.createElement('article');
+        card.className = 'live-frame-card glass-card';
+        card.setAttribute('data-photo-id', photo.id);
+        card.setAttribute('data-photo-url', photo.url);
+        card.setAttribute('data-timestamp', photo.timestamp);
+        if (photo.faces) {
+          card.setAttribute('data-faces', JSON.stringify(photo.faces));
+        }
+
+        const timeStr = new Date(photo.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        card.innerHTML = `
+          <div class="frame-media-box protected-media">
+            <img src="${photo.url}" alt="Live Ceremony Frame" class="live-frame-img" loading="lazy" oncontextmenu="return false;" crossorigin="anonymous" />
+            <div class="protected-overlay" aria-hidden="true"></div>
+            <div class="frame-time-pill">${timeStr}</div>
+            <div class="frame-actions-overlay">
+              <button type="button" class="btn-inspect-frame"><span>🔍 Full Screen</span></button>
+              ${allowDownload ? `
+                <a href="${photo.url}" download target="_blank" class="btn-gold download-frame-btn">
+                  <span>⬇️ Download High-Res</span>
+                </a>
+              ` : `
+                <span class="view-only-tag">🔒 Protected • Direct Studio Print</span>
+              `}
+            </div>
+          </div>
+        `;
+
+        if (isFaceMatchMode && !activeGuestDescriptor) {
+          card.style.display = 'none';
+        }
+
+        grid.prepend(card);
+        newlyAddedCards.push(card);
+      });
+
+      bindCardClicks();
+
+      // If face matching is active, evaluate incoming photos against guest descriptor
+      if (activeGuestDescriptor) {
+        checkNewPhotosAgainstSelfie(newlyAddedCards, activeGuestDescriptor);
+      }
+    }
+
+    // Start 15s polling
+    pollInterval = setInterval(pollLiveStream, 15000);
+
+    // ==========================================
+    // MODE 1: AI FACE-MATCH GALLERY ENGINE
+    // ==========================================
+    async function ensureModelsLoaded(): Promise<boolean> {
+      if (faceApiLoaded) return true;
+      if (modelsPromise) return modelsPromise;
+
+      modelsPromise = (async () => {
+        try {
+          let fa = (window as any).faceapi;
+          if (!fa) {
+            for (let i = 0; i < 20; i++) {
+              await new Promise(r => setTimeout(r, 150));
+              fa = (window as any).faceapi;
+              if (fa) break;
+            }
+          }
+          if (!fa) {
+            console.error('face-api script not available on window.faceapi');
+            modelsPromise = null;
+            return false;
+          }
+
+          await Promise.all([
+            fa.nets.tinyFaceDetector.loadFromUri(MODEL_BASE_URL),
+            fa.nets.faceLandmark68Net.loadFromUri(MODEL_BASE_URL),
+            fa.nets.faceRecognitionNet.loadFromUri(MODEL_BASE_URL)
+          ]);
+
+          faceApiLoaded = true;
+          console.log('✓ AI Face-Match CNN models loaded successfully');
+          return true;
+        } catch (err) {
+          console.error('Failed to load face-api models:', err);
+          modelsPromise = null;
+          return false;
+        }
+      })();
+
+      return modelsPromise;
+    }
+
+    // Preload models in background if event is face_match mode
+    if (isFaceMatchMode) {
+      ensureModelsLoaded();
+    }
+
+    const takeSelfieBtn = document.getElementById('take-selfie-btn');
+    const fallbackInput = document.getElementById('camera-fallback-input') as HTMLInputElement;
+    const cameraModal = document.getElementById('selfie-camera-modal');
+    const closeCameraBtn = document.getElementById('close-camera-modal-btn');
+    const snapBtn = document.getElementById('snap-selfie-btn');
+    const videoElem = document.getElementById('selfie-video') as HTMLVideoElement;
+    const canvasElem = document.getElementById('selfie-canvas') as HTMLCanvasElement;
+    const matchStatusBanner = document.getElementById('face-match-status-banner');
+    const selfieAvatar = document.getElementById('guest-selfie-preview') as HTMLImageElement;
+    const matchHeadline = document.getElementById('match-headline');
+    const matchSubline = document.getElementById('match-subline');
+    const retakeBtn = document.getElementById('retake-selfie-btn');
+    const viewSwitcher = document.getElementById('view-switcher-bar');
+    const btnShowMatched = document.getElementById('btn-show-matched');
+    const btnShowAll = document.getElementById('btn-show-all');
+    const matchedBadge = document.getElementById('matched-count-badge');
+    const allBadge = document.getElementById('all-count-badge');
+    const progressWrap = document.getElementById('match-progress-wrap');
+    const progressFill = document.getElementById('match-progress-fill');
+    const progressLabel = document.getElementById('match-progress-label');
+    const noMatchState = document.getElementById('no-match-found');
+    const emptyShowAllBtn = document.getElementById('empty-show-all-btn');
+    const gateTakeSelfieBtn = document.getElementById('gate-take-selfie-btn');
+    const gateBrowseAllBtn = document.getElementById('gate-browse-all-btn');
+
+    // Unified Camera & Selfie Flow
+    async function openSelfieCamera() {
+      ensureModelsLoaded();
+
+      if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+        try {
+          cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 960 } }
+          });
+          if (videoElem) {
+            videoElem.srcObject = cameraStream;
+            videoElem.play().catch(e => console.warn('Video play warning:', e));
+          }
+          if (cameraModal) cameraModal.style.display = 'flex';
+          return;
+        } catch (err) {
+          console.warn('getUserMedia denied or failed, falling back to camera file input:', err);
+        }
+      }
+
+      fallbackInput?.click();
+    }
+
+    takeSelfieBtn?.addEventListener('click', openSelfieCamera);
+    gateTakeSelfieBtn?.addEventListener('click', openSelfieCamera);
+
+    gateBrowseAllBtn?.addEventListener('click', () => {
+      if (isFaceOnly) return;
+      if (gatePrompt) gatePrompt.style.display = 'none';
+      const allCards = document.querySelectorAll('.live-frame-card');
+      allCards.forEach(c => ((c as HTMLElement).style.display = 'block'));
+      if (viewSwitcher && isFaceAndAll) viewSwitcher.style.display = 'flex';
+      if (btnShowAll) btnShowAll.classList.add('active');
+      if (btnShowMatched) btnShowMatched.classList.remove('active');
+    });
+
+    fallbackInput?.addEventListener('change', () => {
+      if (fallbackInput.files && fallbackInput.files[0]) {
+        const file = fallbackInput.files[0];
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          if (e.target?.result) {
+            const dataUrl = e.target.result as string;
+            const img = new Image();
+            img.onload = async () => {
+              await processSelfieCapture(img, dataUrl);
+            };
+            img.src = dataUrl;
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+      fallbackInput.value = '';
+    });
+
+    function closeCameraModal() {
+      if (cameraModal) cameraModal.style.display = 'none';
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+    }
+
+    closeCameraBtn?.addEventListener('click', closeCameraModal);
+    cameraModal?.addEventListener('click', (e) => {
+      if (e.target === cameraModal) {
+        closeCameraModal();
+      }
+    });
+
+    // Snap Selfie from Live Video
+    snapBtn?.addEventListener('click', async () => {
+      if (!videoElem || !canvasElem) return;
+      canvasElem.width = videoElem.videoWidth || 480;
+      canvasElem.height = videoElem.videoHeight || 640;
+      const ctx = canvasElem.getContext('2d');
+      if (!ctx) return;
+
+      // Mirror-flip compensation
+      ctx.translate(canvasElem.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(videoElem, 0, 0, canvasElem.width, canvasElem.height);
+
+      const dataUrl = canvasElem.toDataURL('image/jpeg', 0.9);
+      closeCameraModal();
+      await processSelfieCapture(canvasElem, dataUrl);
+    });
+
+    // Detect Guest Face Descriptor
+    async function extractGuestDescriptor(source: CanvasImageSource): Promise<Float32Array | null> {
+      const ready = await ensureModelsLoaded();
+      if (!ready) return null;
+      const fa = (window as any).faceapi;
+      if (!fa) return null;
+
+      try {
+        const detection = await fa
+          .detectSingleFace(source, new fa.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.4 }))
+          .withFaceLandmarks()
+          .withFaceDescriptor();
+
+        if (!detection || !detection.descriptor) {
+          return null;
+        }
+        return detection.descriptor;
+      } catch (err) {
+        console.error('Error detecting selfie face:', err);
+        return null;
+      }
+    }
+
+    // Process & Trigger Face Matching
+    async function processSelfieCapture(source: CanvasImageSource, previewDataUrl: string) {
+      if (selfieAvatar) selfieAvatar.src = previewDataUrl;
+      if (matchStatusBanner) matchStatusBanner.style.display = 'flex';
+      if (matchHeadline) matchHeadline.textContent = 'Analyzing Selfie Face...';
+      if (matchSubline) matchSubline.textContent = 'Extracting facial landmarks and biometrics...';
+
+      const descriptor = await extractGuestDescriptor(source);
+      if (!descriptor) {
+        alert('No face detected in selfie. Please ensure good lighting and try again.');
+        activeGuestDescriptor = null;
+        if (matchStatusBanner) matchStatusBanner.style.display = 'none';
+        return;
+      }
+
+      activeGuestDescriptor = descriptor;
+      await runClientFaceMatching(descriptor);
+    }
+
+    // Compute or Retrieve Photo Descriptors
+    async function getPhotoDescriptors(card: HTMLElement): Promise<Float32Array[]> {
+      const photoUrl = card.getAttribute('data-photo-url') || '';
+      if (!photoUrl) return [];
+
+      if (photoDescriptorCache.has(photoUrl)) {
+        return photoDescriptorCache.get(photoUrl)!;
+      }
+
+      // Pre-computed descriptors in card data attribute
+      const rawFaces = card.getAttribute('data-faces');
+      if (rawFaces) {
+        try {
+          const parsed = JSON.parse(rawFaces);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const floatArrays = parsed.map((v: any) => new Float32Array(v));
+            photoDescriptorCache.set(photoUrl, floatArrays);
+            return floatArrays;
+          }
+        } catch {}
+      }
+
+      // Compute client-side via face-api
+      const fa = (window as any).faceapi;
+      if (!fa) return [];
+
+      try {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = photoUrl;
+
+        await new Promise((resolve, reject) => {
+          if (img.complete && img.naturalWidth !== 0) {
+            resolve(true);
+          } else {
+            img.onload = () => resolve(true);
+            img.onerror = () => reject(new Error('Image failed to load'));
+          }
+        });
+
+        const detections = await fa
+          .detectAllFaces(img, new fa.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
+          .withFaceLandmarks()
+          .withFaceDescriptors();
+
+        const descriptors = (detections || []).map((d: any) => d.descriptor).filter(Boolean);
+        photoDescriptorCache.set(photoUrl, descriptors);
+        return descriptors;
+      } catch (err) {
+        console.warn(`Could not compute faces for ${photoUrl}:`, err);
+        photoDescriptorCache.set(photoUrl, []);
+        return [];
+      }
+    }
+
+    // Strict Client Face Matching Loop
+    async function runClientFaceMatching(guestDescriptor: Float32Array) {
+      const fa = (window as any).faceapi;
+      if (!fa) return;
+
+      const allCards = Array.from(document.querySelectorAll('.live-frame-card')) as HTMLElement[];
+      const noPhotosFound = document.getElementById('no-photos-found');
+      if (noPhotosFound) noPhotosFound.style.display = 'none';
+      if (gatePrompt) gatePrompt.style.display = 'none';
+
+      if (progressWrap) progressWrap.style.display = 'flex';
+      if (progressFill) progressFill.style.width = '0%';
+      if (progressLabel) progressLabel.textContent = '0%';
+      if (matchHeadline) matchHeadline.textContent = 'Matching Sacred Moments...';
+
+      let matchedCount = 0;
+
+      for (let i = 0; i < allCards.length; i++) {
+        const card = allCards[i];
+        const checked = i + 1;
+        const total = allCards.length;
+
+        if (matchSubline) {
+          matchSubline.textContent = `Scanning event moments for your smile... (${checked}/${total} frames checked)`;
+        }
+        const percent = Math.round((checked / total) * 100);
+        if (progressFill) progressFill.style.width = `${percent}%`;
+        if (progressLabel) progressLabel.textContent = `${percent}%`;
+
+        const descriptors = await getPhotoDescriptors(card);
+
+        // Strict Matching:
+        // Photos without faces (e.g. stage decor, scenery, or cartoon graphics) MUST BE EXCLUDED!
+        const isMatch = descriptors.length > 0 && descriptors.some((faceVec) => {
+          const distance = fa.euclideanDistance(guestDescriptor, faceVec);
+          return distance < 0.52; // Strict threshold for high confidence
+        });
+
+        if (isMatch) {
+          matchedCount++;
+          card.dataset.matched = 'true';
+        } else {
+          card.dataset.matched = 'false';
+        }
+
+        // Render strictly matched photos
+        const isMatchedView = isFaceOnly || !btnShowAll?.classList.contains('active');
+        if (isMatchedView) {
+          card.style.display = isMatch ? 'block' : 'none';
+        }
+      }
+
+      currentMatchedCount = matchedCount;
+
+      // Hide progress bar
+      if (progressWrap) progressWrap.style.display = 'none';
+
+      // Strict handling: NEVER fall back to showing all photos!
+      if (matchedCount > 0) {
+        if (matchHeadline) matchHeadline.textContent = `Found ${matchedCount} Moment${matchedCount > 1 ? 's' : ''} Featuring You ✨`;
+        if (matchSubline) matchSubline.textContent = 'Strict AI facial match verified. Showing your sacred ceremony moments.';
+        if (noMatchState) noMatchState.style.display = 'none';
+      } else {
+        if (matchHeadline) matchHeadline.textContent = 'Scanning Complete';
+        if (matchSubline) matchSubline.textContent = 'No matching frames found yet.';
+        // Display elegant empty state
+        if (noMatchState) noMatchState.style.display = 'block';
+        allCards.forEach(c => { c.style.display = 'none'; });
+      }
+
+      if (viewSwitcher && isFaceAndAll) viewSwitcher.style.display = 'flex';
+      if (matchedBadge) matchedBadge.textContent = matchedCount.toString();
+      if (allBadge) allBadge.textContent = allCards.length.toString();
+      if (btnShowMatched) btnShowMatched.classList.add('active');
+      if (btnShowAll) btnShowAll.classList.remove('active');
+    }
+
+    // Evaluate incoming streamed photos against active selfie descriptor
+    async function checkNewPhotosAgainstSelfie(newCards: HTMLElement[], guestDescriptor: Float32Array) {
+      const fa = (window as any).faceapi;
+      if (!fa) return;
+
+      for (const card of newCards) {
+        const descriptors = await getPhotoDescriptors(card);
+        const isMatch = descriptors.length > 0 && descriptors.some((faceVec) => {
+          return fa.euclideanDistance(guestDescriptor, faceVec) < 0.52;
+        });
+
+        card.dataset.matched = isMatch ? 'true' : 'false';
+
+        if (isMatch) {
+          currentMatchedCount++;
+          if (matchedBadge) matchedBadge.textContent = currentMatchedCount.toString();
+          if (noMatchState) noMatchState.style.display = 'none';
+          if (matchHeadline) matchHeadline.textContent = `Found ${currentMatchedCount} Moments Featuring You ✨`;
+          card.style.display = 'block';
+        } else {
+          card.style.display = (!isFaceOnly && btnShowAll?.classList.contains('active')) ? 'block' : 'none';
+        }
+      }
+    }
+
+    // Retake Selfie Handler
+    retakeBtn?.addEventListener('click', () => {
+      activeGuestDescriptor = null;
+      currentMatchedCount = 0;
+      if (matchStatusBanner) matchStatusBanner.style.display = 'none';
+      if (viewSwitcher) viewSwitcher.style.display = 'none';
+      if (noMatchState) noMatchState.style.display = 'none';
+      // In face-match mode, hide photos until new selfie is verified
+      const allCards = document.querySelectorAll('.live-frame-card');
+      allCards.forEach(c => ((c as HTMLElement).style.display = 'none'));
+      if (gatePrompt && allCards.length > 0) gatePrompt.style.display = 'block';
+      openSelfieCamera();
+    });
+
+    // Switch between "My Matched Frames" and "All Ceremony Frames"
+    btnShowMatched?.addEventListener('click', () => {
+      if (!activeGuestDescriptor) {
+        openSelfieCamera();
+        return;
+      }
+      btnShowMatched.classList.add('active');
+      btnShowAll?.classList.remove('active');
+      const allCards = document.querySelectorAll('.live-frame-card');
+      allCards.forEach(c => {
+        const el = c as HTMLElement;
+        el.style.display = el.dataset.matched === 'true' ? 'block' : 'none';
+      });
+
+      if (currentMatchedCount === 0 && activeGuestDescriptor) {
+        if (noMatchState) noMatchState.style.display = 'block';
+      } else {
+        if (noMatchState) noMatchState.style.display = 'none';
+      }
+    });
+
+    btnShowAll?.addEventListener('click', () => {
+      if (isFaceOnly) return;
+      btnShowAll.classList.add('active');
+      btnShowMatched?.classList.remove('active');
+      if (noMatchState) noMatchState.style.display = 'none';
+      const allCards = document.querySelectorAll('.live-frame-card');
+      allCards.forEach(c => ((c as HTMLElement).style.display = 'block'));
+    });
+
+    emptyShowAllBtn?.addEventListener('click', () => {
+      if (isFaceOnly) return;
+      btnShowAll?.click();
+    });
+
+    window.addEventListener('beforeunload', () => {
+      if (pollInterval) clearInterval(pollInterval);
+    });
+    document.addEventListener('astro:before-swap', () => {
+      if (pollInterval) clearInterval(pollInterval);
+    }, { once: true });
+  }
+
+  initLiveGallery();
+  document.addEventListener('astro:page-load', initLiveGallery);
+</script>

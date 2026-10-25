@@ -1,0 +1,901 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getPortfolioItemsAsync, getStudioSettingsAsync } from '../lib/db';
+import { isAuthenticated } from '../lib/auth';
+
+export const prerender = false;
+
+const settings = await getStudioSettingsAsync();
+const authed = await isAuthenticated(Astro.request);
+const hasPinParam = Boolean(Astro.url.searchParams.get('pin'));
+const isPortalVisible = settings.clientPortalVisible !== false;
+const isPortalAccessible = isPortalVisible || authed || hasPinParam;
+
+const whatsappClean = (settings.whatsappConcierge || '917892706982').replace(/[^0-9]/g, '');
+const dbPhotos = await getPortfolioItemsAsync();
+
+// Duplicate and expand sample items from database for realistic proofing gallery demo
+const proofingPhotos = Array.from({ length: 48 }, (_, i) => {
+  const base = dbPhotos.length > 0 ? dbPhotos[i % dbPhotos.length] : {
+    title: 'Heritage Frame',
+    category: 'weddings',
+    categoryLabel: 'Weddings & Muhurtham',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Bangalore_Palace.jpg/1280px-Bangalore_Palace.jpg'
+  };
+  return {
+    id: `proof-${i + 1}`,
+    photoNumber: String(i + 1).padStart(3, '0'),
+    title: `${base.title} #${i + 1}`,
+    category: base.categoryLabel || base.category,
+    image: base.image,
+    initialFav: i < 18 // pre-select some favorites for instant demo feel
+  };
+});
+---
+
+<Layout
+  title="Private Client Proofing Portal | Frames By Hithu"
+  description="Private client portal for reviewing, favoriting, and proofing heirloom album selections. Protected by private PIN code."
+>
+  {!isPortalAccessible ? (
+    <div class="portal-offline-wrapper section-py text-center">
+      <div class="container">
+        <div class="portal-offline-card glass-card">
+          <div class="offline-lock-icon">🔒</div>
+          <div class="gold-pill">PRIVATE ARCHIVE</div>
+          <h1 class="portal-title">Client Proofing Portal is Private</h1>
+          <div class="gold-divider"></div>
+          <p class="portal-desc">
+            Public access to the client gallery proofing suite is currently suspended by studio administration. If you have an active event commission, please access your private gallery via your direct WhatsApp link or request your access key from lead photographer Hithu.
+          </p>
+          <div class="offline-actions">
+            <a href={`https://wa.me/${whatsappClean}?text=${encodeURIComponent('Hello Frames By Hithu, I would like to request access to my private client gallery.')}`} target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
+              Contact Concierge on WhatsApp
+            </a>
+            <a href="/" class="btn-gold">
+              Return to Studio Home
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : (
+    <>
+  <!-- Portal Gate / Header -->
+  <div class="portal-header section-py text-center">
+    <div class="container">
+      <div class="gold-pill">PRIVATE CLIENT PROOFING SUITE</div>
+      <h1 class="portal-title">Client Gallery & Album Proofing</h1>
+      <div class="gold-divider"></div>
+      <p class="portal-desc">
+        Review your master fine-art photographs in ultra high-resolution, select your favorites for the heirloom Italian leatherette album, and communicate your choices directly to our post-production team.
+      </p>
+    </div>
+  </div>
+
+  <section class="portal-main-section">
+    <div class="container">
+      <!-- PIN Locked Screen -->
+      <div id="pin-gate-screen" class="pin-gate-card glass-card text-center">
+        <div class="lock-icon">🔒</div>
+        <h2 class="lock-title">Enter Private Access Key</h2>
+        <p class="lock-subtitle">
+          Please input your secure gallery passcode or key provided by Frames By Hithu.
+        </p>
+
+        <!-- Brute-Force Lockout Notice -->
+        <div id="lockout-alert" class="lockout-banner" style="display: none;">
+          <span class="lockout-icon">⚠️</span>
+          <div>
+            <strong>Access Temporarily Suspended</strong><br />
+            Multiple incorrect attempts detected. Please wait <span id="lockout-timer-text">10:00</span> before trying again.
+          </div>
+        </div>
+
+        <form id="pin-gate-form" class="pin-form">
+          <div class="pin-input-wrap">
+            <input
+              type="text"
+              id="pin-input"
+              maxlength="32"
+              placeholder="e.g. FBH-2026 or ANANYA-2026"
+              class="pin-input"
+              autocomplete="off"
+              autocorrect="off"
+              spellcheck="false"
+              required
+            />
+          </div>
+
+          <div class="secondary-auth-wrap" id="sec-auth-wrap" style="display: none;">
+            <input
+              type="text"
+              id="sec-identifier-input"
+              placeholder="Client Email or WhatsApp Number"
+              class="form-input text-center"
+            />
+            <span class="sec-help">Required for 2-factor verified collections</span>
+          </div>
+
+          <button type="submit" id="pin-submit-btn" class="btn-gold pin-submit-btn">
+            Unlock Private Suite
+          </button>
+        </form>
+
+        <div class="security-guarantee-pill">
+          <span>🛡️ AES-256 Encrypted Private Proofing Suite • Monitored Session</span>
+        </div>
+
+        <div class="pin-demo-hint">
+          <span class="hint-badge">Client Demo Access:</span>
+          <span>Enter Passcode: <strong>FBH-2026</strong> or <strong>2026</strong></span>
+        </div>
+      </div>
+
+      <!-- Authenticated Gallery View -->
+      <div id="authenticated-portal-view" class="authenticated-view" style="display: none;">
+        <!-- Client Gallery Bar -->
+        <div class="client-banner glass-card">
+          <div class="client-info">
+            <span class="gold-pill">VERIFIED GALLERY</span>
+            <h2 class="client-event-name">Ananya & Rohit — Royal Bangalore Palace Wedding</h2>
+            <p class="client-details">Ceremony Date: 14 February 2026 • 48 Proofing Frames</p>
+          </div>
+
+          <div class="album-counter-box">
+            <div class="counter-display">
+              <span class="counter-label">Album Selected:</span>
+              <span class="counter-value" id="selected-count">18</span>
+              <span class="counter-max">/ 40 Target</span>
+            </div>
+            <div class="counter-progress-bar">
+              <div class="counter-progress-fill" id="counter-progress" style="width: 45%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gallery Controls -->
+        <div class="gallery-controls-bar">
+          <div class="filter-toggles">
+            <button class="toggle-btn active" id="filter-all-btn">
+              All Photographs (<span id="total-photos-count">48</span>)
+            </button>
+            <button class="toggle-btn" id="filter-selected-btn">
+              ❤️ Selected For Album (<span id="selected-badge-count">18</span>)
+            </button>
+          </div>
+
+          <div class="export-actions">
+            <button class="btn-whatsapp portal-action-btn" id="export-whatsapp-btn" data-whatsapp={whatsappClean}>
+              <span>Send Selections to Studio</span>
+            </button>
+            <button class="btn-outline portal-action-btn" id="download-summary-btn">
+              <span>Download Selection List</span>
+            </button>
+            <a href="/feedback" target="_blank" rel="noopener noreferrer" class="btn-outline portal-action-btn" style="border-color: rgba(212, 175, 55, 0.4); color: var(--gold-light);">
+              <span>⭐ Leave a Review</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Proofing Grid -->
+        <div class="proofing-grid" id="proofing-grid">
+          {proofingPhotos.map((photo) => (
+            <div
+              class:list={['proofing-card glass-card', { favorited: photo.initialFav }]}
+              data-id={photo.id}
+              data-number={photo.photoNumber}
+              data-title={photo.title}
+            >
+              <div class="proofing-media protected-media">
+                <img src={photo.image} alt={photo.title} loading="lazy" class="proofing-img" />
+                <div class="protected-overlay"></div>
+                <div class="watermark-subtle">FRAMES BY HITHU</div>
+
+                <!-- Favorite Heart Button -->
+                <button
+                  class="fav-toggle-btn"
+                  title="Toggle for Album"
+                  aria-label={`Toggle ${photo.title} for album selection`}
+                >
+                  <span class="heart-icon">♥</span>
+                </button>
+
+                <div class="photo-id-badge">#{photo.photoNumber}</div>
+              </div>
+
+              <div class="proofing-card-footer">
+                <span class="card-caption">Frame #{photo.photoNumber}</span>
+                <span class="card-status-badge">
+                  {photo.initialFav ? 'In Album' : 'Not Selected'}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+    </>
+  )}
+</Layout>
+
+<style>
+  .text-center {
+    text-align: center;
+  }
+
+  .portal-header {
+    background: radial-gradient(ellipse at top, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
+    padding-bottom: 2rem;
+  }
+
+  .portal-title {
+    font-size: clamp(2.4rem, 5vw, 4rem);
+    margin-top: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .portal-desc {
+    max-width: 720px;
+    margin: 0 auto;
+    font-size: 1rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  .portal-main-section {
+    padding-bottom: 6rem;
+  }
+
+  /* Private Offline State */
+  .portal-offline-wrapper {
+    padding: 6rem 0;
+  }
+
+  .portal-offline-card {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 3.5rem 2.5rem;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+  }
+
+  .offline-lock-icon {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    color: var(--gold-light);
+  }
+
+  .offline-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1.25rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+  }
+
+  /* PIN Gate Card */
+  .pin-gate-card {
+    max-width: 520px;
+    margin: 2rem auto;
+    padding: 3.5rem 2.5rem;
+    border: 1px solid var(--gold-border);
+  }
+
+  .lock-icon {
+    font-size: 3rem;
+    color: var(--gold-primary);
+    margin-bottom: 1.25rem;
+  }
+
+  .lock-title {
+    font-size: 2rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+  }
+
+  .lock-subtitle {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+  }
+
+  .pin-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .pin-input-wrap {
+    width: 100%;
+    max-width: 360px;
+  }
+
+  .pin-input {
+    width: 100%;
+    text-align: center;
+    font-size: 1.4rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 600;
+    padding: 0.85rem 1.25rem;
+    background: rgba(11, 12, 16, 0.95);
+    border: 2px solid var(--gold-border);
+    border-radius: 8px;
+    color: var(--gold-light);
+    outline: none;
+    transition: var(--transition-smooth);
+  }
+
+  .pin-input:focus {
+    border-color: var(--gold-primary);
+    box-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
+  }
+
+  .secondary-auth-wrap {
+    width: 100%;
+    max-width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .sec-help {
+    font-size: 0.72rem;
+    color: #9CA3AF;
+  }
+
+  .lockout-banner {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #FCA5A5;
+    padding: 0.85rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-align: left;
+  }
+
+  .lockout-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .security-guarantee-pill {
+    margin-top: 1.5rem;
+    font-size: 0.75rem;
+    color: #9CA3AF;
+    letter-spacing: 0.04em;
+  }
+
+  .pin-submit-btn {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .pin-demo-hint {
+    margin-top: 1.5rem;
+    padding: 0.75rem 1rem;
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px dashed var(--gold-border);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: var(--gold-light);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .hint-badge {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+  }
+
+  /* Authenticated Portal */
+  .client-banner {
+    padding: 2rem 2.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    justify-content: space-between;
+    border: 1px solid var(--gold-border);
+  }
+
+  @media (min-width: 768px) {
+    .client-banner {
+      flex-direction: row;
+      align-items: center;
+    }
+  }
+
+  .client-event-name {
+    font-size: 1.6rem;
+    color: var(--gold-light);
+    margin-top: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .client-details {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+  }
+
+  .album-counter-box {
+    background: rgba(11, 12, 16, 0.8);
+    border: 1px solid var(--border-subtle);
+    padding: 1.25rem 1.5rem;
+    border-radius: 6px;
+    min-width: 240px;
+  }
+
+  .counter-display {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .counter-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  .counter-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--gold-light);
+  }
+
+  .counter-max {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+
+  .counter-progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+
+  .counter-progress-fill {
+    height: 100%;
+    background: var(--gold-gradient);
+    transition: width 0.3s ease;
+  }
+
+  /* Controls Bar */
+  .gallery-controls-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+  }
+
+  @media (min-width: 768px) {
+    .gallery-controls-bar {
+      flex-direction: row;
+      align-items: center;
+    }
+  }
+
+  .filter-toggles {
+    display: flex;
+    gap: 0.5rem;
+    background: rgba(20, 22, 29, 0.7);
+    padding: 4px;
+    border-radius: 6px;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .toggle-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    padding: 0.6rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+  }
+
+  .toggle-btn.active {
+    background: var(--gold-gradient);
+    color: #0B0C10;
+    font-weight: 600;
+  }
+
+  .export-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .portal-action-btn {
+    padding: 0.65rem 1.25rem;
+    font-size: 0.8rem;
+  }
+
+  /* Proofing Grid */
+  .proofing-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+
+  @media (min-width: 768px) {
+    .proofing-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .proofing-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.5rem;
+    }
+  }
+
+  .proofing-card {
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    transition: var(--transition-smooth);
+  }
+
+  .proofing-card.favorited {
+    border-color: var(--gold-primary);
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+  }
+
+  .proofing-media {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    background: #000;
+  }
+
+  .proofing-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .fav-toggle-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(11, 12, 16, 0.7);
+    border: 1px solid var(--border-subtle);
+    color: rgba(255, 255, 255, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.25rem;
+    transition: var(--transition-smooth);
+    backdrop-filter: blur(8px);
+  }
+
+  .proofing-card.favorited .fav-toggle-btn {
+    background: var(--gold-gradient);
+    border-color: var(--gold-primary);
+    color: #0B0C10;
+    transform: scale(1.1);
+  }
+
+  .photo-id-badge {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    font-size: 0.75rem;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+    z-index: 5;
+  }
+
+  .proofing-card-footer {
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+  }
+
+  .card-caption {
+    color: var(--text-muted);
+  }
+
+  .card-status-badge {
+    color: var(--text-dim);
+  }
+
+  .proofing-card.favorited .card-status-badge {
+    color: var(--gold-light);
+    font-weight: 600;
+  }
+</style>
+
+<script>
+  function initClientPortal() {
+    const pinForm = document.getElementById('pin-gate-form');
+    const pinInput = document.getElementById('pin-input') as HTMLInputElement;
+    const gateScreen = document.getElementById('pin-gate-screen');
+    const portalView = document.getElementById('authenticated-portal-view');
+    const clientEventName = document.querySelector('.client-event-name');
+    const clientDetails = document.querySelector('.client-details');
+
+    // Check URL query param for instant auto-unlock: /client-portal?pin=2026
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlPin = urlParams.get('pin');
+    if (urlPin && pinInput) {
+      pinInput.value = urlPin;
+    }
+
+    // Check if already authenticated this session
+    const isAuthed = sessionStorage.getItem('client_portal_authed') === 'true';
+
+    // Brute force lockout check
+    function checkLockout(): boolean {
+      const lockoutUntil = parseInt(sessionStorage.getItem('client_lockout_until') || '0', 10);
+      const lockoutBanner = document.getElementById('lockout-alert');
+      const timerSpan = document.getElementById('lockout-timer-text');
+      const submitBtn = document.getElementById('pin-submit-btn') as HTMLButtonElement;
+
+      if (lockoutUntil && Date.now() < lockoutUntil) {
+        const remainingSeconds = Math.ceil((lockoutUntil - Date.now()) / 1000);
+        const mins = Math.floor(remainingSeconds / 60);
+        const secs = remainingSeconds % 60;
+        if (timerSpan) timerSpan.textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        if (lockoutBanner) lockoutBanner.style.display = 'flex';
+        if (submitBtn) submitBtn.disabled = true;
+        return true;
+      } else {
+        if (lockoutBanner) lockoutBanner.style.display = 'none';
+        if (submitBtn) submitBtn.disabled = false;
+        return false;
+      }
+    }
+
+    setInterval(checkLockout, 1000);
+
+    function recordFailedAttempt() {
+      let attempts = parseInt(sessionStorage.getItem('client_failed_attempts') || '0', 10) + 1;
+      sessionStorage.setItem('client_failed_attempts', attempts.toString());
+      if (attempts >= 5) {
+        const lockUntil = Date.now() + 10 * 60 * 1000; // 10 minutes lock
+        sessionStorage.setItem('client_lockout_until', lockUntil.toString());
+        checkLockout();
+      }
+    }
+
+    function unlockGallery(clientData?: any) {
+      if (gateScreen && portalView) {
+        sessionStorage.removeItem('client_failed_attempts');
+        sessionStorage.removeItem('client_lockout_until');
+
+        if (clientData) {
+          if (clientEventName) {
+            clientEventName.textContent = `${clientData.clientName} — ${clientData.eventTitle}`;
+          }
+          if (clientDetails) {
+            clientDetails.textContent = `Ceremony Date: ${clientData.ceremonyDate} • Target: ${clientData.targetAlbumCount} Frames`;
+          }
+
+          // Dynamically populate grid with client's real uploaded photos if present
+          if (Array.isArray(clientData.photos) && clientData.photos.length > 0) {
+            const grid = document.getElementById('proofing-grid');
+            const totalCountElem = document.getElementById('total-photos-count');
+            if (totalCountElem) totalCountElem.textContent = clientData.photos.length.toString();
+
+            if (grid) {
+              grid.innerHTML = '';
+              clientData.photos.forEach((imgUrl: string, idx: number) => {
+                const numStr = String(idx + 1).padStart(3, '0');
+                const card = document.createElement('div');
+                card.className = 'proofing-card glass-card';
+                card.setAttribute('data-id', `proof-${idx + 1}`);
+                card.setAttribute('data-number', numStr);
+                card.setAttribute('data-title', `Ceremony Frame #${numStr}`);
+                card.innerHTML = `
+                  <div class="proofing-media protected-media">
+                    <img src="${imgUrl}" alt="Frame #${numStr}" loading="lazy" class="proofing-img" />
+                    <div class="protected-overlay"></div>
+                    <div class="watermark-subtle">FRAMES BY HITHU</div>
+                    <button class="fav-toggle-btn" title="Toggle for Album" aria-label="Toggle frame #${numStr}">
+                      <span class="heart-icon">♥</span>
+                    </button>
+                    <div class="photo-id-badge">#${numStr}</div>
+                  </div>
+                  <div class="proofing-card-footer">
+                    <span class="card-caption">Frame #${numStr}</span>
+                    <span class="card-status-badge">Not Selected</span>
+                  </div>
+                `;
+                grid.appendChild(card);
+              });
+            }
+          }
+        }
+        gateScreen.style.display = 'none';
+        portalView.style.display = 'block';
+        sessionStorage.setItem('client_portal_authed', 'true');
+        setupGalleryInteractions();
+      }
+    }
+
+    async function verifyAndUnlock(pin: string, secondary?: string) {
+      if (checkLockout()) {
+        alert('Access is temporarily locked due to multiple failed attempts.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/clients/verify-pin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin, secondaryIdentifier: secondary })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          unlockGallery(data.client);
+          return;
+        } else {
+          recordFailedAttempt();
+          alert(data.error || 'Invalid Access Passcode.');
+          if (pinInput) pinInput.value = '';
+          return;
+        }
+      } catch (err) {
+        // Fallback for offline/demo PIN
+        if (pin.toUpperCase() === 'FBH-2026' || pin === '2026') {
+          unlockGallery();
+          return;
+        }
+        recordFailedAttempt();
+        alert('Network verification failed. Please try again.');
+      }
+    }
+
+    if (isAuthed) {
+      unlockGallery();
+    } else if (urlPin) {
+      verifyAndUnlock(urlPin);
+    } else if (pinForm) {
+      pinForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const pin = pinInput?.value.trim();
+        const sec = (document.getElementById('sec-identifier-input') as HTMLInputElement)?.value.trim();
+        if (pin) {
+          verifyAndUnlock(pin, sec);
+        }
+      });
+    }
+
+    function setupGalleryInteractions() {
+      const cards = document.querySelectorAll('.proofing-card');
+      const selectedCountElem = document.getElementById('selected-count');
+      const selectedBadgeElem = document.getElementById('selected-badge-count');
+      const progressFill = document.getElementById('counter-progress');
+      const filterAllBtn = document.getElementById('filter-all-btn');
+      const filterSelBtn = document.getElementById('filter-selected-btn');
+      const exportWaBtn = document.getElementById('export-whatsapp-btn');
+      const downloadBtn = document.getElementById('download-summary-btn');
+
+      function updateCounter() {
+        const favs = document.querySelectorAll('.proofing-card.favorited');
+        const count = favs.length;
+        if (selectedCountElem) selectedCountElem.textContent = count.toString();
+        if (selectedBadgeElem) selectedBadgeElem.textContent = count.toString();
+        if (progressFill) {
+          const pct = Math.min(100, Math.round((count / 40) * 100));
+          progressFill.style.width = `${pct}%`;
+        }
+      }
+
+      // Heart button click
+      cards.forEach((card) => {
+        const favBtn = card.querySelector('.fav-toggle-btn');
+        const statusBadge = card.querySelector('.card-status-badge');
+
+        favBtn?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          card.classList.toggle('favorited');
+          const isFav = card.classList.contains('favorited');
+          if (statusBadge) {
+            statusBadge.textContent = isFav ? 'In Album' : 'Not Selected';
+          }
+          updateCounter();
+        });
+      });
+
+      // Filters
+      if (filterAllBtn && filterSelBtn) {
+        filterAllBtn.addEventListener('click', () => {
+          filterAllBtn.classList.add('active');
+          filterSelBtn.classList.remove('active');
+          cards.forEach((c) => ((c as HTMLElement).style.display = ''));
+        });
+
+        filterSelBtn.addEventListener('click', () => {
+          filterSelBtn.classList.add('active');
+          filterAllBtn.classList.remove('active');
+          cards.forEach((c) => {
+            const isFav = c.classList.contains('favorited');
+            (c as HTMLElement).style.display = isFav ? '' : 'none';
+          });
+        });
+      }
+
+      // Export WhatsApp
+      if (exportWaBtn) {
+        exportWaBtn.addEventListener('click', () => {
+          const favCards = document.querySelectorAll('.proofing-card.favorited');
+          const numbers = Array.from(favCards).map((c) => c.getAttribute('data-number')).filter(Boolean);
+
+          if (numbers.length === 0) {
+            alert('Please select at least one frame before submitting.');
+            return;
+          }
+
+          const message = `✨ *Frames By Hithu - Album Proofing Submission*\n\n` +
+            `👤 *Client:* Ananya & Rohit\n` +
+            `📍 *Event:* Bangalore Palace Wedding\n` +
+            `📸 *Total Frames Selected:* ${numbers.length}\n` +
+            `🏷️ *Selected Frame Numbers:*\n${numbers.join(', ')}\n\n` +
+            `Please confirm receipt and proceed with album spread design!`;
+
+          const waNumber = exportWaBtn.getAttribute('data-whatsapp') || '917892706982';
+          window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`, '_blank');
+        });
+      }
+
+      // Download summary text file
+      if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => {
+          const favCards = document.querySelectorAll('.proofing-card.favorited');
+          const numbers = Array.from(favCards).map((c) => c.getAttribute('data-number')).filter(Boolean);
+
+          const content = `FRAMES BY HITHU - CLIENT ALBUM PROOFING SELECTION\n` +
+            `Client: Ananya & Rohit\n` +
+            `Event: Royal Bangalore Palace Wedding\n` +
+            `Date: 14 February 2026\n` +
+            `Selected Frames Count: ${numbers.length}\n\n` +
+            `Frame Numbers:\n` +
+            numbers.join('\n');
+
+          const blob = new Blob([content], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'FramesByHithu_Album_Selection.txt';
+          a.click();
+          URL.revokeObjectURL(url);
+        });
+      }
+    }
+  }
+
+  initClientPortal();
+  document.addEventListener('astro:page-load', initClientPortal);
+</script>

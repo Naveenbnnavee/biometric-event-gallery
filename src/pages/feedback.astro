@@ -1,0 +1,644 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getStudioSettingsAsync } from '../lib/db';
+
+export const prerender = false;
+
+const settings = await getStudioSettingsAsync();
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'FeedbackPage',
+  'name': 'Client Feedback & Review | Frames By Hithu',
+  'description': 'Share your experience and review Frames By Hithu luxury wedding and fine-art photography services.',
+  'url': 'https://framesbyhithu.com/feedback'
+};
+---
+
+<Layout
+  title="Client Feedback & Reviews | Frames By Hithu"
+  description="Share your experience and thoughts with Frames By Hithu. We cherish every couple and family memory entrusted to our lens."
+  schema={schema}
+>
+  <div class="feedback-page-header section-py text-center">
+    <div class="container">
+      <div class="gold-pill">CLIENT TESTIMONIALS & TRUST</div>
+      <h1 class="page-title">Share Your Experience</h1>
+      <div class="gold-divider"></div>
+      <p class="page-subtitle">
+        Preserving your sacred milestones is our life’s craft. Whether we captured the tears of your Muhurtham, the warmth of your Gruhapravesham, or an heirloom family portrait, your words inspire our dedication to artistic excellence.
+      </p>
+    </div>
+  </div>
+
+  <section class="feedback-section section-py">
+    <div class="container feedback-container">
+      <div class="feedback-grid">
+        <!-- Form Column -->
+        <div class="feedback-form-card glass-card">
+          <div class="card-header">
+            <h2 class="form-title">Client Review Form</h2>
+            <p class="form-subtitle">Takes less than 2 minutes • Verified reviews will be featured on our showcase</p>
+          </div>
+
+          <div id="feedback-alert" class="alert-box" style="display: none;"></div>
+
+          <form id="client-feedback-form" class="review-form">
+            <!-- Bot Anti-Spam Honeypot Field -->
+            <div style="display: none !important;" aria-hidden="true">
+              <label for="company_website">Do not fill this field</label>
+              <input type="text" id="company_website" name="company_website" tabindex="-1" autocomplete="off" />
+            </div>
+
+            <!-- Star Rating Selector -->
+            <div class="form-group rating-group">
+              <label class="form-label">Overall Experience Rating <span class="required">*</span></label>
+              <div class="stars-selector" id="stars-container" role="radiogroup" aria-label="Rating from 1 to 5 stars">
+                <button type="button" class="star-btn active" data-rating="1" aria-label="1 star">★</button>
+                <button type="button" class="star-btn active" data-rating="2" aria-label="2 stars">★</button>
+                <button type="button" class="star-btn active" data-rating="3" aria-label="3 stars">★</button>
+                <button type="button" class="star-btn active" data-rating="4" aria-label="4 stars">★</button>
+                <button type="button" class="star-btn active" data-rating="5" aria-label="5 stars">★</button>
+              </div>
+              <input type="hidden" name="rating" id="rating-input" value="5" />
+              <span class="rating-text" id="rating-label">Exceptional — 5.0 / 5.0 ★</span>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="clientName" class="form-label">Your Name / Couple Names <span class="required">*</span></label>
+                <input
+                  type="text"
+                  id="clientName"
+                  name="clientName"
+                  class="form-input"
+                  placeholder="e.g. Ananya & Rohit Hegde"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="eventType" class="form-label">Ceremony or Milestone <span class="required">*</span></label>
+                <select id="eventType" name="eventType" class="form-input" required>
+                  <option value="Traditional South Indian Wedding">Traditional South Indian Wedding & Muhurtham</option>
+                  <option value="Pre-Wedding & Couple Portraits">Pre-Wedding & Couple Editorial</option>
+                  <option value="Vedic Gruhapravesham (Housewarming)">Vedic Gruhapravesham & Vastu Shanti</option>
+                  <option value="Upanayana (Sacred Thread Ceremony)">Upanayana (Sacred Thread Ceremony)</option>
+                  <option value="Baby Milestone & Naming Ceremony">Baby Milestone & Namakarana</option>
+                  <option value="Grand Heritage Anniversary">Grand Heritage Anniversary</option>
+                  <option value="Other Bespoke Commission">Other Bespoke Commission</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="venue" class="form-label">Venue / Heritage Destination</label>
+                <input
+                  type="text"
+                  id="venue"
+                  name="venue"
+                  class="form-input"
+                  placeholder="e.g. Palace Grounds, Lalitha Mahal, Family Villa"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="location" class="form-label">City / Region in Karnataka</label>
+                <input
+                  type="text"
+                  id="location"
+                  name="location"
+                  class="form-input"
+                  placeholder="e.g. Bengaluru, Mysuru, Mangaluru, Udupi"
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="highlight" class="form-label">One-Line Headline or Highlight</label>
+              <input
+                type="text"
+                id="highlight"
+                name="highlight"
+                class="form-input"
+                placeholder="e.g. “Captured our rituals with zero artificial interruptions”"
+                maxlength="160"
+              />
+              <span class="field-hint">A brief, memorable quote that sums up your experience.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="comment" class="form-label">Your Detailed Review & Thoughts <span class="required">*</span></label>
+              <textarea
+                id="comment"
+                name="comment"
+                rows="5"
+                class="form-input form-textarea"
+                placeholder="How was your experience with Hithu and the team? Mention their approach during ceremonies, the image quality, color grading, and final heirloom presentation..."
+                required
+              ></textarea>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="email" class="form-label">Email Address <span class="private-note">(Private for Verification)</span></label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  class="form-input"
+                  placeholder="you@example.com"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="phone" class="form-label">WhatsApp Number <span class="private-note">(Private)</span></label>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  class="form-input"
+                  placeholder="+91 98450 12345"
+                />
+              </div>
+            </div>
+
+            <div class="form-submit-row">
+              <button type="submit" id="submit-btn" class="btn btn-gold btn-lg submit-btn">
+                <span class="btn-text">Submit Client Review</span>
+                <span class="btn-spinner" style="display: none;">Sending...</span>
+              </button>
+            </div>
+          </form>
+
+          <!-- Success State -->
+          <div id="feedback-success-card" class="success-card" style="display: none;">
+            <div class="success-icon">✨</div>
+            <h3 class="success-title">Thank You Deeply!</h3>
+            <p class="success-desc">
+              Your review has been received with warm gratitude. It will be reviewed by our concierge and published to our curated Karnataka client showcase.
+            </p>
+            <div class="success-actions">
+              <a href="/" class="btn btn-gold">Return to Homepage</a>
+              <a href="/client-portal" class="btn btn-outline">Client Proofing Portal</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar Info Column -->
+        <div class="feedback-sidebar">
+          <div class="sidebar-card glass-card">
+            <span class="sidebar-badge">OUR PROMISE</span>
+            <h3>Privacy & Integrity</h3>
+            <p>
+              We honor your family’s privacy. Your email and phone number are strictly confidential and will never be shared or displayed on the public website.
+            </p>
+            <div class="divider-subtle"></div>
+            <div class="trust-stat">
+              <div class="stat-number">4.98 ★</div>
+              <div class="stat-label">Average rating across 150+ Karnataka heritage ceremonies</div>
+            </div>
+          </div>
+
+          <div class="sidebar-card glass-card concierge-touch">
+            <span class="sidebar-badge">NEED ASSISTANCE?</span>
+            <h3>Direct Concierge</h3>
+            <p>
+              Have a question regarding your private album proofing gallery or print deliveries?
+            </p>
+            <a
+              href={`https://wa.me/${(settings.whatsappConcierge || '917892706982').replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Hello Hithu, I would like to enquire about my ceremony gallery.')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="concierge-cta-link"
+            >
+              <span>💬</span> Message Hithu on WhatsApp
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .feedback-page-header {
+    background: radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.12) 0%, var(--bg-primary) 70%);
+    padding-top: 5rem;
+    padding-bottom: 2.5rem;
+  }
+
+  .page-title {
+    font-family: var(--font-serif);
+    font-size: clamp(2rem, 4vw, 3rem);
+    color: var(--text-primary);
+    margin-top: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .page-subtitle {
+    max-width: 680px;
+    margin: 1.25rem auto 0;
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    line-height: 1.7;
+  }
+
+  .feedback-section {
+    padding-bottom: 6rem;
+  }
+
+  .feedback-container {
+    max-width: 1100px;
+  }
+
+  .feedback-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  @media (min-width: 900px) {
+    .feedback-grid {
+      grid-template-columns: 1.8fr 1fr;
+    }
+  }
+
+  .feedback-form-card {
+    padding: 2.5rem;
+  }
+
+  .card-header {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 1.25rem;
+  }
+
+  .form-title {
+    font-family: var(--font-serif);
+    font-size: 1.85rem;
+    color: var(--gold-light);
+    margin-bottom: 0.4rem;
+  }
+
+  .form-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  @media (min-width: 600px) {
+    .form-row {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .form-group {
+    margin-bottom: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .form-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-primary);
+  }
+
+  .required {
+    color: var(--gold-primary);
+  }
+
+  .private-note {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-transform: none;
+    font-weight: normal;
+  }
+
+  .field-hint {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  .form-input {
+    background: rgba(10, 12, 16, 0.7);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 0.8rem 1rem;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: all 0.2s ease;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--gold-primary);
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+    background: rgba(15, 18, 24, 0.9);
+  }
+
+  .form-textarea {
+    resize: vertical;
+    min-height: 120px;
+    line-height: 1.6;
+  }
+
+  /* Stars Selector */
+  .rating-group {
+    padding: 1rem 1.25rem;
+    background: rgba(212, 175, 55, 0.05);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    border-radius: 8px;
+    margin-bottom: 1.75rem;
+  }
+
+  .stars-selector {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0.4rem 0;
+  }
+
+  .star-btn {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.2);
+    transition: transform 0.15s ease, color 0.15s ease;
+    padding: 0 0.15rem;
+    line-height: 1;
+  }
+
+  .star-btn.active {
+    color: var(--gold-primary);
+    text-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
+  }
+
+  .star-btn:hover {
+    transform: scale(1.15);
+  }
+
+  .rating-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gold-light);
+  }
+
+  .form-submit-row {
+    margin-top: 1.75rem;
+  }
+
+  .submit-btn {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: none;
+    cursor: pointer;
+  }
+
+  .alert-box {
+    padding: 0.85rem 1.25rem;
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+  }
+
+  .alert-error {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #fca5a5;
+  }
+
+  .alert-success {
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    color: #86efac;
+  }
+
+  /* Success Card */
+  .success-card {
+    text-align: center;
+    padding: 3rem 1.5rem;
+  }
+
+  .success-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .success-title {
+    font-family: var(--font-serif);
+    font-size: 2rem;
+    color: var(--gold-light);
+    margin-bottom: 0.75rem;
+  }
+
+  .success-desc {
+    color: var(--text-muted);
+    font-size: 1rem;
+    max-width: 480px;
+    margin: 0 auto 2rem;
+    line-height: 1.6;
+  }
+
+  .success-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  /* Sidebar */
+  .feedback-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .sidebar-card {
+    padding: 2rem;
+  }
+
+  .sidebar-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--gold-primary);
+    background: rgba(212, 175, 55, 0.1);
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-bottom: 0.75rem;
+  }
+
+  .sidebar-card h3 {
+    font-family: var(--font-serif);
+    font-size: 1.35rem;
+    color: var(--text-primary);
+    margin-bottom: 0.6rem;
+  }
+
+  .sidebar-card p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .divider-subtle {
+    height: 1px;
+    background: var(--border-subtle);
+    margin: 1.5rem 0;
+  }
+
+  .trust-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .stat-number {
+    font-family: var(--font-serif);
+    font-size: 2rem;
+    color: var(--gold-primary);
+    font-weight: 600;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+
+  .concierge-cta-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    color: var(--whatsapp-emerald);
+    background: rgba(37, 211, 102, 0.1);
+    border: 1px solid rgba(37, 211, 102, 0.25);
+    padding: 0.65rem 1rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+
+  .concierge-cta-link:hover {
+    background: rgba(37, 211, 102, 0.2);
+  }
+</style>
+
+<script>
+  const form = document.getElementById('client-feedback-form') as HTMLFormElement;
+  const alertBox = document.getElementById('feedback-alert') as HTMLDivElement;
+  const successCard = document.getElementById('feedback-success-card') as HTMLDivElement;
+  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+  const btnText = submitBtn?.querySelector('.btn-text') as HTMLElement;
+  const btnSpinner = submitBtn?.querySelector('.btn-spinner') as HTMLElement;
+  const ratingInput = document.getElementById('rating-input') as HTMLInputElement;
+  const ratingLabel = document.getElementById('rating-label') as HTMLElement;
+  const starBtns = document.querySelectorAll('.star-btn') as NodeListOf<HTMLButtonElement>;
+
+  const ratingDescriptions: Record<number, string> = {
+    1: 'Needs Improvement — 1.0 / 5.0 ★',
+    2: 'Fair Experience — 2.0 / 5.0 ★',
+    3: 'Good Service — 3.0 / 5.0 ★',
+    4: 'Great & Memorable — 4.0 / 5.0 ★',
+    5: 'Exceptional — 5.0 / 5.0 ★'
+  };
+
+  // Interactive Star Selector
+  function setRating(val: number) {
+    if (!ratingInput) return;
+    ratingInput.value = val.toString();
+    if (ratingLabel) {
+      ratingLabel.textContent = ratingDescriptions[val] || `${val}.0 / 5.0 ★`;
+    }
+    starBtns.forEach((btn, index) => {
+      const starVal = index + 1;
+      if (starVal <= val) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
+
+  starBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const val = parseInt(btn.getAttribute('data-rating') || '5', 10);
+      setRating(val);
+    });
+  });
+
+  function showAlert(message: string, isError = true) {
+    if (!alertBox) return;
+    alertBox.textContent = message;
+    alertBox.className = `alert-box ${isError ? 'alert-error' : 'alert-success'}`;
+    alertBox.style.display = 'block';
+    alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (alertBox) alertBox.style.display = 'none';
+
+    const formData = new FormData(form);
+    const data = {
+      clientName: formData.get('clientName'),
+      eventType: formData.get('eventType'),
+      venue: formData.get('venue'),
+      location: formData.get('location'),
+      highlight: formData.get('highlight'),
+      comment: formData.get('comment'),
+      email: formData.get('email'),
+      phone: formData.get('phone'),
+      rating: parseInt(ratingInput?.value || '5', 10),
+      company_website: formData.get('company_website') // honeypot
+    };
+
+    if (submitBtn) submitBtn.disabled = true;
+    if (btnText) btnText.style.display = 'none';
+    if (btnSpinner) btnSpinner.style.display = 'inline';
+
+    try {
+      const res = await fetch('/api/testimonials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || 'Failed to submit feedback');
+      }
+
+      // Show success state
+      if (form) form.style.display = 'none';
+      if (successCard) successCard.style.display = 'block';
+      if (alertBox) alertBox.style.display = 'none';
+    } catch (err: any) {
+      showAlert(err.message || 'Something went wrong. Please try again.');
+      if (submitBtn) submitBtn.disabled = false;
+      if (btnText) btnText.style.display = 'inline';
+      if (btnSpinner) btnSpinner.style.display = 'none';
+    }
+  });
+</script>
