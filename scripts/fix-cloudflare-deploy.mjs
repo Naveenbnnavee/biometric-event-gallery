@@ -10,23 +10,50 @@ const dotWranglerDir = path.resolve(projectRoot, '.wrangler');
 
 console.log('[fix-cloudflare-deploy] Starting post-build deploy preparations...');
 
-// 1. Sanitize dist/server/wrangler.json
+// Load environment variables from .env if present (without external dependencies)
+const envFilePath = path.join(projectRoot, '.env');
+if (fs.existsSync(envFilePath)) {
+  try {
+    const envContent = fs.readFileSync(envFilePath, 'utf8');
+    for (const line of envContent.split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eqIdx = trimmed.indexOf('=') !== -1 ? trimmed.indexOf('=') : trimmed.indexOf(':');
+      if (eqIdx > 0) {
+        const key = trimmed.slice(0, eqIdx).trim();
+        const val = trimmed.slice(eqIdx + 1).trim().replace(/^['"](.*)['"]$/, '$1');
+        if (!process.env[key]) {
+          process.env[key] = val;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[fix-cloudflare-deploy] Note: Could not read .env file:', err);
+  }
+}
+
+// 1. Sanitize or dynamically configure dist/server/wrangler.json
 if (fs.existsSync(wranglerJsonPath)) {
   try {
     const raw = fs.readFileSync(wranglerJsonPath, 'utf8');
     const config = JSON.parse(raw);
 
-    // Cloudflare Pages requires real 32-hex IDs for kv_namespaces in config.
-    // Retain valid 32-character hex IDs while filtering out placeholders so Pages deploys cleanly.
-    if (Array.isArray(config.kv_namespaces)) {
-      config.kv_namespaces = config.kv_namespaces.filter(ns => 
-        ns && typeof ns.id === 'string' && /^[0-9a-f]{32}$/i.test(ns.id) && !/^([0-9a-f])\1{31}$/i.test(ns.id)
-      );
-      if (config.kv_namespaces.length === 0) {
-        delete config.kv_namespaces;
-      }
-    } else if (config.kv_namespaces) {
+    // KV Namespace ID resolution: strictly from environment variables or .env
+    const envKvId = process.env.KV_NAMESPACE_ID || process.env.FH_STUDIO_KV_ID || process.env.CLOUDFLARE_KV_ID;
+
+    if (envKvId && typeof envKvId === 'string' && /^[0-9a-f]{32}$/i.test(envKvId)) {
+      config.kv_namespaces = [
+        {
+          binding: 'FH_STUDIO_KV',
+          id: envKvId
+        }
+      ];
+      console.log('[fix-cloudflare-deploy] ✓ Dynamically bound FH_STUDIO_KV from environment variable KV_NAMESPACE_ID');
+    } else {
+      // In Cloudflare Pages, KV bindings are attached via Cloudflare Dashboard
+      // (Settings > Functions > KV namespace bindings). Remove placeholder or local entries.
       delete config.kv_namespaces;
+      console.log('[fix-cloudflare-deploy] ✓ No local KV_NAMESPACE_ID provided; relying on Cloudflare Pages Dashboard binding');
     }
 
     // Cloudflare Pages forbids the "assets" block in Pages configuration files

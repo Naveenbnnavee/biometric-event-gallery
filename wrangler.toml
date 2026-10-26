@@ -3,6 +3,6 @@ pages_build_output_dir = "dist"
 compatibility_date = "2024-11-01"
 compatibility_flags = ["nodejs_compat"]
 
-[[kv_namespaces]]
-binding = "FH_STUDIO_KV"
-id = "13cc230fac134b0b9e1f8bbb00fcce38"
+# Cloudflare KV binding is attached via Cloudflare Pages Dashboard:
+# Settings > Functions > KV namespace bindings -> Variable: FH_STUDIO_KV
+# For local dev or CI injection, provide KV_NAMESPACE_ID in .env or environment variables.
