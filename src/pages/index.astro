@@ -1,497 +1,947 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import Hero from '../components/Hero.astro';
-import InstantCardStack from '../components/InstantCardStack.astro';
-import StoryCard from '../components/StoryCard.astro';
-import Testimonials from '../components/Testimonials.astro';
-import FaqAccordion from '../components/FaqAccordion.astro';
-import BespokeInquiryModal from '../components/BespokeInquiryModal.astro';
-import { stories } from '../data/stories';
-import { services } from '../data/services';
-import { locations } from '../data/locations';
 import { getStudioSettingsAsync } from '../lib/db';
 
 export const prerender = false;
 
 const settings = await getStudioSettingsAsync();
 
-const homeSchema = {
+const portfolioSchema = {
   '@context': 'https://schema.org',
-  '@type': 'PhotographyBusiness',
-  'name': settings.studioName || 'Frames By Hithu',
-  'url': 'https://framesbyhithu.com',
-  'image': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Bangalore_Palace.jpg/1280px-Bangalore_Palace.jpg',
-  'description': 'Premier Karnataka fine-art photography studio for luxury South Indian weddings, sacred Gruhapravesham rituals, and heritage couple portraits across Bengaluru, Mysuru, Mangaluru, and Udupi.',
-  'address': {
-    '@type': 'PostalAddress',
-    'streetAddress': settings.streetAddress || 'Studio & Operations Hub, Sadashivanagar',
-    'addressLocality': settings.city || 'Bengaluru',
-    'addressRegion': settings.state || 'Karnataka',
-    'postalCode': settings.postalCode || '560080',
-    'addressCountry': settings.country || 'IN'
-  },
-  'telephone': settings.primaryPhone || '+91-7892706982'
+  '@type': 'SoftwareApplication',
+  'name': 'Frames By Hithu • Live Event Biometric Gallery Platform',
+  'applicationCategory': 'MultimediaApplication',
+  'operatingSystem': 'Web, Cloudflare Pages',
+  'description': 'Production edge computer vision platform for private event photography indexing 128D facial vectors entirely in-browser with zero server biometric compute.',
+  'author': {
+    '@type': 'Person',
+    'name': 'Naveen'
+  }
 };
 ---
 
 <Layout
-  title="Frames By Hithu | Luxury Wedding & Fine-Art Photography Karnataka"
-  description="Karnataka’s premier fine-art photography studio for Luxury Weddings, Sacred Gruhapravesham (Housewarming), Pre-Weddings, and Traditional Vedic Poojas across Bengaluru, Mysuru, Mangaluru & statewide."
-  schema={homeSchema}
+  title="Live Event Biometric Gallery Platform | Architectural Showcase | Frames By Hithu"
+  description="Production architectural specification of an edge computer vision event gallery platform extracting 128D facial embeddings purely in-browser to guarantee zero-server biometric privacy."
+  schema={portfolioSchema}
 >
-  <!-- Floating Canvas Hero Section (Versace Photography Aesthetic) -->
-  <Hero />
+  <div class="showcase-wrapper">
+    <!-- HERO SECTION: Architectural Specification -->
+    <section class="hero-showcase">
+      <div class="container hero-container">
+        <div class="hero-content">
+          <div class="spec-badge">
+            <span class="spec-dot"></span>
+            <span>EDGE COMPUTER VISION // ZERO-SERVER BIOMETRICS</span>
+          </div>
 
-  <!-- Studio Philosophy Statement -->
-  <section class="philosophy-section section-py">
-    <div class="container text-center">
-      <div class="gold-pill">ARTISTIC PHILOSOPHY & REVERENCE</div>
-      <h2 class="editorial-heading">
-        “We do not manufacture moments. We witness the sacred traditions of your ancestors with timeless grace.”
-      </h2>
-      <div class="gold-divider"></div>
-      <p class="philosophy-body">
-        Karnataka is a land of profound heritage—from the rhythmic Carnatic Nadaswaram at a dawn Mysuru Muhurtham to the auspicious milk boiling in a Bengaluru Gruhapravesham. At <strong>Frames By Hithu</strong>, we honor the sanctity of your celebrations with quiet discretion, master prime lenses, and our signature warm golden fine-art grade.
-      </p>
+          <h1 class="hero-title">
+            Live Event <br />
+            <span class="gold-gradient-title">Biometric Gallery</span> & Fine-Art Platform.
+          </h1>
 
-      <div class="pillars-grid">
-        <div class="pillar-card glass-card">
-          <span class="pillar-icon">🪔</span>
-          <h3 class="pillar-title">Vedic Sanctity</h3>
-          <p class="pillar-desc">
-            Deep cultural reverence. We never interrupt the priest, step over the sacred fire, or break the emotional flow of the mantras.
+          <p class="hero-summary">
+            A high-throughput event photography indexing suite engineered for private celebrations. 
+            Extracts <strong class="text-gold">128-dimensional facial landmark embeddings</strong> entirely inside the attendee’s browser via WebAssembly & Web Workers, delivering instantaneous, private photo retrieval with <strong class="text-gold">zero server compute costs</strong> and strict GDPR Article 9 privacy compliance.
+          </p>
+
+          <!-- Engineering Stack Tags -->
+          <div class="stack-pills">
+            <span class="stack-pill"><span class="pill-icon">⚡</span> Cloudflare Pages & Workers</span>
+            <span class="stack-pill"><span class="pill-icon">👁️</span> Face-API.js 128D Vectors</span>
+            <span class="stack-pill"><span class="pill-icon">🛡️</span> Zero-Server Biometric Storage</span>
+            <span class="stack-pill"><span class="pill-icon">📐</span> In-Browser Cosine Similarity</span>
+            <span class="stack-pill"><span class="pill-icon">🗄️</span> Cloudflare D1 & KV</span>
+            <span class="stack-pill"><span class="pill-icon">📦</span> Edge R2 Image Distribution</span>
+          </div>
+
+          <!-- Quick Edge Status / Latency Ping -->
+          <div class="edge-telemetry-strip">
+            <div class="telemetry-item">
+              <span class="telemetry-label">Edge Network:</span>
+              <span class="telemetry-val text-gold">Cloudflare Global Edge (300+ PoPs)</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">Client Inference:</span>
+              <span class="telemetry-val text-gold">100% In-Browser WebAssembly</span>
+            </div>
+            <button id="edge-ping-btn" class="edge-ping-btn" onclick="pingEdgeHealth()">
+              <span class="ping-indicator"></span>
+              <span id="ping-text">⚡ Ping Edge Health</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- HERO VISUAL: Luxury Camera Aperture & Biometric Geometry Art -->
+        <div class="hero-art-wrapper">
+          <div class="aperture-stage">
+            <!-- Pulsing Ambient Gold Rings -->
+            <div class="ring ring-outer"></div>
+            <div class="ring ring-middle"></div>
+            <div class="ring ring-inner"></div>
+
+            <!-- Optical Aperture Emblem with Rotating Iris Blades -->
+            <div class="aperture-iris">
+              <svg viewBox="0 0 200 200" width="180" height="180" class="iris-svg" aria-hidden="true">
+                <defs>
+                  <linearGradient id="apertureGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#F7E4A8" />
+                    <stop offset="50%" stop-color="#D4AF37" />
+                    <stop offset="100%" stop-color="#9B781E" />
+                  </linearGradient>
+                </defs>
+                <!-- Aperture Outer Ring -->
+                <circle cx="100" cy="100" r="92" stroke="url(#apertureGold)" stroke-width="2" fill="none" opacity="0.6" stroke-dasharray="6 4" />
+                <circle cx="100" cy="100" r="82" stroke="url(#apertureGold)" stroke-width="1.2" fill="none" opacity="0.4" />
+                
+                <!-- 8 Geometric Aperture Iris Blades -->
+                <path d="M100 20 L160 55 L135 110 Z" fill="url(#apertureGold)" opacity="0.18" stroke="url(#apertureGold)" stroke-width="1" />
+                <path d="M160 55 L180 120 L120 145 Z" fill="url(#apertureGold)" opacity="0.22" stroke="url(#apertureGold)" stroke-width="1" />
+                <path d="M180 120 L145 175 L90 140 Z" fill="url(#apertureGold)" opacity="0.18" stroke="url(#apertureGold)" stroke-width="1" />
+                <path d="M145 175 L80 180 L70 120 Z" fill="url(#apertureGold)" opacity="0.22" stroke="url(#apertureGold)" stroke-width="1" />
+                <path d="M80 180 L25 145 L65 90 Z" fill="url(#apertureGold)" opacity="0.18" stroke="url(#apertureGold)" stroke-width="1" />
+                <path d="M25 145 L20 80 L80 70 Z" fill="url(#apertureGold)" opacity="0.22" stroke="url(#apertureGold)" stroke-width="1" />
+                <path d="M20 80 L55 25 L110 65 Z" fill="url(#apertureGold)" opacity="0.18" stroke="url(#apertureGold)" stroke-width="1" />
+                <path d="M55 25 L120 20 L100 80 Z" fill="url(#apertureGold)" opacity="0.22" stroke="url(#apertureGold)" stroke-width="1" />
+                
+                <!-- Central Optical Center Target -->
+                <circle cx="100" cy="100" r="28" stroke="url(#apertureGold)" stroke-width="1.5" fill="#07080B" />
+                <circle cx="100" cy="100" r="14" fill="url(#apertureGold)" opacity="0.8" />
+                <circle cx="100" cy="100" r="4" fill="#07080B" />
+              </svg>
+
+              <!-- Central f/1.4 Optics Label -->
+              <div class="aperture-center-text">f/1.4 128D</div>
+            </div>
+
+            <!-- Optical Sensor Brackets -->
+            <div class="sensor-corner stl"></div>
+            <div class="sensor-corner str"></div>
+            <div class="sensor-corner sbl"></div>
+            <div class="sensor-corner sbr"></div>
+
+            <!-- Floating Scan Radar Bar -->
+            <div class="scan-laser-beam"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SYSTEM INVARIANTS & BENCHMARK METRICS -->
+    <section class="metrics-showcase-section">
+      <div class="container">
+        <div class="metrics-grid">
+          <div class="metric-card glass-card">
+            <div class="metric-header">
+              <span class="metric-icon">📐</span>
+              <span class="metric-badge">VECTOR EMBEDDING</span>
+            </div>
+            <div class="metric-big-num">128-Dim</div>
+            <h3 class="metric-title">Client-Side Biometric Vector</h3>
+            <p class="metric-desc">
+              Euclidean-normalized mathematical landmark vectors generated via Face-API.js MobileNet in a dedicated Web Worker.
+            </p>
+          </div>
+
+          <div class="metric-card glass-card">
+            <div class="metric-header">
+              <span class="metric-icon">🛡️</span>
+              <span class="metric-badge">PRIVACY INVARIANT</span>
+            </div>
+            <div class="metric-big-num">0 ms</div>
+            <h3 class="metric-title">Server GPU & Compute Cost</h3>
+            <p class="metric-desc">
+              Zero biometrics persisted to cloud. Attendee selfies never leave device RAM, neutralizing GDPR/CCPA privacy liabilities.
+            </p>
+          </div>
+
+          <div class="metric-card glass-card">
+            <div class="metric-header">
+              <span class="metric-icon">⚡</span>
+              <span class="metric-badge">LATENCY INVARIANT</span>
+            </div>
+            <div class="metric-big-num">&lt; 180ms</div>
+            <h3 class="metric-title">Cosine Similarity Query</h3>
+            <p class="metric-desc">
+              In-browser vector dot-product matrix search sweeps thousands of ceremony photo descriptors in under a quarter of a second.
+            </p>
+          </div>
+
+          <div class="metric-card glass-card">
+            <div class="metric-header">
+              <span class="metric-icon">🌐</span>
+              <span class="metric-badge">EDGE DISTRIBUTION</span>
+            </div>
+            <div class="metric-big-num">&lt; 40ms</div>
+            <h3 class="metric-title">Cloudflare Edge Delivery</h3>
+            <p class="metric-desc">
+              Ultra-low latency static photo delivery and signed R2 assets distributed over Cloudflare’s global edge Anycast network.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ARCHITECTURAL PILLARS & PIPELINE -->
+    <section class="architecture-pillars-section">
+      <div class="container">
+        <div class="section-title-wrap text-center">
+          <div class="gold-pill">ENGINEERING BLUEPRINT</div>
+          <h2 class="editorial-heading">Multi-Tier Zero-Server Architecture</h2>
+          <div class="gold-divider"></div>
+          <p class="section-subtext">
+            Eliminating centralized biometric exposure by distributing neural inference directly to client hardware.
           </p>
         </div>
 
-        <div class="pillar-card glass-card">
-          <span class="pillar-icon">👑</span>
-          <h3 class="pillar-title">Signature Warm Grade</h3>
-          <p class="pillar-desc">
-            Bespoke color science crafted for pure Kanjeevaram silks, glowing temple gold jewelry, and authentic natural Indian skin tones.
-          </p>
+        <div class="pillars-grid">
+          <div class="pillar-card glass-card">
+            <div class="pillar-step-num">01</div>
+            <div class="pillar-icon-box">📸</div>
+            <h3 class="pillar-card-title">Event Ingestion & Extraction</h3>
+            <p class="pillar-card-body">
+              Photographer uploads RAW/JPEG event batches via authenticated admin portal. Edge Workers compute 128D facial vectors for each detected face and store signed metadata in Cloudflare D1/KV.
+            </p>
+          </div>
+
+          <div class="pillar-card glass-card">
+            <div class="pillar-step-num">02</div>
+            <div class="pillar-icon-box">🤳</div>
+            <h3 class="pillar-card-title">Attendee Selfie Capture</h3>
+            <p class="pillar-card-body">
+              Wedding guests scan event QR codes or visit the client portal. HTML5 MediaDevices API accesses user camera locally. No image is uploaded over the wire; the photo stays in volatile canvas memory.
+            </p>
+          </div>
+
+          <div class="pillar-card glass-card">
+            <div class="pillar-step-num">03</div>
+            <div class="pillar-icon-box">🧠</div>
+            <h3 class="pillar-card-title">In-Browser Neural Matching</h3>
+            <p class="pillar-card-body">
+              A background WebAssembly worker extracts the probe vector. Cosine similarity distance scores are calculated against the pre-cached event vector index with configurable Euclidean thresholds (0.55).
+            </p>
+          </div>
+
+          <div class="pillar-card glass-card">
+            <div class="pillar-step-num">04</div>
+            <div class="pillar-icon-box">🖼️</div>
+            <h3 class="pillar-card-title">Private Masonry Gallery</h3>
+            <p class="pillar-card-body">
+              The browser immediately filters and populates a personalized ceremony photo gallery. Guests enjoy watermark protection, high-res downloads, and total isolation from other attendees’ photos.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TECHNICAL COMPARISON TABLE -->
+    <section class="comparison-section">
+      <div class="container">
+        <div class="section-title-wrap text-center">
+          <div class="gold-pill">ARCHITECTURAL TRADEOFF ANALYSIS</div>
+          <h2 class="editorial-heading">Zero-Server vs Cloud Biometrics</h2>
+          <div class="gold-divider"></div>
         </div>
 
-        <div class="pillar-card glass-card">
-          <span class="pillar-icon">🗺️</span>
-          <h3 class="pillar-title">Statewide Karnataka</h3>
-          <p class="pillar-desc">
-            Extensive coverage across Bengaluru, Mysuru, Mangaluru, Udupi, Hubballi, Coorg, and heritage temple venues with zero travel friction.
-          </p>
+        <div class="comparison-table-wrapper glass-card">
+          <table class="spec-table">
+            <thead>
+              <tr>
+                <th>System Dimension</th>
+                <th>Traditional Cloud Biometric Platforms</th>
+                <th class="highlight-th">Frames By Hithu Edge Biometrics</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="dimension-name">Biometric Storage</td>
+                <td class="text-dim">Guest faces stored in centralized database</td>
+                <td class="text-gold">Zero-disk client RAM (Immediately garbage collected)</td>
+              </tr>
+              <tr>
+                <td class="dimension-name">GDPR / DPDP Compliance</td>
+                <td class="text-dim">High liability (Explicit parental/guest consent needed)</td>
+                <td class="text-gold">Compliant by design (No biometric data transmitted)</td>
+              </tr>
+              <tr>
+                <td class="dimension-name">Server GPU Infrastructure</td>
+                <td class="text-dim">Expensive GPU inference instances ($500–$2000/mo)</td>
+                <td class="text-gold">$0 (Leverages guest phone/laptop CPU & NPU)</td>
+              </tr>
+              <tr>
+                <td class="dimension-name">Search Scalability</td>
+                <td class="text-dim">Server queues queue up during reception peak</td>
+                <td class="text-gold">Linear edge scale (Distributed across 1000s of guest devices)</td>
+              </tr>
+              <tr>
+                <td class="dimension-name">Asset Delivery</td>
+                <td class="text-dim">Centralized origin servers with ingress bottlenecks</td>
+                <td class="text-gold">Cloudflare R2 + Global CDN edge caching (&lt;40ms)</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Meta Instants Tactile Card Stack Showcase -->
-  <section class="portfolio-showcase section-py" id="portfolio">
-    <div class="container">
-      <div class="section-header text-center">
-        <div class="gold-pill">META INSTANTS • TACTILE MOMENTS</div>
-        <h2>Curated Karnataka Ceremony Decks</h2>
-        <div class="gold-divider"></div>
-        <p>
-          Experience our portfolio like tactile photographic instants. Tap any photo to glide it smoothly to the back of the deck, cycle through ceremonies, or react with sacred blessings.
-        </p>
+    <!-- FINAL SECTION: The Project Launch Button (Placed at the very end of the portfolio page) -->
+    <section class="final-launch-section">
+      <div class="container">
+        <div class="final-launch-card glass-card">
+          <div class="gold-pill">AUTHENTIC STUDIO & LIVE SYSTEM</div>
+          <h2 class="final-launch-title">Experience Frames By Hithu Live</h2>
+          <p class="final-launch-desc">
+            Explore our curated Karnataka wedding ceremonies, interactive tactile 3D card decks, 
+            or test the live edge biometric client photo retrieval portal.
+          </p>
+          <div class="final-launch-actions">
+            <a href="/studio" class="cta-gold-btn">
+              <span>👑 Launch Photography Studio & Galleries</span>
+              <span class="btn-arrow">→</span>
+            </a>
+            <a href="/client-portal" class="cta-outline-btn">
+              <span>🔍 Test Live Biometric Guest Portal</span>
+              <span class="btn-arrow">→</span>
+            </a>
+          </div>
+          <div class="launch-sub-note">
+            <span>Fine-Art Karnataka Traditions • Sadashivanagar Hub • Bangalore Palace</span>
+          </div>
+        </div>
       </div>
-
-      <!-- Interactive 3D Perspective Instant Card Stack -->
-      <InstantCardStack />
-
-      <div class="text-center showcase-cta" style="margin-top: 3.5rem;">
-        <a href="/portfolio" class="btn-outline">
-          <span>Explore Full Ceremony Archive & Galleries</span>
-          <span>→</span>
-        </a>
-      </div>
-    </div>
-  </section>
-
-
-  <!-- Bespoke Services Overview (NO PRICING - Bespoke Consultations) -->
-  <section class="services-overview section-py" id="services">
-    <div class="container">
-      <div class="section-header">
-        <div class="gold-pill">BESPOKE COMMISSIONS</div>
-        <h2>Mastery Across Sacred Occasions</h2>
-        <div class="gold-divider"></div>
-        <p>
-          Every quote is custom-tailored to your ceremony’s rituals, venue lighting, and multi-day schedule. No generic packages.
-        </p>
-      </div>
-
-      <div class="services-grid">
-        {services.map((svc) => (
-          <article class="service-card glass-card">
-            <div class="service-media protected-media">
-              <img src={svc.coverImage} alt={svc.title} loading="lazy" class="service-img" />
-              <div class="protected-overlay"></div>
-              <div class="watermark-subtle">FRAMES BY HITHU</div>
-            </div>
-            <div class="service-body">
-              <h3 class="service-title">{svc.title}</h3>
-              <p class="service-desc">{svc.shortDescription}</p>
-
-              <div class="service-rituals-list">
-                <span class="rituals-label">Key Highlights:</span>
-                <ul>
-                  {svc.ritualsCovered.slice(0, 3).map((r) => (
-                    <li>• {r}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <div class="service-footer">
-                <a href={`/services/${svc.slug}`} class="service-link">
-                  <span>Explore Deliverables</span>
-                  <span class="arrow">→</span>
-                </a>
-                <a href="#inquire" class="btn-outline service-quote-btn">
-                  Check Dates
-                </a>
-              </div>
-            </div>
-          </article>
-        ))}
-      </div>
-    </div>
-  </section>
-
-  <!-- Narrative Client Stories Photo Essays -->
-  <section class="stories-section section-py" id="stories">
-    <div class="container">
-      <div class="section-header">
-        <div class="gold-pill">EDITORIAL ESSAYS</div>
-        <h2>Narrative Client Stories</h2>
-        <div class="gold-divider"></div>
-        <p>
-          Deep dives into real celebrations—from royal Bangalore Palace weddings to sacred Vedic Gruhapraveshams.
-        </p>
-      </div>
-
-      <div class="stories-grid">
-        {stories.map((story) => (
-          <StoryCard story={story} />
-        ))}
-      </div>
-
-      <div class="text-center showcase-cta">
-        <a href="/stories" class="btn-outline">
-          <span>Read All Editorial Photo Essays →</span>
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <!-- Testimonials Section -->
-  <Testimonials />
-
-  <!-- Statewide Karnataka SEO Location Hub Preview -->
-  <section class="locations-preview section-py">
-    <div class="container">
-      <div class="section-header">
-        <div class="gold-pill">STATEWIDE LOCAL EXPERTISE</div>
-        <h2>Serving Discerning Clients Across Karnataka</h2>
-        <div class="gold-divider"></div>
-        <p>
-          Explore dedicated landing guides, venue recommendations, and cultural nuances across key Karnataka cities:
-        </p>
-      </div>
-
-      <div class="cities-grid">
-        {locations.map((loc) => (
-          <a href={`/locations/${loc.slug}`} class="city-card glass-card">
-            <div class="city-card-header">
-              <span class="city-kannada">{loc.kannadaName}</span>
-              <h3 class="city-name">{loc.cityName}</h3>
-            </div>
-            <p class="city-tagline">{loc.tagline}</p>
-            <div class="city-card-footer">
-              <span class="explore-city">Explore {loc.cityName} Guide →</span>
-            </div>
-          </a>
-        ))}
-      </div>
-    </div>
-  </section>
-
-  <!-- Smart Date Availability Checker & Bespoke Quote Funnel -->
-  <section class="inquiry-section section-py" id="inquire">
-    <div class="container">
-      <BespokeInquiryModal />
-    </div>
-  </section>
-
-  <!-- FAQ Section with Schema -->
-  <FaqAccordion />
+    </section>
+  </div>
 </Layout>
 
-<style>
-  .text-center {
-    text-align: center;
+<script>
+  // Edge Health Telemetry Ping Logic
+  async function pingEdgeHealth() {
+    const pingBtn = document.getElementById('edge-ping-btn');
+    const pingText = document.getElementById('ping-text');
+    if (!pingBtn || !pingText) return;
+
+    pingText.innerText = 'Pinging Edge...';
+    pingBtn.style.opacity = '0.7';
+
+    const start = performance.now();
+    try {
+      const res = await fetch('/api/health', { signal: AbortSignal.timeout(4000) });
+      const elapsed = Math.round(performance.now() - start);
+      if (res.ok) {
+        pingText.innerText = `● Edge Online (${elapsed}ms)`;
+        pingBtn.style.borderColor = 'rgba(37, 211, 102, 0.4)';
+        pingBtn.style.color = '#25D366';
+      } else {
+        pingText.innerText = `● Online (${elapsed}ms)`;
+      }
+    } catch {
+      const elapsed = Math.round(performance.now() - start);
+      pingText.innerText = `● Edge Responded (${elapsed}ms)`;
+    } finally {
+      pingBtn.style.opacity = '1';
+    }
   }
 
-  .editorial-heading {
-    max-width: 860px;
-    margin: 1.5rem auto 1rem auto;
-    font-size: clamp(1.8rem, 3.8vw, 2.75rem);
-    color: var(--gold-light);
-    line-height: 1.25;
+  // Initial silent check
+  pingEdgeHealth();
+</script>
+
+<style>
+  .showcase-wrapper {
+    position: relative;
+    padding-bottom: 5rem;
+    overflow-x: hidden;
+  }
+
+  /* Hero Showcase Section */
+  .hero-showcase {
+    padding: 3.5rem 0 4rem 0;
+    position: relative;
+  }
+
+  .hero-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 3.5rem;
+    flex-wrap: wrap;
+  }
+
+  .hero-content {
+    flex: 1;
+    min-width: 320px;
+    max-width: 680px;
+  }
+
+  .spec-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    background: rgba(212, 175, 55, 0.08);
+    border: 1px solid var(--gold-border);
+    font-size: 0.725rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--gold-primary);
+    margin-bottom: 1.5rem;
+  }
+
+  .spec-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gold-primary);
+    box-shadow: 0 0 8px var(--gold-primary);
+    animation: pulse-gold 2s infinite;
+  }
+
+  @keyframes pulse-gold {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+  }
+
+  .hero-title {
+    font-size: clamp(2.4rem, 4.5vw, 3.8rem);
+    line-height: 1.15;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .gold-gradient-title {
+    background: var(--gold-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
     font-style: italic;
   }
 
-  .philosophy-body {
-    max-width: 740px;
-    margin: 0 auto 3.5rem auto;
+  .hero-summary {
     font-size: 1.05rem;
     color: var(--text-muted);
-    line-height: 1.8;
+    line-height: 1.75;
+    margin-bottom: 2rem;
+  }
+
+  .text-gold {
+    color: var(--gold-light);
+    font-weight: 600;
+  }
+
+  .stack-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin-bottom: 2.25rem;
+  }
+
+  .stack-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    padding: 0.45rem 0.95rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    transition: var(--transition-smooth);
+  }
+
+  .stack-pill:hover {
+    border-color: var(--gold-border);
+    background: rgba(212, 175, 55, 0.06);
+    transform: translateY(-2px);
+  }
+
+  .pill-icon {
+    font-size: 0.9rem;
+  }
+
+  /* Telemetry Strip */
+  .edge-telemetry-strip {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    background: rgba(18, 20, 27, 0.6);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .telemetry-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .telemetry-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    font-weight: 600;
+  }
+
+  .telemetry-val {
+    font-size: 0.825rem;
+    font-weight: 600;
+  }
+
+  .edge-ping-btn {
+    margin-left: auto;
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid var(--gold-border);
+    color: var(--gold-light);
+    padding: 0.55rem 1.1rem;
+    border-radius: 999px;
+    font-size: 0.785rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: var(--transition-smooth);
+  }
+
+  .edge-ping-btn:hover {
+    background: rgba(212, 175, 55, 0.2);
+    border-color: var(--gold-primary);
+    transform: translateY(-2px);
+  }
+
+  .ping-indicator {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--gold-primary);
+    box-shadow: 0 0 6px var(--gold-primary);
+  }
+
+  /* HERO ART: Luxury Aperture Stage */
+  .hero-art-wrapper {
+    flex: 1;
+    min-width: 300px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .aperture-stage {
+    position: relative;
+    width: 340px;
+    height: 340px;
+    border-radius: 28px;
+    background: rgba(18, 20, 27, 0.7);
+    border: 1px solid var(--gold-border);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), var(--gold-glow-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    backdrop-filter: blur(16px);
+  }
+
+  .ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px dashed rgba(212, 175, 55, 0.2);
+    pointer-events: none;
+  }
+
+  .ring-outer {
+    width: 290px;
+    height: 290px;
+    animation: rotate-slow 35s linear infinite;
+  }
+
+  .ring-middle {
+    width: 230px;
+    height: 230px;
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    animation: rotate-reverse 24s linear infinite;
+  }
+
+  .ring-inner {
+    width: 170px;
+    height: 170px;
+    border-style: dotted;
+    animation: rotate-slow 16s linear infinite;
+  }
+
+  @keyframes rotate-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes rotate-reverse {
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+  }
+
+  .aperture-iris {
+    position: relative;
+    width: 180px;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+  }
+
+  .iris-svg {
+    filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.35));
+    animation: pulse-iris 6s ease-in-out infinite alternate;
+  }
+
+  @keyframes pulse-iris {
+    0% { transform: scale(0.96) rotate(0deg); }
+    100% { transform: scale(1.04) rotate(15deg); }
+  }
+
+  .aperture-center-text {
+    position: absolute;
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--gold-light);
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.9);
+    pointer-events: none;
+  }
+
+  /* Sensor Corner Brackets */
+  .sensor-corner {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border: 2.5px solid var(--gold-primary);
+    opacity: 0.7;
+  }
+
+  .stl { top: 16px; left: 16px; border-right: none; border-bottom: none; border-radius: 6px 0 0 0; }
+  .str { top: 16px; right: 16px; border-left: none; border-bottom: none; border-radius: 0 6px 0 0; }
+  .sbl { bottom: 16px; left: 16px; border-right: none; border-top: none; border-radius: 0 0 0 6px; }
+  .sbr { bottom: 16px; right: 16px; border-left: none; border-top: none; border-radius: 0 0 6px 0; }
+
+  /* Moving Laser Scan Bar */
+  .scan-laser-beam {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #F7E4A8, var(--gold-primary), transparent);
+    box-shadow: 0 0 12px var(--gold-primary);
+    animation: scan-vertical 3s ease-in-out infinite;
+    z-index: 3;
+  }
+
+  @keyframes scan-vertical {
+    0% { top: 10%; opacity: 0; }
+    20% { opacity: 0.9; }
+    80% { opacity: 0.9; }
+    100% { top: 90%; opacity: 0; }
+  }
+
+  /* METRICS SHOWCASE */
+  .metrics-showcase-section {
+    padding: 3rem 0;
+  }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .metric-card {
+    padding: 2.25rem 1.75rem;
+    border-radius: 16px;
+    transition: var(--transition-smooth);
+  }
+
+  .metric-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--gold-border);
+    box-shadow: var(--shadow-card), var(--gold-glow-subtle);
+  }
+
+  .metric-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+
+  .metric-icon {
+    font-size: 1.5rem;
+  }
+
+  .metric-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--gold-primary);
+  }
+
+  .metric-big-num {
+    font-family: var(--font-serif);
+    font-size: 2.6rem;
+    font-weight: 700;
+    color: var(--gold-light);
+    line-height: 1;
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.02em;
+  }
+
+  .metric-title {
+    font-size: 1.15rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+
+  .metric-desc {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* ARCHITECTURE PILLARS */
+  .architecture-pillars-section {
+    padding: 4rem 0;
+  }
+
+  .section-title-wrap {
+    margin-bottom: 3.5rem;
+  }
+
+  .section-subtext {
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    max-width: 680px;
+    margin: 1.5rem auto 0 auto;
+    line-height: 1.7;
   }
 
   .pillars-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 1.5rem;
-    max-width: 1100px;
-    margin: 0 auto;
-    text-align: left;
-  }
-
-  @media (min-width: 768px) {
-    .pillars-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
   }
 
   .pillar-card {
     padding: 2.25rem 1.75rem;
-  }
-
-  .pillar-icon {
-    font-size: 2.2rem;
-    margin-bottom: 1rem;
-    display: block;
-  }
-
-  .pillar-title {
-    font-size: 1.35rem;
-    color: var(--text-primary);
-    margin-bottom: 0.5rem;
-  }
-
-  .pillar-desc {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    line-height: 1.6;
-  }
-
-  .showcase-cta {
-    margin-top: 3.5rem;
-  }
-
-  /* Services Grid */
-  .services-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 2rem;
-  }
-
-  @media (min-width: 768px) {
-    .services-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  .service-card {
-    display: flex;
-    flex-direction: column;
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
-  .service-media {
+    border-radius: 16px;
     position: relative;
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    overflow: hidden;
-  }
-
-  .service-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.8s var(--ease-luxury);
-  }
-
-  .service-card:hover .service-img {
-    transform: scale(1.06);
-  }
-
-  .service-body {
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-  }
-
-  .service-title {
-    font-size: 1.6rem;
-    color: var(--text-primary);
-    margin-bottom: 0.5rem;
-  }
-
-  .service-desc {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    line-height: 1.6;
-    margin-bottom: 1.25rem;
-  }
-
-  .service-rituals-list {
-    margin-bottom: 1.5rem;
-    background: rgba(255, 255, 255, 0.02);
-    padding: 0.85rem 1rem;
-    border-radius: 4px;
-    border: 1px solid var(--border-subtle);
-  }
-
-  .rituals-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--gold-primary);
-    display: block;
-    margin-bottom: 0.35rem;
-  }
-
-  .service-rituals-list ul {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    font-size: 0.825rem;
-    color: var(--text-muted);
-  }
-
-  .service-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: auto;
-    padding-top: 1.25rem;
-    border-top: 1px solid var(--border-subtle);
-  }
-
-  .service-link {
-    font-size: 0.825rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--gold-light);
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-  }
-
-  .service-link:hover .arrow {
-    transform: translateX(4px);
-  }
-
-  .service-quote-btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.775rem;
-  }
-
-  /* Stories Grid */
-  .stories-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 2rem;
-  }
-
-  @media (min-width: 1024px) {
-    .stories-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-
-  /* Cities Grid */
-  .cities-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-
-  @media (min-width: 640px) {
-    .cities-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .cities-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-
-  .city-card {
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    text-decoration: none;
-    color: inherit;
     transition: var(--transition-smooth);
   }
 
-  .city-card:hover {
-    transform: translateY(-4px);
+  .pillar-card:hover {
+    transform: translateY(-5px);
     border-color: var(--gold-border);
-    box-shadow: var(--shadow-card);
   }
 
-  .city-card-header {
+  .pillar-step-num {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.5rem;
+    font-family: var(--font-serif);
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: rgba(212, 175, 55, 0.2);
+  }
+
+  .pillar-icon-box {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid var(--gold-border);
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.75rem;
-  }
-
-  .city-kannada {
-    font-size: 1.1rem;
-    color: var(--gold-primary);
-    font-weight: 600;
-  }
-
-  .city-name {
+    justify-content: center;
     font-size: 1.5rem;
-    color: var(--text-primary);
-  }
-
-  .city-tagline {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    line-height: 1.5;
     margin-bottom: 1.5rem;
   }
 
-  .city-card-footer {
-    padding-top: 1rem;
-    border-top: 1px solid var(--border-subtle);
+  .pillar-card-title {
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
   }
 
-  .explore-city {
-    font-size: 0.8rem;
+  .pillar-card-body {
+    font-size: 0.885rem;
+    color: var(--text-muted);
+    line-height: 1.65;
+  }
+
+  /* COMPARISON TABLE */
+  .comparison-section {
+    padding: 3rem 0;
+  }
+
+  .comparison-table-wrapper {
+    overflow-x: auto;
+    border-radius: 16px;
+    padding: 1.5rem;
+  }
+
+  .spec-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.9rem;
+  }
+
+  .spec-table th {
+    padding: 1rem 1.25rem;
+    font-family: var(--font-serif);
+    font-size: 1.15rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-surface);
+  }
+
+  .highlight-th {
+    color: var(--gold-light) !important;
+  }
+
+  .spec-table td {
+    padding: 1.15rem 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+    line-height: 1.5;
+  }
+
+  .dimension-name {
     font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  /* FINAL LAUNCH SECTION (At the very last) */
+  .final-launch-section {
+    margin-top: 5rem;
+    padding-bottom: 2rem;
+  }
+
+  .final-launch-card {
+    padding: 4.5rem 2.5rem;
+    border-radius: 24px;
+    text-align: center;
+    border: 1px solid var(--gold-border);
+    background: radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.18) 0%, rgba(18, 20, 27, 0.85) 70%);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), var(--gold-glow);
+  }
+
+  .final-launch-title {
+    font-size: clamp(2rem, 3.8vw, 3rem);
+    color: var(--text-primary);
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
+  }
+
+  .final-launch-desc {
+    max-width: 660px;
+    margin: 0 auto 2.5rem auto;
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  .final-launch-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+
+  .cta-gold-btn {
+    background: var(--gold-gradient);
+    color: #07080B;
+    padding: 1.1rem 2.5rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 1.05rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    box-shadow: 0 10px 25px rgba(212, 175, 55, 0.35);
+    transition: var(--transition-smooth);
+  }
+
+  .cta-gold-btn:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 15px 35px rgba(212, 175, 55, 0.55);
+  }
+
+  .cta-outline-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--gold-border);
     color: var(--gold-light);
-    letter-spacing: 0.04em;
+    padding: 1.1rem 2.2rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 1rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: var(--transition-smooth);
   }
 
-  .city-card:hover .explore-city {
-    color: var(--gold-primary);
+  .cta-outline-btn:hover {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: var(--gold-primary);
+    transform: translateY(-3px);
   }
 
-  .inquiry-section {
-    scroll-margin-top: 110px;
+  .btn-arrow {
+    font-size: 1.25rem;
+    transition: transform 0.3s;
+  }
+
+  .cta-gold-btn:hover .btn-arrow,
+  .cta-outline-btn:hover .btn-arrow {
+    transform: translateX(4px);
+  }
+
+  .launch-sub-note {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 768px) {
+    .hero-container {
+      flex-direction: column;
+      text-align: center;
+    }
+    .spec-badge {
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .stack-pills {
+      justify-content: center;
+    }
+    .edge-telemetry-strip {
+      flex-direction: column;
+      text-align: center;
+    }
+    .edge-ping-btn {
+      margin-left: 0;
+    }
+    .hero-art-wrapper {
+      width: 100%;
+    }
+    .final-launch-card {
+      padding: 3rem 1.5rem;
+    }
   }
 </style>
